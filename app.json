@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/splash.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
@@ -14,43 +13,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.therepublic.app",
-      "infoPlist": {
-        "NSExtension": {
-          "NSExtensionPointIdentifier": "com.apple.Safari.web-auth"
-        }
-      },
-      "associatedDomains": ["therepublic://"]
+      "bundleIdentifier": "com.therepublic.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/splash.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.therepublic.app",
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "therepublic"
-            }
-          ],
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
-      ]
+      "package": "com.therepublic.app"
     },
     "web": {
       "favicon": "./assets/splash.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "therepublic-app"
-      }
-    },
-    "plugins": [
-      "expo-web-browser"
-    ]
+    }
   }
 }
