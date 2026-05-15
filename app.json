@@ -1,54 +1,56 @@
 {
-  "name": "The Republic",
-  "slug": "therepublic",
-  "version": "1.0.0",
-  "orientation": "portrait",
-  "icon": "./assets/icon.png",
-  "userInterfaceStyle": "automatic",
-  "newArchEnabled": true,
-  "splash": {
-    "image": "./assets/splash.png",
-    "resizeMode": "contain",
-    "backgroundColor": "#000000"
-  },
-  "ios": {
-    "supportsTablet": true,
-    "bundleIdentifier": "com.therepublic.app",
-    "infoPlist": {
-      "NSExtension": {
-        "NSExtensionPointIdentifier": "com.apple.Safari.web-auth"
-      }
-    },
-    "associatedDomains": ["therepublic://"]
-  },
-  "android": {
-    "adaptiveIcon": {
-      "foregroundImage": "./assets/adaptive-icon.png",
+  "expo": {
+    "name": "The Republic",
+    "slug": "therepublic",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/splash.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#000000"
     },
-    "package": "com.therepublic.app",
-    "intentFilters": [
-      {
-        "action": "VIEW",
-        "autoVerify": true,
-        "data": [
-          {
-            "scheme": "therepublic"
-          }
-        ],
-        "category": ["BROWSABLE", "DEFAULT"]
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.therepublic.app",
+      "infoPlist": {
+        "NSExtension": {
+          "NSExtensionPointIdentifier": "com.apple.Safari.web-auth"
+        }
+      },
+      "associatedDomains": ["therepublic://"]
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/splash.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.therepublic.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "therepublic"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/splash.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "therepublic-app"
       }
+    },
+    "plugins": [
+      "expo-web-browser"
     ]
-  },
-  "web": {
-    "favicon": "./assets/favicon.png"
-  },
-  "extra": {
-    "eas": {
-      "projectId": "therepublic-app"
-    }
-  },
-  "plugins": [
-    "expo-web-browser"
-  ]
+  }
 }
