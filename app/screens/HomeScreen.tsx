@@ -1,203 +1,97 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-} from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, RefreshControl } from 'react-native';
 import { useAppStore } from '../contexts/store';
-import { useAuth } from '../contexts/AuthContext';
 import { PillTab, WebsiteCard, UpgradeModal } from '../components';
-import * as supabaseService from '../services/supabase';
-import type { Category, Website } from '../types/supabase';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { Website } from '../types/supabase';
 
-type HomeScreenProps = {
-  navigation: NativeStackNavigationProp<any>;
-};
+type HomeScreenProps = { navigation: NativeStackNavigationProp<any> };
+
+const DEMO_CATEGORIES = [
+  { id: '1', name: 'Shopping', color: '#FF6B6B' },
+  { id: '2', name: 'Grocery', color: '#4ECDC4' },
+  { id: '3', name: 'Food', color: '#45B7D1' },
+  { id: '4', name: 'Jobs', color: '#96CEB4' },
+  { id: '5', name: 'Travel', color: '#FFEAA7' },
+];
+
+const DEMO_WEBSITES = [
+  { id: '1', name: 'Walmart', url: 'https://walmart.com', category_id: '1', is_free: true },
+  { id: '2', name: 'Target', url: 'https://target.com', category_id: '1', is_free: true },
+  { id: '3', name: 'eBay', url: 'https://ebay.com', category_id: '1', is_free: false },
+  { id: '4', name: 'Instacart', url: 'https://instacart.com', category_id: '2', is_free: true },
+  { id: '5', name: 'Uber Eats', url: 'https://ubereats.com', category_id: '3', is_free: true },
+  { id: '6', name: 'Indeed', url: 'https://indeed.com', category_id: '4', is_free: false },
+  { id: '7', name: 'Airbnb', url: 'https://airbnb.com', category_id: '5', is_free: false },
+  { id: '8', name: 'DoorDash', url: 'https://doordash.com', category_id: '3', is_free: true },
+];
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { colors, spacing } = useTheme();
-  const { user, isAuthenticated } = useAuth();
-  const {
-    categories,
-    setCategories,
-    selectedCategoryId,
-    setSelectedCategoryId,
-    websites,
-    setWebsites,
-  } = useAppStore();
+  const { colors } = useAppStore();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isMember] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [selectedWebsite, setSelectedWebsite] = useState<Website | null>(null);
+  const filteredWebsites = selectedCategory
+    ? DEMO_WEBSITES.filter(w => w.category_id === selectedCategory)
+    : DEMO_WEBSITES;
 
-  const isPaidMember = user?.membership_active === true;
-
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  useEffect(() => {
-    if (selectedCategoryId) {
-      loadWebsites(selectedCategoryId);
+  const handlePress = (website: any) => {
+    if (!website.is_free && !isMember) {
+      setShowUpgrade(true);
+    } else {
+      navigation.navigate('WebView', { website });
     }
-  }, [selectedCategoryId]);
-
-  const loadCategories = async () => {
-    try {
-      const data = await supabaseService.fetchCategories();
-      if (data) {
-        setCategories(data);
-        if (data.length > 0 && !selectedCategoryId) {
-          setSelectedCategoryId(data[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading categories:', error);
-    }
-  };
-
-  const loadWebsites = async (categoryId: string) => {
-    setIsLoading(true);
-    try {
-      const data = await supabaseService.fetchWebsitesByCategory(categoryId);
-      if (data) {
-        setWebsites(data);
-      }
-    } catch (error) {
-      console.error('Error loading websites:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleWebsitePress = async (website: Website) => {
-    // Check if user can access
-    if (!website.is_free && !isPaidMember) {
-      setSelectedWebsite(website);
-      setShowUpgradeModal(true);
-      return;
-    }
-
-    // Navigate to WebView
-    navigation.navigate('WebView', { website });
-  };
-
-  const handleUpgrade = () => {
-    setShowUpgradeModal(false);
-    navigation.navigate('Membership');
-  };
-
-  const handleMaybeLater = () => {
-    setShowUpgradeModal(false);
-    setSelectedWebsite(null);
-  };
-
-  const renderCategoryTab = ({ item, index }: { item: Category; index: number }) => {
-    const isSelected = item.id === selectedCategoryId;
-    return (
-      <PillTab
-        name={item.name}
-        color={isSelected ? item.default_color_light : undefined}
-        isSelected={isSelected}
-        onPress={() => setSelectedCategoryId(item.id)}
-      />
-    );
-  };
-
-  const renderWebsiteItem = ({ item }: { item: Website }) => {
-    const isLocked = !item.is_free && !isPaidMember;
-    return (
-      <WebsiteCard
-        website={item}
-        isLocked={isLocked}
-        onPress={() => handleWebsitePress(item)}
-      />
-    );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Category Pills */}
-      <View style={[styles.categoriesContainer, { borderBottomColor: colors.border }]}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {categories.map((category) => (
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>The Republic</Text>
+      </View>
+
+      <View style={styles.categoryContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+          {DEMO_CATEGORIES.map((cat) => (
             <PillTab
-              key={category.id}
-              name={category.name}
-              color={category.default_color_light}
-              isSelected={category.id === selectedCategoryId}
-              onPress={() => setSelectedCategoryId(category.id)}
+              key={cat.id}
+              title={cat.name}
+              selected={selectedCategory === cat.id}
+              onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
+              color={cat.color}
             />
           ))}
         </ScrollView>
       </View>
 
-      {/* Websites List */}
       <FlatList
-        data={websites}
-        renderItem={renderWebsiteItem}
+        data={filteredWebsites}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={() => selectedCategoryId && loadWebsites(selectedCategoryId)}
-            tintColor={colors.primary}
+        numColumns={2}
+        contentContainerStyle={styles.websiteGrid}
+        renderItem={({ item }) => (
+          <WebsiteCard
+            website={item}
+            onPress={() => handlePress(item)}
+            isLocked={!item.is_free && !isMember}
           />
-        }
-        ListEmptyComponent={
-          !isLoading ? (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                No websites in this category
-              </Text>
-            </View>
-          ) : null
-        }
+        )}
       />
 
-      {/* Upgrade Modal */}
       <UpgradeModal
-        visible={showUpgradeModal}
-        onClose={handleMaybeLater}
-        onUpgrade={handleUpgrade}
-        onMaybeLater={handleMaybeLater}
+        visible={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        onUpgrade={() => navigation.navigate('Membership')}
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  categoriesContainer: {
-    borderBottomWidth: 1,
-    paddingVertical: 12,
-  },
-  categoriesContent: {
-    paddingHorizontal: 16,
-  },
-  listContent: {
-    padding: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 48,
-  },
-  emptyText: {
-    fontSize: 16,
-  },
+  container: { flex: 1 },
+  header: { padding: 16, paddingTop: 48 },
+  title: { fontSize: 28, fontWeight: '700' },
+  categoryContainer: { paddingVertical: 8 },
+  categoryScroll: { paddingHorizontal: 16, gap: 8, flexDirection: 'row' },
+  websiteGrid: { padding: 12 },
 });
