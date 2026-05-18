@@ -1,0 +1,669 @@
+Build a brand-new cross-platform mobile app called The Republic.
+The Republic is a directory/aggregator application that allows users to browse curated external websites inside an in-app WebView browser experience.
+The app:
+Primarily organizes external websites into categories
+allows users to save/customize website category tabs
+unlocks premium customization + additional websites through a paid membership
+The platform should include:
+Full mobile app
+Full admin panel/dashboard
+Membership system
+Stripe subscription flow
+Notifications/support system
+WebView optimization system
+User customization system
+Loading optimization + WebView management logic
+Replit should:
+create the frontend
+generate the backend structure
+Direct what Supabase connection is needed 
+generate database schema/migrations automatically where appropriate
+generate API/backend actions if needed 
+create all auth/database logic internally
+avoid exposing secret keys in frontend code
+
+CORE APP PURPOSE
+The Republic is an aggregator app that:
+opens third-party websites inside an in-app WebView
+categorizes websites using pill-tab categories
+allows users to personalize their browsing experience
+uses a membership model to unlock advanced features and additional websites
+The app should feel:
+modern
+smooth
+lightweight
+extremely fast
+premium but simple
+
+REQUIRED STACK
+Use:
+Mobile app friendly for iOS & android 
+Stripe subscriptions
+WebView
+Clean admin dashboard
+
+AUTH
+Implement:
+Email OTP login
+Google login if available through Base44/Supabase
+Terms + Privacy acceptance required before signup completes
+Store:
+accepted_terms_at
+accepted_privacy_at
+
+HOME SCREEN
+Create:
+horizontally scrollable category pill tabs
+website cards/list rows on main page 
+smooth animations/transitions
+loading skeletons
+cached category rendering
+optimized category switching
+
+
+
+FREE VS PRO MEMBERSHIP LOGIC
+FREE USERS:
+Can only access these 10 default websites:
+Instacart
+Uber Eats
+TaskRabbit
+Freelancer
+ZipRecruiter
+OfferUp
+Vrbo
+YouTube
+SeatGeek
+Walmart
+These 10 websites should:
+automatically appear on the homepage
+automatically appear in profile tabs
+work without membership
+All other websites should:
+appear visually locked
+show a lock icon
+trigger an upgrade modal when clicked
+
+
+
+
+•If have a membership users should be able to change colors of their tabs at the top, reorder them, like the top of a list puts the tab closer to the front on the left. And change them to any color. 
+
+
+
+
+
+
+
+
+IMPORTANT UI UPDATE — WEBSITE TAB-FIRST EXPERIENCE
+
+
+The app should open into a browser-style tab experience, not just a list-first directory.
+
+
+
+
+TOP WEBSITE TAB BAR:
+Across the top of the screen, show horizontal, pill shaped l tabs for the user’s selected company websites.
+
+
+Example top tabs for free users:
+- Instacart — https://www.instacart.com
+- Uber Eats — https://www.ubereats.com
+- TaskRabbit — https://www.taskrabbit.com
+- Freelancer — https://www.freelancer.com
+- ZipRecruiter — https://www.ziprecruiter.com
+- OfferUp — https://offerup.com
+- Vrbo — https://www.vrbo.com
+- YouTube — https://www.youtube.com
+- SeatGeek — https://seatgeek.com
+- Walmart — https://www.walmart.com
+
+
+When a user taps a website tab:
+- that website should automatically open and display across nearly the full screen
+- keep only the top tab-shift bar visible
+- users should be able to switch between website tabs without returning to the list
+- preserve each website’s current page/session when switching tabs if possible
+- do not reload the website unnecessarily when changing tabs
+
+
+FULLSCREEN EXPAND VIEW:
+Add an expand-view button in the corner of the website view.
+The icon should look like four arrows pointing outward.
+
+
+When clicked:
+- the website becomes truly fullscreen
+- hide the top tab bar and normal UI
+- keep the current website state/session
+- do not create a second WebView
+- do not reload the page
+
+
+In fullscreen mode:
+- show a faded floating minimize button in the corner
+- the minimize icon should look like four arrows pointing inward
+- tapping minimize returns to the normal website-tab layout
+- the top website tab bar becomes visible again so users can switch tabs
+
+
+This tab-first website browsing experience is core to the app. The Republic should feel like a customizable multi-website mobile browser, with membership/paywall logic layered on top.
+
+
+
+
+
+
+
+LOCKED WEBSITE POPUP
+When a free user taps a locked website:
+Show a premium membership popup modal.
+Modal text:
+“Upgrade to Pro for access to all websites and advanced customization features.”
+Include:
+lock icon
+smooth animation
+premium styling
+Buttons:
+Upgrade to Pro
+Maybe Later
+The modal should advertise that Pro members can:
+unlock all websites to add 
+customize each websites tab color
+reorder tabs
+
+
+
+
+•And show payout out options $3.99 a month or $30 a year for pro membership.
+
+PRO MEMBER FEATURES
+Paid members can:
+access all websites
+customize pill tab colors
+rearrange tab order
+pin favorite websites
+reorder homepage cards
+customize UI appearance
+add websites up to configured limit
+unlock premium-only categories
+Add:
+drag-and-drop pill tab reordering
+drag-and-drop website ordering
+color picker system
+reset-to-default button
+
+WEBSITE ADD LIMIT SYSTEM
+Implement logic to determine:
+maximum recommended number of active websites
+safe homepage rendering thresholds
+safe WebView memory thresholds
+System should:
+dynamically determine performance thresholds
+optimize for 20–40+ websites
+avoid significant slowdown
+avoid memory overload
+If user exceeds limit:
+show popup notification:
+“You’ve reached the recommended website limit for optimal performance.”
+Include:
+current count
+max recommended count
+explanation that additional websites may reduce loading performance
+For Pro members:
+allow a larger limit than free users.
+
+WEBVIEW PERFORMANCE OPTIMIZATION
+Implement advanced WebView optimization:
+Requirements:
+preload only small number of WebViews
+preserve sessions/cookies normally
+avoid aggressive background loading
+unload inactive WebViews under memory pressure
+cache metadata instantly
+use loading skeletons/spinners
+preserve last visited URL
+Determine:
+safe preload limits
+active WebView limits
+homepage rendering limits
+Store configurable settings for:
+max_preloaded_webviews
+preload_enabled
+session_memory_enabled
+homepage_limit
+
+EXPANDED WEBVIEW MODE
+Add:
+expand button (4 outward arrows)
+minimize button (4 inward arrows)
+Expanded mode should:
+hide normal UI
+make website fullscreen
+preserve state/session
+keep navigation smooth
+
+WEBVIEW BEHAVIOR
+Implement:
+top navigation controls
+back
+forward
+refresh
+close
+loading indicators
+graceful failure handling
+Add:
+optional per-site custom user agent
+optional injected CSS/JS
+optional app-banner hiding selectors
+Do NOT:
+scrape private content
+bypass website security
+manipulate credentials
+abuse session systems
+
+PROFILE SCREEN
+Include:
+membership status
+email/display name
+subscription management
+color customization
+reorder tabs
+theme settings
+support/contact
+terms/privacy
+logout
+For locked customization features:
+show Pro upgrade prompt.
+
+SETTINGS SCREEN
+Include:
+light/dark/system theme
+notification settings
+membership management
+restore purchases
+delete account request
+privacy policy
+terms
+logout
+
+ADMIN PANEL
+Build a full admin dashboard.
+Admin should manage:
+categories
+websites
+free vs paid access
+membership states
+support inbox
+bug reports
+feature requests
+notifications
+audit logs
+WebView rules
+preload settings
+homepage limits
+Admin can configure:
+preload limits
+session memory rules
+custom user agents
+injected CSS/JS
+app-banner hide selectors
+
+
+
+
+ADMIN PANEL WEBSITE/CATEGORY MANAGEMENT
+
+
+The admin panel must allow admins to:
+
+
+- create new categories
+- edit existing categories
+- deactivate categories
+- reorder categories
+- create new websites
+- edit existing websites
+- deactivate websites
+- assign websites to categories
+- set each website as free or paid
+- set website tab order
+- set website card order
+- add/edit website URL
+- add/edit website display domain
+- add/edit website icon
+- configure WebView rules per website
+- configure whether each website can appear as a top tab
+- configure whether each website can be preloaded
+- configure whether each website remembers last visited URL
+
+
+Admins should be able to expand the website library over time without changing code.
+
+
+PAID WEBSITE LIBRARY / SEED CATEGORIES
+
+
+Seed these categories and websites into the database. The first 10 free websites should be marked is_free=true. All others should default to is_free=false unless admin changes them.
+
+
+
+STRIPE INTEGRATION
+Use Lovable’s preferred Stripe integration flow.
+Implement:
+Stripe subscription checkout
+Stripe webhook handling
+membership state syncing
+subscription status refresh
+success/cancel deep links
+Do NOT hardcode secret keys in frontend code.
+Membership logic should:
+sync with Supabase user profile
+activate/deactivate membership automatically
+refresh instantly after successful checkout
+Deep links:
+therepublic://checkout-success
+therepublic://checkout-cancel
+
+SUPPORT SYSTEM
+Implement:
+support tickets
+bug reports
+feature requests
+notifications
+admin replies
+email confirmations
+Support categories:
+support
+bug
+feature
+
+TERMS & PRIVACY
+Create:
+Terms of Agreement
+Privacy Policy
+Explain:
+The Republic is an aggregator
+third-party sites control their own content
+payments handled through Stripe
+membership unlocks premium access/features
+no social network posting
+users must be 18+
+
+PERFORMANCE GOAL
+The app should feel:
+fast
+responsive
+scalable
+memory efficient
+The system should intelligently:
+limit excessive active WebViews
+prevent homepage overload
+preserve responsiveness with 20–40+ websites
+dynamically unload inactive views when needed
+
+
+
+
+——————
+
+
+Full web site list with categories to display!
+
+
+1. Mega Marketplaces
+Walmart — https://www.walmart.com
+Target — https://www.target.com
+eBay — https://www.ebay.com
+Temu — https://www.temu.com
+AliExpress — https://www.aliexpress.com
+Alibaba — https://www.alibaba.com
+Etsy — https://www.etsy.com
+Rakuten — https://www.rakuten.com
+Newegg — https://www.newegg.com
+2. Grocery Delivery
+Instacart — https://www.instacart.com
+Shipt — https://www.shipt.com
+Kroger — https://www.kroger.com
+Publix — https://www.publix.com
+FreshDirect — https://www.freshdirect.com
+3. Food Delivery
+Uber Eats — https://www.ubereats.com
+DoorDash — https://www.doordash.com
+Grubhub — https://www.grubhub.com
+Slice — https://slicelife.com
+ChowNow — https://www.chownow.com
+4. Local Service Marketplaces
+Thumbtack — https://www.thumbtack.com
+Angi — https://www.angi.com
+Taskrabbit — https://www.taskrabbit.com
+Handy — https://www.handy.com
+Porch — https://porch.com
+Houzz — https://www.houzz.com
+5. Online Freelance Services
+Fiverr — https://www.fiverr.com
+Upwork — https://www.upwork.com
+Freelancer — https://www.freelancer.com
+Contra — https://contra.com
+PeoplePerHour — https://www.peopleperhour.com
+Guru — https://www.guru.com
+6. Job Boards
+Indeed — https://www.indeed.com
+LinkedIn Jobs — https://www.linkedin.com/jobs
+ZipRecruiter — https://www.ziprecruiter.com
+Glassdoor — https://www.glassdoor.com
+Wellfound — https://wellfound.com
+7. Community Marketplaces
+OfferUp — https://offerup.com
+Mercari — https://www.mercari.com
+Craigslist — https://craigslist.org
+VarageSale — https://www.varagesale.com
+Oodle — https://www.oodle.com
+8. Travel & Vacation Rentals
+Airbnb — https://www.airbnb.com
+Vrbo — https://www.vrbo.com
+Booking.com — https://www.booking.com
+Expedia — https://www.expedia.com
+Kayak — https://www.kayak.com
+9. Social Media
+Reddit — https://www.reddit.com
+X — https://x.com
+LinkedIn — https://www.linkedin.com
+Pinterest — https://www.pinterest.com
+YouTube — https://www.youtube.com
+Discord — https://discord.com
+10. Electronics
+Best Buy — https://www.bestbuy.com
+Newegg — https://www.newegg.com
+Micro Center — https://www.microcenter.com
+B&H Photo — https://www.bhphotovideo.com
+11. Home Improvement
+Home Depot — https://www.homedepot.com
+Lowe’s — https://www.lowes.com
+Ace Hardware — https://www.acehardware.com
+Harbor Freight — https://www.harborfreight.com
+12. Automotive
+AutoZone — https://www.autozone.com
+RockAuto — https://www.rockauto.com
+Tire Rack — https://www.tirerack.com
+Carvana — https://www.carvana.com
+13. Fashion
+Nike — https://www.nike.com
+Adidas — https://www.adidas.com
+ASOS — https://www.asos.com
+Zara — https://www.zara.com
+14. Beauty & Personal Care
+Sephora — https://www.sephora.com
+Ulta Beauty — https://www.ulta.com
+Dermstore — https://www.dermstore.com
+15. Health Supplements
+iHerb — https://www.iherb.com
+Vitamin Shoppe — https://www.vitaminshoppe.com
+NOW Foods — https://www.nowfoods.com
+Thorne — https://www.thorne.com
+Life Extension — https://www.lifeextension.com
+Momentous — https://www.livemomentous.com
+Onnit — https://www.onnit.com
+Transparent Labs — https://www.transparentlabs.com
+Gorilla Mind — https://gorillamind.com
+Swanson Vitamins — https://www.swansonvitamins.com
+
+
+
+
+
+
+
+
+Jacob <the.republic.platform@gmail.com>
+
+
+
+Fri, May 15, 10:51 AM (3 days ago)
+
+
+
+
+
+
+to me
+
+
+
+
+APP INSTALL POPUP / OPEN-IN-APP BANNER MITIGATION
+
+
+Many third-party websites display:
+- “Download our app”
+- “Open in app”
+- App Store banners
+- Sticky install prompts
+- Mobile app overlays
+
+
+The Republic should minimize these interruptions whenever technically and legally possible inside the WebView experience.
+
+
+Implement a configurable mitigation system.
+
+
+Requirements:
+
+
+- support per-website custom user agents
+- support injected CSS
+- support injected JavaScript
+- support configurable DOM selectors to hide app-install banners
+- support optional delayed selector removal after page load
+- support optional MutationObserver logic for dynamically inserted popups
+
+
+Examples of elements to hide:
+- “Open in App”
+- “Get the App”
+- App Store smart banners
+- sticky install prompts
+- full-page mobile-app overlays
+- install bottom sheets
+
+
+IMPORTANT:
+- do NOT break website functionality
+- do NOT bypass authentication/security
+- do NOT interfere with payment systems
+- do NOT manipulate protected/private content
+
+
+If a website prevents modification because of:
+- cross-origin limitations
+- CSP restrictions
+- anti-tampering systems
+- dynamically protected overlays
+
+
+then fail gracefully without crashing the WebView.
+
+
+ADMIN PANEL CONTROLS:
+Admins should be able to configure per-website:
+- app_banner_hide_selectors
+- injected_css
+- injected_js
+- custom_user_agent
+- popup mitigation enabled/disabled
+- notes about compatibility
+
+
+The goal is to make websites feel cleaner and more native inside The Republic app while respecting website functionality and security.
+
+
+
+
+PERSISTENT WEBSITE SESSION & TAB MEMORY SYSTEM
+
+The Republic should behave like a persistent multi-tab mobile browser experience.
+
+When users open websites inside tabs:
+- preserve their login session whenever technically possible
+- preserve cookies/session storage using normal WebView behavior
+- preserve the last visited page/URL
+- preserve scroll position when possible
+- preserve tab state when switching between websites
+- avoid unnecessary reloads
+
+TAB MEMORY:
+When users switch between website tabs:
+- do NOT fully reset the website
+- preserve the current page they were on
+- preserve the current browsing session
+- preserve login state if the website allows persistent sessions
+
+When users close and reopen the app:
+- restore their previous website tabs
+- restore the last active website tab
+- restore the last visited URL for each tab if allowed
+- restore expanded/fullscreen mode state if appropriate
+
+SESSION STORAGE:
+Use safe/local storage approaches for:
+- last visited URLs
+- tab ordering
+- website preferences
+- tab state metadata
+
+Do NOT:
+- store passwords
+- capture private form fields
+- scrape protected content
+- bypass website authentication/security
+
+WEBVIEW REQUIREMENTS:
+- use persistent WebView cookie/session behavior
+- do not unnecessarily destroy inactive tabs
+- intelligently unload older tabs only during memory pressure
+- preserve tab/browser state whenever possible
+
+USER EXPERIENCE GOAL:
+The Republic should feel like:
+- a persistent customizable browser
+- users should be able to return later and continue where they left off
+- websites should feel “still open” when revisiting tabs
+- switching tabs should feel smooth and nearly instant 
+
+
+—-------
+
+*Make the page it opens to, tab called ‘Citizen Vote’
+it should be a real simple feed with just upvotes & a geo tag ((by major city & all 50 states) or national tag instead of geo with filter drop-down) & also a filter for the major categories : health, immigration etc. & also allow filter by that most voted 
+>automatically show newest posts top to bottom as the default screen 
+>for each category geo area/national, or category show the most voted top to bottom 
+>make ‘likes’ upvotes 
+>title this area Citizen Vote & title this pill tab that 
+>show a post button in the corner when on this screen, that has a text box & the applicable filter(s) box’s & a submit post button which should apply it to the feed. Also add applicable things for this feature to the user profile & admin panel. 
+
+
+—————-
+Make the second tab called ‘Robot Work Pool’ this is going to be a complicated feature we will go over this next how to set-up. 
