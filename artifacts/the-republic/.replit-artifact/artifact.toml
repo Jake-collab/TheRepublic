@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "The Republic"
+version = "1.0.0"
+id = "artifacts/the-republic"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 21779
+
+[services.development]
+run = "pnpm --filter @workspace/the-republic run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/the-republic", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/the-republic", "run", "serve" ]
+
+[services.env]
+PORT = "21779"
+BASE_PATH = "/"
