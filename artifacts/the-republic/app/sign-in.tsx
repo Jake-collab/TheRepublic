@@ -37,12 +37,21 @@ export default function SignInScreen() {
     setLoading(true);
     setError("");
     try {
-      await signIn!.create({ identifier: email.trim(), strategy: "email_code" });
-      await signIn!.prepareFirstFactor({ strategy: "email_code", emailAddressId: signIn!.supportedFirstFactors?.find((f: any) => f.strategy === "email_code")?.emailAddressId ?? "" });
+      const attempt = await signIn!.create({ identifier: email.trim() });
+      const emailFactor = (attempt.supportedFirstFactors ?? []).find(
+        (f: any) => f.strategy === "email_code"
+      ) as any;
+      if (!emailFactor) {
+        throw new Error("Email code sign-in is not enabled for this account.");
+      }
+      await signIn!.prepareFirstFactor({
+        strategy: "email_code",
+        emailAddressId: emailFactor.emailAddressId,
+      });
       setStep("code");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
-      setError(e?.errors?.[0]?.longMessage ?? "Failed to send code");
+      setError(e?.errors?.[0]?.longMessage ?? e?.message ?? "Failed to send code");
     } finally {
       setLoading(false);
     }
