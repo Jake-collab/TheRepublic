@@ -5,46 +5,33 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { ClerkProvider, useAuth } from "@clerk/expo";
-import * as SecureStore from "expo-secure-store";
+import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Redirect, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
-import { Platform } from "react-native";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BrowserProvider } from "@/contexts/BrowserContext";
 
 SplashScreen.preventAutoHideAsync();
 
-if (process.env.EXPO_PUBLIC_DOMAIN) {
-  setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
-}
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+if (domain) setBaseUrl(`https://${domain}`);
+
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30_000 },
   },
 });
-
-const tokenCache = Platform.OS !== "web"
-  ? {
-      async getToken(key: string) {
-        return SecureStore.getItemAsync(key);
-      },
-      async saveToken(key: string, value: string) {
-        return SecureStore.setItemAsync(key, value);
-      },
-      async clearToken(key: string) {
-        return SecureStore.deleteItemAsync(key);
-      },
-    }
-  : undefined;
 
 function AuthTokenBridge() {
   const { getToken } = useAuth();
@@ -92,23 +79,23 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
-
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <SafeAreaProvider>
-        <ErrorBoundary>
-          <QueryClientProvider client={queryClient}>
-            <BrowserProvider>
-              <GestureHandlerRootView>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </BrowserProvider>
-          </QueryClientProvider>
-        </ErrorBoundary>
-      </SafeAreaProvider>
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
+      <ClerkLoaded>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+              <BrowserProvider>
+                <GestureHandlerRootView>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </BrowserProvider>
+            </QueryClientProvider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </ClerkLoaded>
     </ClerkProvider>
   );
 }

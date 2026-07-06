@@ -1,6 +1,5 @@
 import { useSignIn } from "@clerk/expo";
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -18,60 +17,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
-type Step = "email" | "code";
-
 export default function SignInScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { signIn, setActive, isLoaded } = useSignIn();
+  const { signIn, errors, fetchStatus } = useSignIn();
 
-  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
 
-  const sendCode = async () => {
-    if (!isLoaded || !email.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const attempt = await signIn!.create({ identifier: email.trim() });
-      const emailFactor = (attempt.supportedFirstFactors ?? []).find(
-        (f: any) => f.strategy === "email_code"
-      ) as any;
-      if (!emailFactor) {
-        throw new Error("Email code sign-in is not enabled for this account.");
-      }
-      await signIn!.prepareFirstFactor({
-        strategy: "email_code",
-        emailAddressId: emailFactor.emailAddressId,
+  const loading = fetchStatus === "fetching";
+
+  const handleSignIn = async () => {
+    if (!email.trim() || !password.trim()) return;
+    const { error } = await signIn.password({ emailAddress: email.trim(), password });
+    if (error) return;
+
+    if (signIn.status === "complete") {
+      await signIn.finalize({
+        navigate: ({ decorateUrl }) => {
+          const url = decorateUrl("/");
+          if (Platform.OS === "web" && url.startsWith("http")) {
+            window.location.href = url;
+          } else {
+            router.replace("/");
+          }
+        },
       });
-      setStep("code");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e: any) {
-      setError(e?.errors?.[0]?.longMessage ?? e?.message ?? "Failed to send code");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyCode = async () => {
-    if (!isLoaded || !code.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const result = await signIn!.attemptFirstFactor({ strategy: "email_code", code: code.trim() });
-      if (result.status === "complete") {
-        await setActive!({ session: result.createdSessionId });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace("/");
-      }
-    } catch (e: any) {
-      setError(e?.errors?.[0]?.longMessage ?? "Invalid code");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -95,45 +67,48 @@ export default function SignInScreen() {
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-            {step === "email" ? "Sign in" : "Enter code"}
-          </Text>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Sign in</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-            {step === "email"
-              ? "Enter your email to receive a one-time code"
-              : `We sent a code to ${email}`}
+            Enter your email and password
           </Text>
 
-          {step === "email" ? (
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="Email address"
-              placeholderTextColor={colors.mutedForeground}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              returnKeyType="send"
-              onSubmitEditing={sendCode}
-            />
-          ) : (
-            <TextInput
-              style={[styles.input, styles.codeInput, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="6-digit code"
-              placeholderTextColor={colors.mutedForeground}
-              value={code}
-              onChangeText={setCode}
-              keyboardType="number-pad"
-              maxLength={6}
-              returnKeyType="done"
-              onSubmitEditing={verifyCode}
-              autoFocus
-            />
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
+            placeholder="Email address"
+            placeholderTextColor={colors.mutedForeground}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            returnKeyType="next"
+          />
+          {errors?.fields?.identifier && (
+            <Text style={[styles.errorText, { color: colors.destructive }]}>
+              {errors.fields.identifier.message}
+            </Text>
           )}
 
-          {!!error && (
-            <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
+            placeholder="Password"
+            placeholderTextColor={colors.mutedForeground}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            returnKeyType="done"
+            onSubmitEditing={handleSignIn}
+          />
+          {errors?.fields?.password && (
+            <Text style={[styles.errorText, { color: colors.destructive }]}>
+              {errors.fields.password.message}
+            </Text>
+          )}
+
+          {errors?.global && (
+            <Text style={[styles.errorText, { color: colors.destructive }]}>
+              {errors.global.message}
+            </Text>
           )}
 
           <Pressable
@@ -141,25 +116,17 @@ export default function SignInScreen() {
               styles.primaryBtn,
               { backgroundColor: colors.primary, opacity: pressed || loading ? 0.8 : 1 },
             ]}
-            onPress={step === "email" ? sendCode : verifyCode}
-            disabled={loading}
+            onPress={handleSignIn}
+            disabled={loading || !email.trim() || !password.trim()}
           >
             {loading ? (
               <ActivityIndicator color={colors.primaryForeground} />
             ) : (
               <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>
-                {step === "email" ? "Send Code" : "Verify"}
+                Sign In
               </Text>
             )}
           </Pressable>
-
-          {step === "code" && (
-            <Pressable onPress={() => { setStep("email"); setCode(""); setError(""); }}>
-              <Text style={[styles.linkText, { color: colors.mutedForeground }]}>
-                ← Change email
-              </Text>
-            </Pressable>
-          )}
         </View>
 
         <Pressable onPress={() => router.push("/sign-up")} style={styles.switchRow}>
@@ -175,28 +142,11 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  inner: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    gap: 28,
-  },
-  logoArea: {
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 16,
-  },
-  appName: {
-    fontSize: 22,
-    fontWeight: "700",
-    letterSpacing: 3,
-  },
+  inner: { flexGrow: 1, paddingHorizontal: 24, gap: 28 },
+  logoArea: { alignItems: "center", gap: 10, paddingVertical: 16 },
+  appName: { fontSize: 22, fontWeight: "700", letterSpacing: 3 },
   tagline: { fontSize: 14, textAlign: "center" },
-  card: {
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    gap: 14,
-  },
+  card: { borderRadius: 16, padding: 24, borderWidth: 1, gap: 14 },
   cardTitle: { fontSize: 22, fontWeight: "700" },
   cardSub: { fontSize: 14, lineHeight: 20 },
   input: {
@@ -206,19 +156,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
   },
-  codeInput: {
-    fontSize: 24,
-    letterSpacing: 8,
-    textAlign: "center",
-  },
   errorText: { fontSize: 13 },
-  primaryBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
+  primaryBtn: { borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   primaryBtnText: { fontSize: 16, fontWeight: "700" },
-  linkText: { fontSize: 13, textAlign: "center" },
   switchRow: { alignItems: "center" },
   switchText: { fontSize: 14 },
 });
