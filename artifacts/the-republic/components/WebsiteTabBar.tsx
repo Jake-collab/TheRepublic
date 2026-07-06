@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useRef } from "react";
+import React, { useRef, useCallback, memo } from "react";
 import {
   FlatList,
   Platform,
@@ -25,7 +25,7 @@ interface TabPillProps {
   onPress: () => void;
 }
 
-function TabPill({ tab, isActive, isPro, customColor, onPress }: TabPillProps) {
+const TabPill = memo(function TabPill({ tab, isActive, isPro, customColor, onPress }: TabPillProps) {
   const colors = useColors();
   const isLocked = !tab.isFree && !isPro && !tab.isCitizenVote;
   const activeColor = customColor ?? colors.primary;
@@ -43,17 +43,9 @@ function TabPill({ tab, isActive, isPro, customColor, onPress }: TabPillProps) {
       ]}
     >
       {tab.isCitizenVote ? (
-        <Feather
-          name="flag"
-          size={13}
-          color={isActive ? "#ffffff" : colors.primary}
-        />
+        <Feather name="flag" size={13} color={isActive ? "#ffffff" : colors.primary} />
       ) : isLocked ? (
-        <Feather
-          name="lock"
-          size={12}
-          color={isActive ? "#ffffff" : colors.mutedForeground}
-        />
+        <Feather name="lock" size={12} color={isActive ? "#ffffff" : colors.mutedForeground} />
       ) : null}
       <Text
         style={[
@@ -73,7 +65,7 @@ function TabPill({ tab, isActive, isPro, customColor, onPress }: TabPillProps) {
       </Text>
     </Pressable>
   );
-}
+});
 
 export default function WebsiteTabBar({ isPro }: Props) {
   const colors = useColors();
@@ -87,7 +79,7 @@ export default function WebsiteTabBar({ isPro }: Props) {
   } = useBrowser();
   const flatListRef = useRef<FlatList>(null);
 
-  const handleTabPress = (tab: WebsiteTab) => {
+  const handleTabPress = useCallback((tab: WebsiteTab) => {
     Haptics.selectionAsync();
     const isLocked = !tab.isFree && !isPro && !tab.isCitizenVote;
     if (isLocked) {
@@ -96,11 +88,22 @@ export default function WebsiteTabBar({ isPro }: Props) {
       return;
     }
     setActiveTabId(tab.id);
-    const idx = visibleTabs.findIndex((t) => t.id === tab.id);
-    if (idx >= 0) {
-      flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
-    }
-  };
+    flatListRef.current?.scrollToIndex({
+      index: visibleTabs.findIndex((t) => t.id === tab.id),
+      animated: true,
+      viewPosition: 0.3,
+    });
+  }, [isPro, setPendingProTabId, setUpgradeModalVisible, setActiveTabId, visibleTabs]);
+
+  const renderItem = useCallback(({ item }: { item: WebsiteTab }) => (
+    <TabPill
+      tab={item}
+      isActive={activeTabId === item.id}
+      isPro={isPro}
+      customColor={tabColors[item.id]}
+      onPress={() => handleTabPress(item)}
+    />
+  ), [activeTabId, isPro, tabColors, handleTabPress]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -109,22 +112,17 @@ export default function WebsiteTabBar({ isPro }: Props) {
         data={visibleTabs}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContent}
-        onScrollToIndexFailed={() => {}}
-        renderItem={({ item }) => (
-          <TabPill
-            tab={item}
-            isActive={activeTabId === item.id}
-            isPro={isPro}
-            customColor={tabColors[item.id]}
-            onPress={() => handleTabPress(item)}
-          />
-        )}
+        onScrollToIndexFailed={noop}
+        renderItem={renderItem}
       />
     </View>
   );
 }
+
+const keyExtractor = (item: WebsiteTab) => item.id;
+const noop = () => {};
 
 const styles = StyleSheet.create({
   container: {

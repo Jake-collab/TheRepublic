@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useState, useCallback, memo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -25,6 +25,7 @@ import {
 
 const GEO_OPTIONS = ["National", "Local", "State", "Global"];
 const CAT_OPTIONS = ["Economy", "Health", "Education", "Environment", "Safety", "Housing", "Other"];
+const postKeyExtractor = (item: { id: number }) => String(item.id);
 
 interface Post {
   id: number;
@@ -47,7 +48,7 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d`;
 }
 
-function PostCard({ post, onUpvote }: { post: Post; onUpvote: (id: number) => void }) {
+const PostCard = memo(function PostCard({ post, onUpvote }: { post: Post; onUpvote: (id: number) => void }) {
   const colors = useColors();
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -103,7 +104,7 @@ function PostCard({ post, onUpvote }: { post: Post; onUpvote: (id: number) => vo
       </View>
     </View>
   );
-}
+});
 
 function CreatePostModal({
   visible,
@@ -219,10 +220,10 @@ export default function CitizenVoteFeed() {
 
   const posts = (data as any)?.items ?? (Array.isArray(data) ? data : []);
 
-  const handleUpvote = (id: number) => {
+  const handleUpvote = useCallback((id: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     upvoteMutation.mutate({ id });
-  };
+  }, [upvoteMutation]);
 
   const handleCreate = (body: {
     title: string;
@@ -258,7 +259,7 @@ export default function CitizenVoteFeed() {
       ) : (
         <FlatList
           data={posts as Post[]}
-          keyExtractor={(item) => String(item.id)}
+          keyExtractor={postKeyExtractor}
           renderItem={({ item }) => (
             <PostCard post={item} onUpvote={handleUpvote} />
           )}

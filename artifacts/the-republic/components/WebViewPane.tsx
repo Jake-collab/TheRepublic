@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -21,11 +21,8 @@ interface Props {
 const SUPPRESS_APP_PROMPTS_JS = `
 (function() {
   try {
-    // Remove Apple smart app banners
     document.querySelectorAll('meta[name="apple-itunes-app"],meta[name="google-play-app"]').forEach(function(m){m.remove&&m.remove();});
-    // Suppress install prompts
     window.addEventListener('beforeinstallprompt',function(e){e.preventDefault&&e.preventDefault();},true);
-    // Override window.open to stay in-app
     var _nativeOpen = window.open;
     window.open = function(url, target, features) {
       if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
@@ -33,7 +30,6 @@ const SUPPRESS_APP_PROMPTS_JS = `
       }
       return null;
     };
-    // Suppress smart-app-banner style divs added by JS
     var obs = new MutationObserver(function(mutations) {
       mutations.forEach(function(m) {
         m.addedNodes.forEach(function(node) {
@@ -61,7 +57,7 @@ function shouldAllowNavigation(url: string): boolean {
   return false;
 }
 
-function NativeWebView({ tabId, url, isVisible }: Props) {
+const NativeWebView = memo(function NativeWebView({ tabId, url, isVisible }: Props) {
   const colors = useColors();
   const { setUrlForTab } = useBrowser();
   const [loading, setLoading] = useState(true);
@@ -144,9 +140,9 @@ function NativeWebView({ tabId, url, isVisible }: Props) {
       </View>
     );
   }
-}
+});
 
-function WebIframe({ url, isVisible }: { url: string; isVisible: boolean }) {
+const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isVisible: boolean }) {
   const colors = useColors();
   const [loading, setLoading] = useState(true);
   const [hasEverBeenVisible, setHasEverBeenVisible] = useState(isVisible);
@@ -177,30 +173,26 @@ function WebIframe({ url, isVisible }: { url: string; isVisible: boolean }) {
       />
     </View>
   );
-}
+});
 
-export default function WebViewPane({ tabId, url, isVisible }: Props) {
+const WebViewPane = memo(function WebViewPane({ tabId, url, isVisible }: Props) {
   if (Platform.OS === "web") {
     return <WebIframe url={url} isVisible={isVisible} />;
   }
   return <NativeWebView tabId={tabId} url={url} isVisible={isVisible} />;
-}
+});
+
+export default WebViewPane;
 
 const styles = StyleSheet.create({
-  webviewContainer: {
-    flex: 1,
-  },
+  webviewContainer: { flex: 1 },
   hiddenView: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     opacity: 0,
-  },
-  webview: {
-    flex: 1,
-  },
+    pointerEvents: "none",
+  } as any,
+  webview: { flex: 1 },
   loadingOverlay: {
     justifyContent: "center",
     alignItems: "center",

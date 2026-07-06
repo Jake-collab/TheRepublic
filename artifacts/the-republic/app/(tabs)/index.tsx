@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, memo, useCallback } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -22,12 +22,65 @@ import {
   useGetUserMembership,
 } from "@workspace/api-client-react";
 
+interface HeaderProps {
+  topPad: number;
+  isCVTab: boolean;
+  isFullscreen: boolean;
+  setIsFullscreen: (v: boolean) => void;
+}
+
+const BrowserHeader = memo(function BrowserHeader({ topPad, isCVTab, isFullscreen, setIsFullscreen }: HeaderProps) {
+  const colors = useColors();
+  const router = useRouter();
+
+  if (isFullscreen) return null;
+
+  return (
+    <View
+      style={[
+        styles.header,
+        {
+          backgroundColor: colors.background,
+          borderBottomColor: colors.border,
+          paddingTop: topPad,
+        },
+      ]}
+    >
+      <View style={styles.logoArea}>
+        <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+          <Feather name="shield" size={14} color="#ffffff" />
+        </View>
+        <Text style={[styles.logoText, { color: colors.foreground }]}>
+          Republic
+        </Text>
+      </View>
+      <View style={styles.headerActions}>
+        {!isCVTab && (
+          <Pressable
+            style={styles.iconBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsFullscreen(true);
+            }}
+          >
+            <Feather name="maximize-2" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        )}
+        <Pressable
+          style={[styles.profileBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+          onPress={() => router.push("/profile")}
+        >
+          <Feather name="user" size={16} color={colors.primary} />
+        </Pressable>
+      </View>
+    </View>
+  );
+});
+
 export default function BrowserScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const {
-    tabs,
     visibleTabs,
     setTabs,
     activeTabId,
@@ -52,62 +105,40 @@ export default function BrowserScreen() {
     setTabs(siteTabs);
   }, [websites, setTabs]);
 
-  const activeTab = visibleTabs.find((t) => t.id === activeTabId);
-  const isCVTab = activeTab?.isCitizenVote ?? false;
+  const activeTab = useMemo(
+    () => visibleTabs.find((t) => t.id === activeTabId),
+    [visibleTabs, activeTabId],
+  );
+  const isCVTab = activeTab?.isCitizenVote ?? true;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const preloadTabs = tabs.filter((t) => !t.isCitizenVote);
+  // Only mount WebViewPanes for visible (non-hidden) website tabs
+  const webviewTabs = useMemo(
+    () => visibleTabs.filter((t) => !t.isCitizenVote),
+    [visibleTabs],
+  );
+
+  const handleMinimize = useCallback(() => {
+    Haptics.selectionAsync();
+    setIsFullscreen(false);
+  }, [setIsFullscreen]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {!isFullscreen && (
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: colors.background,
-              borderBottomColor: colors.border,
-              paddingTop: topPad,
-            },
-          ]}
-        >
-          <View style={styles.logoArea}>
-            <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
-              <Feather name="shield" size={14} color="#ffffff" />
-            </View>
-            <Text style={[styles.logoText, { color: colors.foreground }]}>
-              Republic
-            </Text>
-          </View>
-          <View style={styles.headerActions}>
-            {!isCVTab && (
-              <Pressable
-                style={styles.iconBtn}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsFullscreen(true);
-                }}
-              >
-                <Feather name="maximize-2" size={18} color={colors.mutedForeground} />
-              </Pressable>
-            )}
-            <Pressable
-              style={[styles.profileBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-              onPress={() => router.push("/profile")}
-            >
-              <Feather name="user" size={16} color={colors.primary} />
-            </Pressable>
-          </View>
-        </View>
-      )}
+      <BrowserHeader
+        topPad={topPad}
+        isCVTab={isCVTab}
+        isFullscreen={isFullscreen}
+        setIsFullscreen={setIsFullscreen}
+      />
 
       {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
 
       {isFullscreen && (
         <Pressable
           style={[styles.minimizeBtn, { backgroundColor: colors.card, top: insets.top + 8 }]}
-          onPress={() => { Haptics.selectionAsync(); setIsFullscreen(false); }}
+          onPress={handleMinimize}
         >
           <Feather name="minimize-2" size={18} color={colors.foreground} />
         </Pressable>
@@ -117,12 +148,12 @@ export default function BrowserScreen() {
         {isCVTab ? (
           <CitizenVoteFeed />
         ) : (
-          preloadTabs.map((tab) => (
+          webviewTabs.map((tab) => (
             <WebViewPane
               key={tab.id}
               tabId={tab.id}
               url={tab.url}
-              isVisible={activeTabId === tab.id && !isCVTab}
+              isVisible={activeTabId === tab.id}
             />
           ))
         )}

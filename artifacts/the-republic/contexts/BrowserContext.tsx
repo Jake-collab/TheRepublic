@@ -26,7 +26,6 @@ interface BrowserContextType {
   setActiveTabId: (id: string) => void;
   isFullscreen: boolean;
   setIsFullscreen: (v: boolean) => void;
-  urlState: Record<string, string>;
   setUrlForTab: (tabId: string, url: string) => void;
   upgradeModalVisible: boolean;
   setUpgradeModalVisible: (v: boolean) => void;
@@ -63,7 +62,6 @@ const BrowserContext = createContext<BrowserContextType>({
   setActiveTabId: () => {},
   isFullscreen: false,
   setIsFullscreen: () => {},
-  urlState: {},
   setUrlForTab: () => {},
   upgradeModalVisible: false,
   setUpgradeModalVisible: () => {},
@@ -81,13 +79,14 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
   const [tabs, setTabsState] = useState<WebsiteTab[]>([CITIZEN_VOTE_TAB]);
   const [activeTabId, setActiveTabId] = useState("citizen-vote");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [urlState, setUrlState] = useState<Record<string, string>>({});
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [pendingProTabId, setPendingProTabId] = useState<string | null>(null);
   const [hiddenTabIds, setHiddenTabIds] = useState<string[]>([]);
   const [tabColors, setTabColorsState] = useState<Record<string, string>>({});
   const [tabOrder, setTabOrderState] = useState<string[]>([]);
   const initialized = useRef(false);
+  // urlState is write-only tracking for navigation history — never triggers re-renders
+  const urlStateRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     if (initialized.current) return;
@@ -140,8 +139,9 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEYS.activeTab, id);
   }, []);
 
+  // Writes to a ref — zero re-renders on every WebView page navigation
   const setUrlForTab = useCallback((tabId: string, url: string) => {
-    setUrlState((prev) => ({ ...prev, [tabId]: url }));
+    urlStateRef.current[tabId] = url;
   }, []);
 
   const toggleTabVisibility = useCallback((id: string) => {
@@ -175,30 +175,38 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const contextValue = useMemo<BrowserContextType>(() => ({
+    tabs,
+    setTabs,
+    visibleTabs,
+    activeTabId,
+    setActiveTabId: handleSetActiveTabId,
+    isFullscreen,
+    setIsFullscreen,
+    setUrlForTab,
+    upgradeModalVisible,
+    setUpgradeModalVisible,
+    pendingProTabId,
+    setPendingProTabId,
+    hiddenTabIds,
+    toggleTabVisibility,
+    tabColors,
+    setTabColor,
+    tabOrder,
+    moveTab,
+  }), [
+    tabs, setTabs, visibleTabs,
+    activeTabId, handleSetActiveTabId,
+    isFullscreen, setUrlForTab,
+    upgradeModalVisible,
+    pendingProTabId,
+    hiddenTabIds, toggleTabVisibility,
+    tabColors, setTabColor,
+    tabOrder, moveTab,
+  ]);
+
   return (
-    <BrowserContext.Provider
-      value={{
-        tabs,
-        setTabs,
-        visibleTabs,
-        activeTabId,
-        setActiveTabId: handleSetActiveTabId,
-        isFullscreen,
-        setIsFullscreen,
-        urlState,
-        setUrlForTab,
-        upgradeModalVisible,
-        setUpgradeModalVisible,
-        pendingProTabId,
-        setPendingProTabId,
-        hiddenTabIds,
-        toggleTabVisibility,
-        tabColors,
-        setTabColor,
-        tabOrder,
-        moveTab,
-      }}
-    >
+    <BrowserContext.Provider value={contextValue}>
       {children}
     </BrowserContext.Provider>
   );

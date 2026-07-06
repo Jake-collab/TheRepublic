@@ -1,0 +1,63 @@
+Optimize the web commerce aggregator app for faster loading and smoother navigation.
+
+Focus on these areas:
+
+Remove unnecessary startup work
+Do not load every marketplace/web portal at app startup.
+Only load the selected/default portal first.
+Lazy-load other portals only when the user taps them.
+Avoid preloading hidden WebViews unless explicitly enabled.
+Improve WebView loading
+Keep the currently selected WebView mounted when switching tabs if possible.
+Cache previously visited portals so switching back is instant.
+Add a loading skeleton/spinner only inside the WebView area.
+Prevent full app re-renders when a WebView URL changes.
+Disable unnecessary WebView debugging/logging in production.
+Reduce JavaScript bundle size
+Remove unused libraries, components, test/demo code, console logs, and dead imports.
+Split heavy screens/components with dynamic imports.
+Move large constants/configs into separate files and import only where needed.
+Check bundle analyzer results and identify the largest dependencies.
+Optimize images and assets
+Compress all images/icons.
+Use WebP or SVG where appropriate.
+Do not load full-size images for small icons/avatars.
+Lazy-load non-critical images.
+Cache profile images and app icons.
+Optimize Supabase/backend calls
+Do not block the homepage on profile/settings/user_websites loading.
+Load the UI immediately, then hydrate user-specific data.
+Batch Supabase queries where possible.
+Add loading states instead of waiting before render.
+Cache user settings/websites locally and sync in the background.
+Avoid repeated auth/session checks on every route change.
+Optimize React rendering
+Memoize expensive components with React.memo/useMemo/useCallback where useful.
+Make sure changing one chip/tab does not re-render the entire app.
+Move WebView state into a dedicated store/context so unrelated UI does not update.
+Avoid inline object/function props in frequently rendered components.
+Use FlatList/virtualized lists for long portal lists or discussion groups.
+Improve perceived speed
+Show the app shell instantly: header, portal chips, and empty WebView container.
+Load the default portal immediately after the shell appears.
+Use cached portal metadata first, then refresh.
+Add “last opened portal” persistence so the app opens where the user left off.
+Add clear loading indicators but avoid blocking screens.
+Networking and caching
+Add HTTP caching where applicable.
+Cache portal favicons, labels, colors, and user configuration.
+Debounce search/filter inputs.
+Avoid duplicate fetches when rapidly switching tabs.
+Add request cancellation/ignore stale responses.
+Production performance
+Build and test in production mode, not dev mode.
+Remove excessive console logging.
+Make sure source maps/debug tools are not slowing runtime.
+Run Lighthouse or equivalent profiling and fix the biggest bottlenecks first.
+Specific goal
+The app should open quickly, show the shell immediately, load only the selected commerce portal first, cache previously opened portals, and make switching between Amazon/Walmart/OfferUp/etc feel instant after first load.
+Please inspect the codebase, identify the current bottlenecks, apply the fixes, and explain what changed.
+
+
+
+Do not change the app’s core design or features; only improve loading speed, caching, rendering efficiency, and WebView performance
