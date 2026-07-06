@@ -109,7 +109,7 @@ export default function BrowserScreen() {
     () => visibleTabs.find((t) => t.id === activeTabId),
     [visibleTabs, activeTabId],
   );
-  const isCVTab = activeTab?.isCitizenVote ?? true;
+  const isCVTab = activeTab?.isCitizenVote === true;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
