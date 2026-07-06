@@ -31,9 +31,10 @@ router.get("/profile", async (req, res) => {
 
 router.patch("/profile", async (req, res) => {
   const userId = (req as any).userId as string;
-  const { displayName, theme, acceptedTermsAt, acceptedPrivacyAt } = req.body;
+  const { displayName, avatarUrl, theme, acceptedTermsAt, acceptedPrivacyAt } = req.body;
   const updates: Partial<typeof usersTable.$inferInsert> = {};
   if (displayName !== undefined) updates.displayName = displayName;
+  if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
   if (theme !== undefined) updates.theme = theme;
   if (acceptedTermsAt !== undefined) updates.acceptedTermsAt = acceptedTermsAt ? new Date(acceptedTermsAt) : null;
   if (acceptedPrivacyAt !== undefined) updates.acceptedPrivacyAt = acceptedPrivacyAt ? new Date(acceptedPrivacyAt) : null;

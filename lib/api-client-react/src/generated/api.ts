@@ -38,6 +38,7 @@ import type {
   CitizenVotePostList,
   HealthStatus,
   ListCitizenVotePostsParams,
+  ListTalkPostsParams,
   ListWebsitesParams,
   Membership,
   MembershipUpdate,
@@ -48,6 +49,13 @@ import type {
   SupportTicketAdminUpdate,
   SupportTicketInput,
   TabReorderInput,
+  TalkCategory,
+  TalkComment,
+  TalkCommentInput,
+  TalkPost,
+  TalkPostInput,
+  TalkPostsPage,
+  TalkVoteResult,
   UpvoteResult,
   UserProfile,
   UserProfileUpdate,
@@ -2918,5 +2926,456 @@ export const useAdminSendNotification = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminSendNotificationMutationOptions(options));
+    }
+
+export const getListTalkCategoriesUrl = () => {
+
+
+
+
+  return `/api/talks/categories`
+}
+
+/**
+ * @summary List talk discussion categories
+ */
+export const listTalkCategories = async ( options?: RequestInit): Promise<TalkCategory[]> => {
+
+  return customFetch<TalkCategory[]>(getListTalkCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTalkCategoriesQueryKey = () => {
+    return [
+    `/api/talks/categories`
+    ] as const;
+    }
+
+
+export const getListTalkCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof listTalkCategories>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTalkCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTalkCategoriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTalkCategories>>> = ({ signal }) => listTalkCategories({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTalkCategories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTalkCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof listTalkCategories>>>
+export type ListTalkCategoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List talk discussion categories
+ */
+
+export function useListTalkCategories<TData = Awaited<ReturnType<typeof listTalkCategories>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTalkCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTalkCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListTalkPostsUrl = (params?: ListTalkPostsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/talks/posts?${stringifiedParams}` : `/api/talks/posts`
+}
+
+/**
+ * @summary List talk posts (paginated)
+ */
+export const listTalkPosts = async (params?: ListTalkPostsParams, options?: RequestInit): Promise<TalkPostsPage> => {
+
+  return customFetch<TalkPostsPage>(getListTalkPostsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTalkPostsQueryKey = (params?: ListTalkPostsParams,) => {
+    return [
+    `/api/talks/posts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListTalkPostsQueryOptions = <TData = Awaited<ReturnType<typeof listTalkPosts>>, TError = ErrorType<unknown>>(params?: ListTalkPostsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTalkPosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTalkPostsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTalkPosts>>> = ({ signal }) => listTalkPosts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTalkPosts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTalkPostsQueryResult = NonNullable<Awaited<ReturnType<typeof listTalkPosts>>>
+export type ListTalkPostsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List talk posts (paginated)
+ */
+
+export function useListTalkPosts<TData = Awaited<ReturnType<typeof listTalkPosts>>, TError = ErrorType<unknown>>(
+ params?: ListTalkPostsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTalkPosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTalkPostsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTalkPostUrl = () => {
+
+
+
+
+  return `/api/talks/posts`
+}
+
+/**
+ * @summary Create a new talk post
+ */
+export const createTalkPost = async (talkPostInput: TalkPostInput, options?: RequestInit): Promise<TalkPost> => {
+
+  return customFetch<TalkPost>(getCreateTalkPostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      talkPostInput,)
+  }
+);}
+
+
+
+
+export const getCreateTalkPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTalkPost>>, TError,{data: BodyType<TalkPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTalkPost>>, TError,{data: BodyType<TalkPostInput>}, TContext> => {
+
+const mutationKey = ['createTalkPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTalkPost>>, {data: BodyType<TalkPostInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTalkPost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTalkPostMutationResult = NonNullable<Awaited<ReturnType<typeof createTalkPost>>>
+    export type CreateTalkPostMutationBody = BodyType<TalkPostInput>
+    export type CreateTalkPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new talk post
+ */
+export const useCreateTalkPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTalkPost>>, TError,{data: BodyType<TalkPostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTalkPost>>,
+        TError,
+        {data: BodyType<TalkPostInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTalkPostMutationOptions(options));
+    }
+
+export const getVoteTalkPostUrl = (id: number,) => {
+
+
+
+
+  return `/api/talks/posts/${id}/vote`
+}
+
+/**
+ * @summary Toggle upvote on a talk post
+ */
+export const voteTalkPost = async (id: number, options?: RequestInit): Promise<TalkVoteResult> => {
+
+  return customFetch<TalkVoteResult>(getVoteTalkPostUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getVoteTalkPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voteTalkPost>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['voteTalkPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voteTalkPost>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  voteTalkPost(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoteTalkPostMutationResult = NonNullable<Awaited<ReturnType<typeof voteTalkPost>>>
+
+    export type VoteTalkPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle upvote on a talk post
+ */
+export const useVoteTalkPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voteTalkPost>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getVoteTalkPostMutationOptions(options));
+    }
+
+export const getListTalkCommentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/talks/posts/${id}/comments`
+}
+
+/**
+ * @summary List comments on a post
+ */
+export const listTalkComments = async (id: number, options?: RequestInit): Promise<TalkComment[]> => {
+
+  return customFetch<TalkComment[]>(getListTalkCommentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTalkCommentsQueryKey = (id: number,) => {
+    return [
+    `/api/talks/posts/${id}/comments`
+    ] as const;
+    }
+
+
+export const getListTalkCommentsQueryOptions = <TData = Awaited<ReturnType<typeof listTalkComments>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTalkComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTalkCommentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTalkComments>>> = ({ signal }) => listTalkComments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTalkComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTalkCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof listTalkComments>>>
+export type ListTalkCommentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List comments on a post
+ */
+
+export function useListTalkComments<TData = Awaited<ReturnType<typeof listTalkComments>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTalkComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTalkCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTalkCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/talks/posts/${id}/comments`
+}
+
+/**
+ * @summary Add a comment to a talk post
+ */
+export const createTalkComment = async (id: number,
+    talkCommentInput: TalkCommentInput, options?: RequestInit): Promise<TalkComment> => {
+
+  return customFetch<TalkComment>(getCreateTalkCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      talkCommentInput,)
+  }
+);}
+
+
+
+
+export const getCreateTalkCommentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTalkComment>>, TError,{id: number;data: BodyType<TalkCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTalkComment>>, TError,{id: number;data: BodyType<TalkCommentInput>}, TContext> => {
+
+const mutationKey = ['createTalkComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTalkComment>>, {id: number;data: BodyType<TalkCommentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createTalkComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTalkCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createTalkComment>>>
+    export type CreateTalkCommentMutationBody = BodyType<TalkCommentInput>
+    export type CreateTalkCommentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a comment to a talk post
+ */
+export const useCreateTalkComment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTalkComment>>, TError,{id: number;data: BodyType<TalkCommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTalkComment>>,
+        TError,
+        {id: number;data: BodyType<TalkCommentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTalkCommentMutationOptions(options));
     }
 

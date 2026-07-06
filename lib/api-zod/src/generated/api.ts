@@ -113,6 +113,7 @@ export const GetUserProfileResponse = zod.object({
  */
 export const UpdateUserProfileBody = zod.object({
   "displayName": zod.string().optional(),
+  "avatarUrl": zod.string().nullish(),
   "theme": zod.string().optional(),
   "acceptedTermsAt": zod.string().nullish(),
   "acceptedPrivacyAt": zod.string().nullish()
@@ -713,6 +714,105 @@ export const AdminSendNotificationBody = zod.object({
   "userId": zod.string().nullish(),
   "title": zod.string(),
   "message": zod.string()
+})
+
+
+/**
+ * @summary List talk discussion categories
+ */
+export const ListTalkCategoriesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "emoji": zod.string(),
+  "sortOrder": zod.number(),
+  "isActive": zod.boolean()
+})
+export const ListTalkCategoriesResponse = zod.array(ListTalkCategoriesResponseItem)
+
+
+/**
+ * @summary List talk posts (paginated)
+ */
+export const listTalkPostsQuerySortDefault = `new`;
+export const listTalkPostsQueryLimitDefault = 20;
+
+export const ListTalkPostsQueryParams = zod.object({
+  "categoryId": zod.coerce.number().nullish(),
+  "sort": zod.enum(['new', 'top']).default(listTalkPostsQuerySortDefault),
+  "search": zod.coerce.string().nullish(),
+  "cursor": zod.coerce.number().nullish(),
+  "limit": zod.coerce.number().default(listTalkPostsQueryLimitDefault)
+})
+
+export const ListTalkPostsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "categoryId": zod.number(),
+  "userId": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "upvotes": zod.number(),
+  "commentCount": zod.number(),
+  "hasVoted": zod.boolean(),
+  "createdAt": zod.string()
+})),
+  "nextCursor": zod.number().nullish()
+})
+
+
+/**
+ * @summary Create a new talk post
+ */
+export const CreateTalkPostBody = zod.object({
+  "categoryId": zod.number(),
+  "title": zod.string(),
+  "body": zod.string()
+})
+
+
+/**
+ * @summary Toggle upvote on a talk post
+ */
+export const VoteTalkPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const VoteTalkPostResponse = zod.object({
+  "upvotes": zod.number(),
+  "hasVoted": zod.boolean()
+})
+
+
+/**
+ * @summary List comments on a post
+ */
+export const ListTalkCommentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListTalkCommentsResponseItem = zod.object({
+  "id": zod.number(),
+  "postId": zod.number(),
+  "userId": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListTalkCommentsResponse = zod.array(ListTalkCommentsResponseItem)
+
+
+/**
+ * @summary Add a comment to a talk post
+ */
+export const CreateTalkCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreateTalkCommentBody = zod.object({
+  "body": zod.string()
 })
 
 

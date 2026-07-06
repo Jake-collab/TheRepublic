@@ -1,5 +1,5 @@
 import { db } from "./index.js";
-import { categoriesTable, websitesTable } from "./schema/index.js";
+import { categoriesTable, websitesTable, talkCategoriesTable } from "./schema/index.js";
 import { eq } from "drizzle-orm";
 
 function domain(url: string) {
@@ -87,6 +87,41 @@ async function seed() {
     }
   }
   console.log(`Inserted ${inserted} websites`);
+
+  console.log("Seeding talk categories...");
+  const TALK_CATS = [
+    { name: "Citizen Vote", emoji: "🌍", sortOrder: 1 },
+    { name: "News & Current Events", emoji: "📰", sortOrder: 2 },
+    { name: "Business & Entrepreneurship", emoji: "💼", sortOrder: 3 },
+    { name: "Finance & Investing", emoji: "💰", sortOrder: 4 },
+    { name: "Technology & AI", emoji: "💻", sortOrder: 5 },
+    { name: "Gaming", emoji: "🎮", sortOrder: 6 },
+    { name: "Entertainment", emoji: "🎬", sortOrder: 7 },
+    { name: "Music & Audio", emoji: "🎵", sortOrder: 8 },
+    { name: "Art & Creativity", emoji: "🎨", sortOrder: 9 },
+    { name: "Education & Learning", emoji: "📚", sortOrder: 10 },
+    { name: "Science & Research", emoji: "🔬", sortOrder: 11 },
+    { name: "Health & Wellness", emoji: "❤️", sortOrder: 12 },
+    { name: "Fitness & Sports", emoji: "🏋️", sortOrder: 13 },
+    { name: "Food & Cooking", emoji: "🍳", sortOrder: 14 },
+    { name: "Home & Lifestyle", emoji: "🏡", sortOrder: 15 },
+    { name: "Travel & Outdoors", emoji: "🌎", sortOrder: 16 },
+    { name: "Automotive & Transportation", emoji: "🚗", sortOrder: 17 },
+    { name: "Pets & Animals", emoji: "🐶", sortOrder: 18 },
+    { name: "Family & Relationships", emoji: "💞", sortOrder: 19 },
+    { name: "Shopping & Marketplace", emoji: "🛒", sortOrder: 20 },
+    { name: "Hobbies & DIY", emoji: "💡", sortOrder: 21 },
+  ];
+  let talkInserted = 0;
+  for (const tc of TALK_CATS) {
+    const exists = await db.select().from(talkCategoriesTable).where(eq(talkCategoriesTable.name, tc.name));
+    if (exists.length === 0) {
+      await db.insert(talkCategoriesTable).values(tc);
+      talkInserted++;
+    }
+  }
+  console.log(`Inserted ${talkInserted} talk categories`);
+
   console.log("Seed complete!");
   process.exit(0);
 }

@@ -1,5 +1,6 @@
 import { useSignUp } from "@clerk/expo";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -25,6 +26,7 @@ export default function SignUpScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [code, setCode] = useState("");
 
   const loading = fetchStatus === "fetching";
@@ -45,6 +47,9 @@ export default function SignUpScreen() {
     if (!code.trim()) return;
     await signUp.verifications.verifyEmailCode({ code: code.trim() });
     if (signUp.status === "complete") {
+      if (username.trim()) {
+        await AsyncStorage.setItem("pending_username", username.trim());
+      }
       await signUp.finalize({
         navigate: ({ decorateUrl }) => {
           const url = decorateUrl("/");
@@ -163,6 +168,16 @@ export default function SignUpScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
+            returnKeyType="next"
+          />
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
+            placeholder="Username (optional)"
+            placeholderTextColor={colors.mutedForeground}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            maxLength={40}
             returnKeyType="next"
           />
           {errors?.fields?.emailAddress && (

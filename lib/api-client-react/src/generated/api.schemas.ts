@@ -135,6 +135,8 @@ export interface UserProfile {
 
 export interface UserProfileUpdate {
   displayName?: string;
+  /** @nullable */
+  avatarUrl?: string | null;
   theme?: string;
   /** @nullable */
   acceptedTermsAt?: string | null;
@@ -407,6 +409,63 @@ export interface AuditLogList {
   total: number;
 }
 
+export interface TalkCategory {
+  id: number;
+  name: string;
+  emoji: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface TalkPost {
+  id: number;
+  categoryId: number;
+  /** @nullable */
+  userId?: string | null;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  title: string;
+  body: string;
+  upvotes: number;
+  commentCount: number;
+  hasVoted: boolean;
+  createdAt: string;
+}
+
+export interface TalkPostInput {
+  categoryId: number;
+  title: string;
+  body: string;
+}
+
+export interface TalkPostsPage {
+  items: TalkPost[];
+  /** @nullable */
+  nextCursor?: number | null;
+}
+
+export interface TalkVoteResult {
+  upvotes: number;
+  hasVoted: boolean;
+}
+
+export interface TalkComment {
+  id: number;
+  postId: number;
+  /** @nullable */
+  userId?: string | null;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface TalkCommentInput {
+  body: string;
+}
+
 export type ListWebsitesParams = {
 /**
  * @nullable
@@ -467,4 +526,29 @@ export type AdminListAuditLogsParams = {
 page?: number;
 limit?: number;
 };
+
+export type ListTalkPostsParams = {
+/**
+ * @nullable
+ */
+categoryId?: number | null;
+sort?: ListTalkPostsSort;
+/**
+ * @nullable
+ */
+search?: string | null;
+/**
+ * @nullable
+ */
+cursor?: number | null;
+limit?: number;
+};
+
+export type ListTalkPostsSort = typeof ListTalkPostsSort[keyof typeof ListTalkPostsSort];
+
+
+export const ListTalkPostsSort = {
+  new: 'new',
+  top: 'top',
+} as const;
 

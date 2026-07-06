@@ -2,20 +2,23 @@ import { useAuth, useUser } from "@clerk/expo";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   Platform,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import { useGetUserMembership, useListNotifications } from "@workspace/api-client-react";
+import { useGetUserMembership, useListNotifications, useUpdateUserProfile } from "@workspace/api-client-react";
 
 function SettingRow({
   icon,
@@ -72,9 +75,36 @@ export default function ProfileScreen() {
   const { user } = useUser();
   const { data: membership, isLoading: membershipLoading } = useGetUserMembership();
   const { data: notifications } = useListNotifications();
+  const updateProfile = useUpdateUserProfile();
 
   const tier = (membership as any)?.tier ?? "free";
   const isPro = tier === "pro";
+
+  const storedDisplayName = (membership as any)?.displayName ?? "";
+  const storedAvatarUrl = (membership as any)?.avatarUrl ?? "";
+
+  const [editDisplayName, setEditDisplayName] = useState(
+    storedDisplayName || user?.firstName || "",
+  );
+  const [editAvatarUrl, setEditAvatarUrl] = useState(storedAvatarUrl);
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveProfile = () => {
+    setSaving(true);
+    updateProfile.mutate(
+      { data: { displayName: editDisplayName.trim() || undefined, avatarUrl: editAvatarUrl.trim() || null } },
+      {
+        onSuccess: () => {
+          setSaving(false);
+          Alert.alert("Saved", "Profile updated successfully.");
+        },
+        onError: () => {
+          setSaving(false);
+          Alert.alert("Error", "Could not save profile. Please try again.");
+        },
+      },
+    );
+  };
 
   const unreadCount = ((notifications as any[]) ?? []).filter((n: any) => !n.isRead).length;
 
@@ -102,13 +132,21 @@ export default function ProfileScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
       >
         <View style={styles.avatarArea}>
-          <View style={[styles.avatar, { backgroundColor: colors.secondary, borderColor: colors.primary }]}>
-            <Text style={[styles.avatarInitial, { color: colors.primary }]}>
-              {user?.firstName?.[0] ?? user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() ?? "C"}
-            </Text>
-          </View>
+          {editAvatarUrl ? (
+            <Image
+              source={{ uri: editAvatarUrl }}
+              style={[styles.avatar, { borderColor: colors.primary }]}
+              onError={() => setEditAvatarUrl("")}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: colors.secondary, borderColor: colors.primary }]}>
+              <Text style={[styles.avatarInitial, { color: colors.primary }]}>
+                {(editDisplayName || user?.firstName || "C")[0]?.toUpperCase()}
+              </Text>
+            </View>
+          )}
           <Text style={[styles.name, { color: colors.foreground }]}>
-            {user?.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "Citizen"}
+            {editDisplayName || user?.firstName || "Citizen"}
           </Text>
           <Text style={[styles.email, { color: colors.mutedForeground }]}>
             {user?.emailAddresses?.[0]?.emailAddress ?? ""}
@@ -140,6 +178,51 @@ export default function ProfileScreen() {
               </Text>
             </View>
           )}
+        </View>
+
+        {/* Identity / Edit Profile */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Identity</Text>
+        <View style={[styles.editCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.editRow}>
+            <Text style={[styles.editLabel, { color: colors.mutedForeground }]}>Username</Text>
+            <TextInput
+              style={[styles.editInput, { color: colors.foreground, borderColor: colors.border }]}
+              value={editDisplayName}
+              onChangeText={setEditDisplayName}
+              placeholder="Your display name"
+              placeholderTextColor={colors.mutedForeground}
+              maxLength={40}
+              returnKeyType="next"
+            />
+          </View>
+          <View style={[styles.editDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.editRow}>
+            <Text style={[styles.editLabel, { color: colors.mutedForeground }]}>Avatar URL</Text>
+            <TextInput
+              style={[styles.editInput, { color: colors.foreground, borderColor: colors.border }]}
+              value={editAvatarUrl}
+              onChangeText={setEditAvatarUrl}
+              placeholder="https://..."
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="url"
+              autoCapitalize="none"
+              returnKeyType="done"
+            />
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.saveBtn,
+              { backgroundColor: colors.primary, opacity: pressed || saving ? 0.7 : 1 },
+            ]}
+            onPress={handleSaveProfile}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.saveBtnText}>Save Profile</Text>
+            )}
+          </Pressable>
         </View>
 
         {!isPro && (
@@ -325,4 +408,29 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   signOutText: { fontSize: 15, fontWeight: "600" },
+  editCard: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  editRow: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  editLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.3 },
+  editInput: {
+    fontSize: 15,
+    paddingVertical: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  editDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
+  saveBtn: {
+    margin: 12,
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  saveBtnText: { color: "#ffffff", fontSize: 14, fontWeight: "700" },
 });

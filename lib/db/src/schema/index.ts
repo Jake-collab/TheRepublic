@@ -8,3 +8,4 @@ export * from "./support";
 export * from "./notifications";
 export * from "./webviewSettings";
 export * from "./auditLogs";
+export * from "./talks";

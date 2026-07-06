@@ -8,6 +8,8 @@
 
 export interface UserProfileUpdate {
   displayName?: string;
+  /** @nullable */
+  avatarUrl?: string | null;
   theme?: string;
   /** @nullable */
   acceptedTermsAt?: string | null;

@@ -9,6 +9,7 @@ import supportRouter from "./support";
 import notificationsRouter from "./notifications";
 import stripeRouter from "./stripe";
 import adminRouter from "./admin";
+import talksRouter from "./talks";
 
 const router: IRouter = Router();
 
@@ -21,6 +22,7 @@ router.use("/citizen-vote", citizenVoteRouter);
 router.use("/support", supportRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/stripe", stripeRouter);
+router.use("/talks", talksRouter);
 router.use("/admin", adminRouter);
 
 export default router;

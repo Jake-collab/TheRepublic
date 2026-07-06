@@ -39,14 +39,6 @@ interface BrowserContextType {
   moveTab: (id: string, direction: "up" | "down") => void;
 }
 
-const CITIZEN_VOTE_TAB: WebsiteTab = {
-  id: "citizen-vote",
-  name: "Citizen Vote",
-  url: "",
-  isFree: true,
-  isCitizenVote: true,
-};
-
 const STORAGE_KEYS = {
   activeTab: "republic_active_tab",
   hiddenTabs: "republic_hidden_tabs",
@@ -55,10 +47,10 @@ const STORAGE_KEYS = {
 };
 
 const BrowserContext = createContext<BrowserContextType>({
-  tabs: [CITIZEN_VOTE_TAB],
+  tabs: [],
   setTabs: () => {},
-  visibleTabs: [CITIZEN_VOTE_TAB],
-  activeTabId: "citizen-vote",
+  visibleTabs: [],
+  activeTabId: "",
   setActiveTabId: () => {},
   isFullscreen: false,
   setIsFullscreen: () => {},
@@ -76,8 +68,8 @@ const BrowserContext = createContext<BrowserContextType>({
 });
 
 export function BrowserProvider({ children }: { children: React.ReactNode }) {
-  const [tabs, setTabsState] = useState<WebsiteTab[]>([CITIZEN_VOTE_TAB]);
-  const [activeTabId, setActiveTabId] = useState("citizen-vote");
+  const [tabs, setTabsState] = useState<WebsiteTab[]>([]);
+  const [activeTabId, setActiveTabIdState] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [pendingProTabId, setPendingProTabId] = useState<string | null>(null);
@@ -97,7 +89,7 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.getItem(STORAGE_KEYS.tabColors),
       AsyncStorage.getItem(STORAGE_KEYS.tabOrder),
     ]).then(([activeTab, hidden, colors, order]) => {
-      if (activeTab) setActiveTabId(activeTab);
+      if (activeTab) setActiveTabIdState(activeTab);
       if (hidden) { try { setHiddenTabIds(JSON.parse(hidden)); } catch {} }
       if (colors) { try { setTabColorsState(JSON.parse(colors)); } catch {} }
       if (order) { try { setTabOrderState(JSON.parse(order)); } catch {} }
@@ -106,8 +98,16 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
 
   const setTabs = useCallback((newTabs: WebsiteTab[]) => {
     const siteTabs = newTabs.filter((t) => !t.isCitizenVote);
-    const withCV = [CITIZEN_VOTE_TAB, ...siteTabs];
-    setTabsState(withCV);
+    setTabsState(siteTabs);
+    setActiveTabIdState((prev) => {
+      const validIds = new Set(siteTabs.map((t) => t.id));
+      if (!prev || !validIds.has(prev)) {
+        const firstId = siteTabs[0]?.id ?? "";
+        if (firstId) AsyncStorage.setItem(STORAGE_KEYS.activeTab, firstId);
+        return firstId;
+      }
+      return prev;
+    });
     setTabOrderState((prev) => {
       if (prev.length === 0) return siteTabs.map((t) => t.id);
       const newIds = siteTabs.map((t) => t.id);
@@ -118,24 +118,20 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const visibleTabs = useMemo(() => {
-    const siteTabs = tabs.filter((t) => !t.isCitizenVote);
-    const orderedSiteTabs =
+    const orderedTabs =
       tabOrder.length > 0
         ? [
             ...tabOrder
-              .map((id) => siteTabs.find((t) => t.id === id))
+              .map((id) => tabs.find((t) => t.id === id))
               .filter(Boolean) as WebsiteTab[],
-            ...siteTabs.filter((t) => !tabOrder.includes(t.id)),
+            ...tabs.filter((t) => !tabOrder.includes(t.id)),
           ]
-        : siteTabs;
-    return [
-      CITIZEN_VOTE_TAB,
-      ...orderedSiteTabs.filter((t) => !hiddenTabIds.includes(t.id)),
-    ];
+        : tabs;
+    return orderedTabs.filter((t) => !hiddenTabIds.includes(t.id));
   }, [tabs, hiddenTabIds, tabOrder]);
 
   const handleSetActiveTabId = useCallback((id: string) => {
-    setActiveTabId(id);
+    setActiveTabIdState(id);
     AsyncStorage.setItem(STORAGE_KEYS.activeTab, id);
   }, []);
 
@@ -179,7 +175,7 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
     tabs,
     setTabs,
     visibleTabs,
-    activeTabId,
+    activeTabId: activeTabId,
     setActiveTabId: handleSetActiveTabId,
     isFullscreen,
     setIsFullscreen,

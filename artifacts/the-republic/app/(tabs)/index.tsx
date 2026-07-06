@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, memo, useCallback } from "react";
+import React, { useEffect, useMemo, memo, useCallback, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -12,7 +12,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import CitizenVoteFeed from "@/components/CitizenVoteFeed";
+import BottomNav, { type Section } from "@/components/BottomNav";
+import TalksScreen from "@/components/TalksScreen";
 import UpgradeModal from "@/components/UpgradeModal";
 import WebViewPane from "@/components/WebViewPane";
 import WebsiteTabBar from "@/components/WebsiteTabBar";
@@ -22,52 +23,44 @@ import { triggerTabPreload } from "@/utils/preloadRegistry";
 import {
   useListWebsites,
   useGetUserMembership,
+  useUpdateUserProfile,
 } from "@workspace/api-client-react";
 
-interface HeaderProps {
+const BrowserHeader = memo(function BrowserHeader({
+  topPad,
+  isFullscreen,
+  setIsFullscreen,
+}: {
   topPad: number;
-  isCVTab: boolean;
   isFullscreen: boolean;
   setIsFullscreen: (v: boolean) => void;
-}
-
-const BrowserHeader = memo(function BrowserHeader({ topPad, isCVTab, isFullscreen, setIsFullscreen }: HeaderProps) {
+}) {
   const colors = useColors();
   const router = useRouter();
-
   if (isFullscreen) return null;
-
   return (
     <View
       style={[
         styles.header,
-        {
-          backgroundColor: colors.background,
-          borderBottomColor: colors.border,
-          paddingTop: topPad,
-        },
+        { backgroundColor: colors.background, borderBottomColor: colors.border, paddingTop: topPad },
       ]}
     >
       <View style={styles.logoArea}>
         <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
           <Feather name="shield" size={14} color="#ffffff" />
         </View>
-        <Text style={[styles.logoText, { color: colors.foreground }]}>
-          Republic
-        </Text>
+        <Text style={[styles.logoText, { color: colors.foreground }]}>Republic</Text>
       </View>
       <View style={styles.headerActions}>
-        {!isCVTab && (
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setIsFullscreen(true);
-            }}
-          >
-            <Feather name="maximize-2" size={18} color={colors.mutedForeground} />
-          </Pressable>
-        )}
+        <Pressable
+          style={styles.iconBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setIsFullscreen(true);
+          }}
+        >
+          <Feather name="maximize-2" size={18} color={colors.mutedForeground} />
+        </Pressable>
         <Pressable
           style={[styles.profileBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
           onPress={() => router.push("/profile")}
@@ -82,20 +75,17 @@ const BrowserHeader = memo(function BrowserHeader({ topPad, isCVTab, isFullscree
 export default function BrowserScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const {
-    visibleTabs,
-    setTabs,
-    activeTabId,
-    isFullscreen,
-    setIsFullscreen,
-  } = useBrowser();
+  const { visibleTabs, setTabs, activeTabId, isFullscreen, setIsFullscreen } = useBrowser();
+
+  const [activeSection, setActiveSection] = useState<Section>("web");
+  const [showTalks, setShowTalks] = useState(false);
 
   const { data: websites } = useListWebsites({});
   const { data: membership } = useGetUserMembership();
+  const updateProfile = useUpdateUserProfile();
 
   const isPro = (membership as any)?.tier === "pro";
 
-  // Sync websites from API into browser context
   useEffect(() => {
     if (!websites) return;
     const siteTabs = (websites as any[]).map((w: any) => ({
@@ -106,35 +96,29 @@ export default function BrowserScreen() {
       isFree: w.isFree,
     }));
     setTabs(siteTabs);
-    // Persist to AsyncStorage so next launch is instant
     AsyncStorage.setItem("rq:websites", JSON.stringify(websites));
   }, [websites, setTabs]);
 
-  // Persist membership so next launch has instant Pro status
   useEffect(() => {
     if (membership) AsyncStorage.setItem("rq:membership", JSON.stringify(membership));
   }, [membership]);
 
-  const activeTab = useMemo(
-    () => visibleTabs.find((t) => t.id === activeTabId),
-    [visibleTabs, activeTabId],
-  );
-  const isCVTab = activeTab?.isCitizenVote === true;
+  // Apply username set during sign-up
+  useEffect(() => {
+    AsyncStorage.getItem("pending_username").then((username) => {
+      if (!username) return;
+      updateProfile.mutate(
+        { data: { displayName: username } },
+        { onSettled: () => AsyncStorage.removeItem("pending_username") },
+      );
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  // Only mount WebViewPanes for visible (non-hidden) website tabs
-  const webviewTabs = useMemo(
-    () => visibleTabs.filter((t) => !t.isCitizenVote),
-    [visibleTabs],
-  );
+  const webviewTabs = useMemo(() => visibleTabs.filter((t) => !t.isCitizenVote), [visibleTabs]);
 
-  const handleMinimize = useCallback(() => {
-    Haptics.selectionAsync();
-    setIsFullscreen(false);
-  }, [setIsFullscreen]);
-
-  // After settling on a tab, silently warm the next one in the list
   const activeIndex = useMemo(
     () => webviewTabs.findIndex((t) => t.id === activeTabId),
     [webviewTabs, activeTabId],
@@ -147,48 +131,79 @@ export default function BrowserScreen() {
     return () => clearTimeout(timer);
   }, [activeIndex, webviewTabs]);
 
+  const handleMinimize = useCallback(() => {
+    Haptics.selectionAsync();
+    setIsFullscreen(false);
+  }, [setIsFullscreen]);
+
+  const handleSectionChange = useCallback((section: Section) => {
+    setActiveSection(section);
+    if (section === "talks") setShowTalks(true);
+  }, []);
+
+  const webHidden = activeSection !== "web";
+  const talksHidden = activeSection !== "talks";
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <BrowserHeader
-        topPad={topPad}
-        isCVTab={isCVTab}
-        isFullscreen={isFullscreen}
-        setIsFullscreen={setIsFullscreen}
-      />
-
-      {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
-
-      {isFullscreen && (
-        <Pressable
-          style={[styles.minimizeBtn, { backgroundColor: colors.card, top: insets.top + 8 }]}
-          onPress={handleMinimize}
-        >
-          <Feather name="minimize-2" size={18} color={colors.foreground} />
-        </Pressable>
-      )}
-
-      <View style={styles.content}>
-        {isCVTab ? (
-          <CitizenVoteFeed />
-        ) : (
-          webviewTabs.map((tab) => (
+      {/* Web section — always mounted so WebViews stay alive */}
+      <View
+        style={[styles.section, webHidden && styles.sectionInvisible]}
+        pointerEvents={webHidden ? "none" : "auto"}
+      >
+        <BrowserHeader topPad={topPad} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} />
+        {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
+        {isFullscreen && (
+          <Pressable
+            style={[styles.minimizeBtn, { backgroundColor: colors.card, top: insets.top + 8 }]}
+            onPress={handleMinimize}
+          >
+            <Feather name="minimize-2" size={18} color={colors.foreground} />
+          </Pressable>
+        )}
+        <View style={styles.content}>
+          {webviewTabs.map((tab) => (
             <WebViewPane
               key={tab.id}
               tabId={tab.id}
               url={tab.url}
-              isVisible={activeTabId === tab.id}
+              isVisible={activeTabId === tab.id && !webHidden}
             />
-          ))
-        )}
+          ))}
+        </View>
+        <UpgradeModal />
       </View>
 
-      <UpgradeModal />
+      {/* Talks section — lazy mounted on first switch */}
+      {showTalks && (
+        <View
+          style={[styles.sectionOverlay, talksHidden && styles.sectionInvisible]}
+          pointerEvents={talksHidden ? "none" : "auto"}
+        >
+          <TalksScreen />
+        </View>
+      )}
+
+      {/* Floating pill nav */}
+      {!isFullscreen && (
+        <BottomNav activeSection={activeSection} onChange={handleSectionChange} />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  section: { flex: 1 },
+  sectionOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+  sectionInvisible: { opacity: 0 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -197,34 +212,11 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  logoArea: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  logoMark: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoText: {
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  logoArea: { flexDirection: "row", alignItems: "center", gap: 8 },
+  logoMark: { width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center" },
+  logoText: { fontSize: 15, fontWeight: "700", letterSpacing: 0.5 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  iconBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
   profileBtn: {
     width: 36,
     height: 36,

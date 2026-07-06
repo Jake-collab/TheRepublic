@@ -1,4 +1,8 @@
 - [Blue-green theme](theme-colors.md) — primary=#2563eb (light)/#3b82f6 (dark), accent/green=#16a34a; colors.ts has `green`+`greenForeground` extras.
-- [BrowserContext tab management](browser-context-tabs.md) — visibleTabs=computed; hiddenTabIds/tabColors/tabOrder all persisted to AsyncStorage; moveTab/toggleTabVisibility/setTabColor actions.
+- [BrowserContext tab management](browser-context-tabs.md) — visibleTabs=computed; hiddenTabIds/tabColors/tabOrder all persisted to AsyncStorage; moveTab/toggleTabVisibility/setTabColor actions. CV tab removed — Talks section owns it now.
 - [WebView session+security](webview-config.md) — cacheEnabled+sharedCookiesEnabled+thirdPartyCookiesEnabled for session persistence; injectedJS suppresses app banners; onShouldStartLoadWithRequest blocks non-http(s) deep links; setSupportMultipleWindows=false.
 - [Clerk v3 Expo SDK](clerk-expo-v3.md) — signIn.password()→signIn.finalize(); signUp.password()→verifications.sendEmailCode()→verifyEmailCode()→finalize(); tokenCache from @clerk/expo/token-cache; ClerkLoaded wrapper; proxyUrl from EXPO_PUBLIC_CLERK_PROXY_URL.
+- [Talks feature architecture](talks-architecture.md) — 4 DB tables; denormalized displayName/avatarUrl on posts; cursor pagination; optionalAuth for vote status on feed.
+- [Bottom nav section switching](bottom-nav-pattern.md) — opacity:0+pointerEvents:none keeps WebViews alive; TalksScreen lazy-mounts on first switch; BottomNav hides in fullscreen.
+- [Orval query options format](orval-query-options.md) — Pass params as first arg only; Partial<UseQueryOptions> not used so queryKey required if you try to pass options — just don't.
+- [Pending username pattern](pending-username.md) — Sign-up stores username in AsyncStorage("pending_username"); main screen applies it on first mount via updateProfile mutation.
