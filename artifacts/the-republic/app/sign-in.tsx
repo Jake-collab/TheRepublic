@@ -59,10 +59,12 @@ export default function SignInScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.logoArea}>
-          <Feather name="shield" size={40} color={colors.primary} />
-          <Text style={[styles.appName, { color: colors.foreground }]}>THE REPUBLIC</Text>
+          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+            <Feather name="shield" size={28} color="#ffffff" />
+          </View>
+          <Text style={[styles.appName, { color: colors.foreground }]}>Republic</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Your curated web, governed by citizens
+            your curated web for commerce & discussions
           </Text>
         </View>
 
@@ -131,7 +133,7 @@ export default function SignInScreen() {
 
         <Pressable onPress={() => router.push("/sign-up")} style={styles.switchRow}>
           <Text style={[styles.switchText, { color: colors.mutedForeground }]}>
-            New to The Republic?{" "}
+            New to Republic?{" "}
             <Text style={{ color: colors.primary, fontWeight: "600" }}>Create account</Text>
           </Text>
         </Pressable>
@@ -144,8 +146,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flexGrow: 1, paddingHorizontal: 24, gap: 28 },
   logoArea: { alignItems: "center", gap: 10, paddingVertical: 16 },
-  appName: { fontSize: 22, fontWeight: "700", letterSpacing: 3 },
-  tagline: { fontSize: 14, textAlign: "center" },
+  logoMark: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  appName: { fontSize: 26, fontWeight: "700", letterSpacing: 1 },
+  tagline: { fontSize: 14, textAlign: "center", lineHeight: 20 },
   card: { borderRadius: 16, padding: 24, borderWidth: 1, gap: 14 },
   cardTitle: { fontSize: 22, fontWeight: "700" },
   cardSub: { fontSize: 14, lineHeight: 20 },

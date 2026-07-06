@@ -71,8 +71,10 @@ export default function SignUpScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.logoArea}>
-            <Feather name="shield" size={40} color={colors.primary} />
-            <Text style={[styles.appName, { color: colors.foreground }]}>THE REPUBLIC</Text>
+            <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+              <Feather name="shield" size={28} color="#ffffff" />
+            </View>
+            <Text style={[styles.appName, { color: colors.foreground }]}>Republic</Text>
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -137,17 +139,19 @@ export default function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.logoArea}>
-          <Feather name="shield" size={40} color={colors.primary} />
-          <Text style={[styles.appName, { color: colors.foreground }]}>THE REPUBLIC</Text>
+          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+            <Feather name="shield" size={28} color="#ffffff" />
+          </View>
+          <Text style={[styles.appName, { color: colors.foreground }]}>Republic</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Join the curated web
+            your curated web for commerce & discussions
           </Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.foreground }]}>Create account</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-            Join The Republic — free to start
+            Join Republic — free to start
           </Text>
 
           <TextInput
@@ -206,7 +210,6 @@ export default function SignUpScreen() {
             )}
           </Pressable>
 
-          {/* Required for Clerk bot protection */}
           <View nativeID="clerk-captcha" />
         </View>
 
@@ -225,8 +228,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flexGrow: 1, paddingHorizontal: 24, gap: 28 },
   logoArea: { alignItems: "center", gap: 10, paddingVertical: 16 },
-  appName: { fontSize: 22, fontWeight: "700", letterSpacing: 3 },
-  tagline: { fontSize: 14, textAlign: "center" },
+  logoMark: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  appName: { fontSize: 26, fontWeight: "700", letterSpacing: 1 },
+  tagline: { fontSize: 14, textAlign: "center", lineHeight: 20 },
   card: { borderRadius: 16, padding: 24, borderWidth: 1, gap: 14 },
   cardTitle: { fontSize: 22, fontWeight: "700" },
   cardSub: { fontSize: 14, lineHeight: 20 },

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -18,27 +18,82 @@ interface Props {
   isVisible: boolean;
 }
 
+const SUPPRESS_APP_PROMPTS_JS = `
+(function() {
+  try {
+    // Remove Apple smart app banners
+    document.querySelectorAll('meta[name="apple-itunes-app"],meta[name="google-play-app"]').forEach(function(m){m.remove&&m.remove();});
+    // Suppress install prompts
+    window.addEventListener('beforeinstallprompt',function(e){e.preventDefault&&e.preventDefault();},true);
+    // Override window.open to stay in-app
+    var _nativeOpen = window.open;
+    window.open = function(url, target, features) {
+      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+        window.location.href = url;
+      }
+      return null;
+    };
+    // Suppress smart-app-banner style divs added by JS
+    var obs = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        m.addedNodes.forEach(function(node) {
+          if (node.nodeType === 1) {
+            var el = node;
+            var id = el.id || '';
+            var cls = (el.className || '').toString();
+            if (/smart.?app.?banner|app.?banner|branch-banner|deeplink/i.test(id + ' ' + cls)) {
+              el.remove && el.remove();
+            }
+          }
+        });
+      });
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+  } catch(e) {}
+  true;
+})();
+`;
+
+function shouldAllowNavigation(url: string): boolean {
+  if (url.startsWith("http://") || url.startsWith("https://")) return true;
+  if (url.startsWith("about:")) return true;
+  if (url.startsWith("data:")) return true;
+  return false;
+}
+
 function NativeWebView({ tabId, url, isVisible }: Props) {
   const colors = useColors();
   const { setUrlForTab } = useBrowser();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0);
+  const [hasEverBeenVisible, setHasEverBeenVisible] = useState(false);
 
-  if (!isVisible) return null;
+  useEffect(() => {
+    if (isVisible && !hasEverBeenVisible) {
+      setHasEverBeenVisible(true);
+    }
+  }, [isVisible, hasEverBeenVisible]);
+
+  if (!hasEverBeenVisible) {
+    return <View style={isVisible ? styles.webviewContainer : styles.hiddenView} />;
+  }
 
   try {
     const WebView = require("react-native-webview").WebView;
 
     return (
-      <View style={styles.webviewContainer}>
-        {loading && (
+      <View
+        style={isVisible ? styles.webviewContainer : styles.hiddenView}
+        pointerEvents={isVisible ? "auto" : "none"}
+      >
+        {loading && isVisible && (
           <View style={[StyleSheet.absoluteFill, styles.loadingOverlay, { backgroundColor: colors.background }]}>
             <ActivityIndicator color={colors.primary} size="large" />
           </View>
         )}
-        {error ? (
-          <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        {error && isVisible ? (
+          <View style={[StyleSheet.absoluteFill, styles.errorContainer, { backgroundColor: colors.background }]}>
             <Feather name="wifi-off" size={40} color={colors.mutedForeground} />
             <Text style={[styles.errorText, { color: colors.foreground }]}>
               Couldn't load this site
@@ -59,10 +114,19 @@ function NativeWebView({ tabId, url, isVisible }: Props) {
             onLoadEnd={() => setLoading(false)}
             onError={() => { setLoading(false); setError(true); }}
             onNavigationStateChange={(s: { url: string }) => setUrlForTab(tabId, s.url)}
+            onShouldStartLoadWithRequest={(request: { url: string }) => shouldAllowNavigation(request.url)}
+            injectedJavaScript={SUPPRESS_APP_PROMPTS_JS}
+            injectedJavaScriptBeforeContentLoaded={SUPPRESS_APP_PROMPTS_JS}
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
             javaScriptEnabled
             domStorageEnabled
+            cacheEnabled
+            sharedCookiesEnabled
+            thirdPartyCookiesEnabled
+            setSupportMultipleWindows={false}
+            allowsLinkPreview={false}
+            startInLoadingState={false}
           />
         )}
       </View>
@@ -85,19 +149,28 @@ function NativeWebView({ tabId, url, isVisible }: Props) {
 function WebIframe({ url, isVisible }: { url: string; isVisible: boolean }) {
   const colors = useColors();
   const [loading, setLoading] = useState(true);
+  const [hasEverBeenVisible, setHasEverBeenVisible] = useState(false);
 
-  if (!isVisible) return null;
+  useEffect(() => {
+    if (isVisible && !hasEverBeenVisible) {
+      setHasEverBeenVisible(true);
+    }
+  }, [isVisible, hasEverBeenVisible]);
+
+  if (!hasEverBeenVisible) {
+    return <View style={isVisible ? styles.webviewContainer : styles.hiddenView} />;
+  }
 
   return (
-    <View style={styles.webviewContainer}>
-      {loading && (
+    <View style={isVisible ? styles.webviewContainer : styles.hiddenView}>
+      {loading && isVisible && (
         <View style={[StyleSheet.absoluteFill, styles.loadingOverlay, { backgroundColor: colors.background }]}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       )}
       <iframe
         src={url}
-        style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
+        style={{ flex: 1, border: "none", width: "100%", height: "100%", display: isVisible ? "block" : "none" }}
         onLoad={() => setLoading(false)}
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
         title="Republic Browser"
@@ -116,6 +189,14 @@ export default function WebViewPane({ tabId, url, isVisible }: Props) {
 const styles = StyleSheet.create({
   webviewContainer: {
     flex: 1,
+  },
+  hiddenView: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
   },
   webview: {
     flex: 1,

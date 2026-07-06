@@ -21,12 +21,14 @@ interface TabPillProps {
   tab: WebsiteTab;
   isActive: boolean;
   isPro: boolean;
+  customColor?: string;
   onPress: () => void;
 }
 
-function TabPill({ tab, isActive, isPro, onPress }: TabPillProps) {
+function TabPill({ tab, isActive, isPro, customColor, onPress }: TabPillProps) {
   const colors = useColors();
   const isLocked = !tab.isFree && !isPro && !tab.isCitizenVote;
+  const activeColor = customColor ?? colors.primary;
 
   return (
     <Pressable
@@ -34,8 +36,8 @@ function TabPill({ tab, isActive, isPro, onPress }: TabPillProps) {
       style={({ pressed }) => [
         styles.pill,
         {
-          backgroundColor: isActive ? colors.primary : colors.secondary,
-          borderColor: isActive ? colors.primary : colors.border,
+          backgroundColor: isActive ? activeColor : colors.secondary,
+          borderColor: isActive ? activeColor : colors.border,
           opacity: pressed ? 0.8 : 1,
         },
       ]}
@@ -44,13 +46,13 @@ function TabPill({ tab, isActive, isPro, onPress }: TabPillProps) {
         <Feather
           name="flag"
           size={13}
-          color={isActive ? colors.primaryForeground : colors.primary}
+          color={isActive ? "#ffffff" : colors.primary}
         />
       ) : isLocked ? (
         <Feather
           name="lock"
           size={12}
-          color={isActive ? colors.primaryForeground : colors.mutedForeground}
+          color={isActive ? "#ffffff" : colors.mutedForeground}
         />
       ) : null}
       <Text
@@ -58,7 +60,7 @@ function TabPill({ tab, isActive, isPro, onPress }: TabPillProps) {
           styles.pillText,
           {
             color: isActive
-              ? colors.primaryForeground
+              ? "#ffffff"
               : tab.isCitizenVote
                 ? colors.primary
                 : colors.foreground,
@@ -75,8 +77,14 @@ function TabPill({ tab, isActive, isPro, onPress }: TabPillProps) {
 
 export default function WebsiteTabBar({ isPro }: Props) {
   const colors = useColors();
-  const { tabs, activeTabId, setActiveTabId, setUpgradeModalVisible, setPendingProTabId } =
-    useBrowser();
+  const {
+    visibleTabs,
+    activeTabId,
+    setActiveTabId,
+    setUpgradeModalVisible,
+    setPendingProTabId,
+    tabColors,
+  } = useBrowser();
   const flatListRef = useRef<FlatList>(null);
 
   const handleTabPress = (tab: WebsiteTab) => {
@@ -88,7 +96,7 @@ export default function WebsiteTabBar({ isPro }: Props) {
       return;
     }
     setActiveTabId(tab.id);
-    const idx = tabs.findIndex((t) => t.id === tab.id);
+    const idx = visibleTabs.findIndex((t) => t.id === tab.id);
     if (idx >= 0) {
       flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
     }
@@ -98,7 +106,7 @@ export default function WebsiteTabBar({ isPro }: Props) {
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
       <FlatList
         ref={flatListRef}
-        data={tabs}
+        data={visibleTabs}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
@@ -109,6 +117,7 @@ export default function WebsiteTabBar({ isPro }: Props) {
             tab={item}
             isActive={activeTabId === item.id}
             isPro={isPro}
+            customColor={tabColors[item.id]}
             onPress={() => handleTabPress(item)}
           />
         )}

@@ -1,0 +1,4 @@
+- [Blue-green theme](theme-colors.md) — primary=#2563eb (light)/#3b82f6 (dark), accent/green=#16a34a; colors.ts has `green`+`greenForeground` extras.
+- [BrowserContext tab management](browser-context-tabs.md) — visibleTabs=computed; hiddenTabIds/tabColors/tabOrder all persisted to AsyncStorage; moveTab/toggleTabVisibility/setTabColor actions.
+- [WebView session+security](webview-config.md) — cacheEnabled+sharedCookiesEnabled+thirdPartyCookiesEnabled for session persistence; injectedJS suppresses app banners; onShouldStartLoadWithRequest blocks non-http(s) deep links; setSupportMultipleWindows=false.
+- [Clerk v3 Expo SDK](clerk-expo-v3.md) — signIn.password()→signIn.finalize(); signUp.password()→verifications.sendEmailCode()→verifyEmailCode()→finalize(); tokenCache from @clerk/expo/token-cache; ClerkLoaded wrapper; proxyUrl from EXPO_PUBLIC_CLERK_PROXY_URL.

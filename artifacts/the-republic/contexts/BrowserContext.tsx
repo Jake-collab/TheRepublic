@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -20,6 +21,7 @@ export interface WebsiteTab {
 interface BrowserContextType {
   tabs: WebsiteTab[];
   setTabs: (tabs: WebsiteTab[]) => void;
+  visibleTabs: WebsiteTab[];
   activeTabId: string;
   setActiveTabId: (id: string) => void;
   isFullscreen: boolean;
@@ -30,6 +32,12 @@ interface BrowserContextType {
   setUpgradeModalVisible: (v: boolean) => void;
   pendingProTabId: string | null;
   setPendingProTabId: (id: string | null) => void;
+  hiddenTabIds: string[];
+  toggleTabVisibility: (id: string) => void;
+  tabColors: Record<string, string>;
+  setTabColor: (id: string, color: string) => void;
+  tabOrder: string[];
+  moveTab: (id: string, direction: "up" | "down") => void;
 }
 
 const CITIZEN_VOTE_TAB: WebsiteTab = {
@@ -40,9 +48,17 @@ const CITIZEN_VOTE_TAB: WebsiteTab = {
   isCitizenVote: true,
 };
 
+const STORAGE_KEYS = {
+  activeTab: "republic_active_tab",
+  hiddenTabs: "republic_hidden_tabs",
+  tabColors: "republic_tab_colors",
+  tabOrder: "republic_tab_order",
+};
+
 const BrowserContext = createContext<BrowserContextType>({
   tabs: [CITIZEN_VOTE_TAB],
   setTabs: () => {},
+  visibleTabs: [CITIZEN_VOTE_TAB],
   activeTabId: "citizen-vote",
   setActiveTabId: () => {},
   isFullscreen: false,
@@ -53,6 +69,12 @@ const BrowserContext = createContext<BrowserContextType>({
   setUpgradeModalVisible: () => {},
   pendingProTabId: null,
   setPendingProTabId: () => {},
+  hiddenTabIds: [],
+  toggleTabVisibility: () => {},
+  tabColors: {},
+  setTabColor: () => {},
+  tabOrder: [],
+  moveTab: () => {},
 });
 
 export function BrowserProvider({ children }: { children: React.ReactNode }) {
@@ -62,30 +84,95 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
   const [urlState, setUrlState] = useState<Record<string, string>>({});
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [pendingProTabId, setPendingProTabId] = useState<string | null>(null);
+  const [hiddenTabIds, setHiddenTabIds] = useState<string[]>([]);
+  const [tabColors, setTabColorsState] = useState<Record<string, string>>({});
+  const [tabOrder, setTabOrderState] = useState<string[]>([]);
   const initialized = useRef(false);
 
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    AsyncStorage.getItem("republic_active_tab").then((val) => {
-      if (val) setActiveTabId(val);
+    Promise.all([
+      AsyncStorage.getItem(STORAGE_KEYS.activeTab),
+      AsyncStorage.getItem(STORAGE_KEYS.hiddenTabs),
+      AsyncStorage.getItem(STORAGE_KEYS.tabColors),
+      AsyncStorage.getItem(STORAGE_KEYS.tabOrder),
+    ]).then(([activeTab, hidden, colors, order]) => {
+      if (activeTab) setActiveTabId(activeTab);
+      if (hidden) { try { setHiddenTabIds(JSON.parse(hidden)); } catch {} }
+      if (colors) { try { setTabColorsState(JSON.parse(colors)); } catch {} }
+      if (order) { try { setTabOrderState(JSON.parse(order)); } catch {} }
     });
   }, []);
 
   const setTabs = useCallback((newTabs: WebsiteTab[]) => {
-    const withCV = newTabs.some((t) => t.isCitizenVote)
-      ? newTabs
-      : [CITIZEN_VOTE_TAB, ...newTabs];
+    const siteTabs = newTabs.filter((t) => !t.isCitizenVote);
+    const withCV = [CITIZEN_VOTE_TAB, ...siteTabs];
     setTabsState(withCV);
+    setTabOrderState((prev) => {
+      if (prev.length === 0) return siteTabs.map((t) => t.id);
+      const newIds = siteTabs.map((t) => t.id);
+      const ordered = prev.filter((id) => newIds.includes(id));
+      const appended = newIds.filter((id) => !ordered.includes(id));
+      return [...ordered, ...appended];
+    });
   }, []);
+
+  const visibleTabs = useMemo(() => {
+    const siteTabs = tabs.filter((t) => !t.isCitizenVote);
+    const orderedSiteTabs =
+      tabOrder.length > 0
+        ? [
+            ...tabOrder
+              .map((id) => siteTabs.find((t) => t.id === id))
+              .filter(Boolean) as WebsiteTab[],
+            ...siteTabs.filter((t) => !tabOrder.includes(t.id)),
+          ]
+        : siteTabs;
+    return [
+      CITIZEN_VOTE_TAB,
+      ...orderedSiteTabs.filter((t) => !hiddenTabIds.includes(t.id)),
+    ];
+  }, [tabs, hiddenTabIds, tabOrder]);
 
   const handleSetActiveTabId = useCallback((id: string) => {
     setActiveTabId(id);
-    AsyncStorage.setItem("republic_active_tab", id);
+    AsyncStorage.setItem(STORAGE_KEYS.activeTab, id);
   }, []);
 
   const setUrlForTab = useCallback((tabId: string, url: string) => {
     setUrlState((prev) => ({ ...prev, [tabId]: url }));
+  }, []);
+
+  const toggleTabVisibility = useCallback((id: string) => {
+    setHiddenTabIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      AsyncStorage.setItem(STORAGE_KEYS.hiddenTabs, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const setTabColor = useCallback((id: string, color: string) => {
+    setTabColorsState((prev) => {
+      const next = { ...prev, [id]: color };
+      AsyncStorage.setItem(STORAGE_KEYS.tabColors, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const moveTab = useCallback((id: string, direction: "up" | "down") => {
+    setTabOrderState((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      if (direction === "up" && idx > 0) {
+        [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+      } else if (direction === "down" && idx < next.length - 1) {
+        [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+      }
+      AsyncStorage.setItem(STORAGE_KEYS.tabOrder, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   return (
@@ -93,6 +180,7 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
       value={{
         tabs,
         setTabs,
+        visibleTabs,
         activeTabId,
         setActiveTabId: handleSetActiveTabId,
         isFullscreen,
@@ -103,6 +191,12 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
         setUpgradeModalVisible,
         pendingProTabId,
         setPendingProTabId,
+        hiddenTabIds,
+        toggleTabVisibility,
+        tabColors,
+        setTabColor,
+        tabOrder,
+        moveTab,
       }}
     >
       {children}

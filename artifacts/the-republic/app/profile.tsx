@@ -15,18 +15,20 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import { useGetUserProfile, useGetUserMembership } from "@workspace/api-client-react";
+import { useGetUserMembership, useListNotifications } from "@workspace/api-client-react";
 
 function SettingRow({
   icon,
   label,
   value,
+  badge,
   onPress,
   destructive,
 }: {
   icon: React.ComponentProps<typeof Feather>["name"];
   label: string;
   value?: string;
+  badge?: number;
   onPress?: () => void;
   destructive?: boolean;
 }) {
@@ -45,12 +47,19 @@ function SettingRow({
       <Text style={[styles.rowLabel, { color: destructive ? colors.destructive : colors.foreground }]}>
         {label}
       </Text>
+      {badge != null && badge > 0 && (
+        <View style={[styles.badgePill, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.badgeText, { color: colors.primaryForeground }]}>{badge}</Text>
+        </View>
+      )}
       {!!value && (
         <View style={[styles.valueBadge, { backgroundColor: colors.primary }]}>
           <Text style={[styles.valueText, { color: colors.primaryForeground }]}>{value}</Text>
         </View>
       )}
-      {!value && <Feather name="chevron-right" size={16} color={colors.mutedForeground} />}
+      {!value && badge == null && (
+        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+      )}
     </Pressable>
   );
 }
@@ -62,9 +71,12 @@ export default function ProfileScreen() {
   const { signOut } = useAuth();
   const { user } = useUser();
   const { data: membership, isLoading: membershipLoading } = useGetUserMembership();
+  const { data: notifications } = useListNotifications();
 
   const tier = (membership as any)?.tier ?? "free";
   const isPro = tier === "pro";
+
+  const unreadCount = ((notifications as any[]) ?? []).filter((n: any) => !n.isRead).length;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -104,14 +116,27 @@ export default function ProfileScreen() {
           {membershipLoading ? (
             <ActivityIndicator color={colors.primary} size="small" />
           ) : (
-            <View style={[styles.tierBadge, { backgroundColor: isPro ? colors.primary : colors.secondary, borderColor: isPro ? colors.primary : colors.border }]}>
+            <View
+              style={[
+                styles.tierBadge,
+                {
+                  backgroundColor: isPro ? colors.green : colors.secondary,
+                  borderColor: isPro ? colors.green : colors.border,
+                },
+              ]}
+            >
               <Feather
                 name={isPro ? "star" : "user"}
                 size={12}
-                color={isPro ? colors.primaryForeground : colors.mutedForeground}
+                color={isPro ? colors.greenForeground : colors.mutedForeground}
               />
-              <Text style={[styles.tierText, { color: isPro ? colors.primaryForeground : colors.mutedForeground }]}>
-                {isPro ? "Pro Citizen" : "Free"}
+              <Text
+                style={[
+                  styles.tierText,
+                  { color: isPro ? colors.greenForeground : colors.mutedForeground },
+                ]}
+              >
+                {isPro ? "Pro Member" : "Free"}
               </Text>
             </View>
           )}
@@ -122,21 +147,41 @@ export default function ProfileScreen() {
             style={[styles.upgradeCard, { backgroundColor: colors.card, borderColor: colors.primary }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.back(); }}
           >
-            <Feather name="star" size={20} color={colors.primary} />
+            <View style={[styles.upgradeIcon, { backgroundColor: colors.primary }]}>
+              <Feather name="star" size={18} color="#ffffff" />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.upgradeTitle, { color: colors.foreground }]}>Upgrade to Pro</Text>
               <Text style={[styles.upgradeSub, { color: colors.mutedForeground }]}>
-                Unlock all 50+ websites for $9.99/mo
+                Unlock all 50+ websites & tab customization
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={colors.primary} />
           </Pressable>
         )}
 
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Browsing</Text>
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <SettingRow
+            icon="sliders"
+            label="Manage Tabs"
+            onPress={() => router.push("/manage-tabs")}
+          />
+        </View>
+
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Account</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
-          <SettingRow icon="bell" label="Notifications" onPress={() => {}} />
-          <SettingRow icon="help-circle" label="Support" onPress={() => {}} />
+          <SettingRow
+            icon="bell"
+            label="Notifications"
+            badge={unreadCount}
+            onPress={() => router.push("/notifications")}
+          />
+          <SettingRow
+            icon="help-circle"
+            label="Support"
+            onPress={() => router.push("/support")}
+          />
           <SettingRow icon="file-text" label="Terms & Privacy" onPress={() => {}} />
         </View>
 
@@ -224,6 +269,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     marginVertical: 8,
   },
+  upgradeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   upgradeTitle: { fontSize: 15, fontWeight: "600" },
   upgradeSub: { fontSize: 12, marginTop: 2 },
   sectionLabel: { fontSize: 12, fontWeight: "600", letterSpacing: 0.5, marginTop: 8 },
@@ -247,6 +299,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rowLabel: { flex: 1, fontSize: 15 },
+  badgePill: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
+  },
+  badgeText: { fontSize: 11, fontWeight: "700" },
   valueBadge: {
     paddingHorizontal: 10,
     paddingVertical: 3,

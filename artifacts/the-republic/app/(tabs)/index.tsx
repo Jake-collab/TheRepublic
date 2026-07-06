@@ -28,6 +28,7 @@ export default function BrowserScreen() {
   const router = useRouter();
   const {
     tabs,
+    visibleTabs,
     setTabs,
     activeTabId,
     isFullscreen,
@@ -51,10 +52,12 @@ export default function BrowserScreen() {
     setTabs(siteTabs);
   }, [websites, setTabs]);
 
-  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const activeTab = visibleTabs.find((t) => t.id === activeTabId);
   const isCVTab = activeTab?.isCitizenVote ?? false;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const preloadTabs = tabs.filter((t) => !t.isCitizenVote);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -70,9 +73,11 @@ export default function BrowserScreen() {
           ]}
         >
           <View style={styles.logoArea}>
-            <Feather name="shield" size={18} color={colors.primary} />
+            <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
+              <Feather name="shield" size={14} color="#ffffff" />
+            </View>
             <Text style={[styles.logoText, { color: colors.foreground }]}>
-              THE REPUBLIC
+              Republic
             </Text>
           </View>
           <View style={styles.headerActions}>
@@ -112,16 +117,14 @@ export default function BrowserScreen() {
         {isCVTab ? (
           <CitizenVoteFeed />
         ) : (
-          tabs
-            .filter((t) => !t.isCitizenVote)
-            .map((tab) => (
-              <WebViewPane
-                key={tab.id}
-                tabId={tab.id}
-                url={tab.url}
-                isVisible={activeTabId === tab.id}
-              />
-            ))
+          preloadTabs.map((tab) => (
+            <WebViewPane
+              key={tab.id}
+              tabId={tab.id}
+              url={tab.url}
+              isVisible={activeTabId === tab.id && !isCVTab}
+            />
+          ))
         )}
       </View>
 
@@ -145,10 +148,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  logoMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   logoText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
-    letterSpacing: 2,
+    letterSpacing: 0.5,
   },
   headerActions: {
     flexDirection: "row",

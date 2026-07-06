@@ -57,6 +57,30 @@ function RootLayoutNav() {
             animation: "slide_from_bottom",
           }}
         />
+        <Stack.Screen
+          name="notifications"
+          options={{
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="support"
+          options={{
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="manage-tabs"
+          options={{
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_bottom",
+          }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
     </>
