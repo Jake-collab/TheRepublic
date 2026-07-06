@@ -12,6 +12,7 @@ import {
 
 import { useBrowser, type WebsiteTab } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
+import { triggerTabPreload } from "@/utils/preloadRegistry";
 
 interface Props {
   isPro: boolean;
@@ -23,15 +24,17 @@ interface TabPillProps {
   isPro: boolean;
   customColor?: string;
   onPress: () => void;
+  onPressIn: () => void;
 }
 
-const TabPill = memo(function TabPill({ tab, isActive, isPro, customColor, onPress }: TabPillProps) {
+const TabPill = memo(function TabPill({ tab, isActive, isPro, customColor, onPress, onPressIn }: TabPillProps) {
   const colors = useColors();
   const isLocked = !tab.isFree && !isPro && !tab.isCitizenVote;
   const activeColor = customColor ?? colors.primary;
 
   return (
     <Pressable
+      onPressIn={onPressIn}
       onPress={onPress}
       style={({ pressed }) => [
         styles.pill,
@@ -95,6 +98,13 @@ export default function WebsiteTabBar({ isPro }: Props) {
     });
   }, [isPro, setPendingProTabId, setUpgradeModalVisible, setActiveTabId, visibleTabs]);
 
+  const handleTabPressIn = useCallback((tab: WebsiteTab) => {
+    // Fire the WebView load immediately on finger-down — 100–200 ms before onPress
+    if (!tab.isCitizenVote) {
+      triggerTabPreload(tab.id);
+    }
+  }, []);
+
   const renderItem = useCallback(({ item }: { item: WebsiteTab }) => (
     <TabPill
       tab={item}
@@ -102,8 +112,9 @@ export default function WebsiteTabBar({ isPro }: Props) {
       isPro={isPro}
       customColor={tabColors[item.id]}
       onPress={() => handleTabPress(item)}
+      onPressIn={() => handleTabPressIn(item)}
     />
-  ), [activeTabId, isPro, tabColors, handleTabPress]);
+  ), [activeTabId, isPro, tabColors, handleTabPress, handleTabPressIn]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>

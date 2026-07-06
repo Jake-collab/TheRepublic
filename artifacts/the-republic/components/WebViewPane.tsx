@@ -11,6 +11,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
+import { registerTabPreload, unregisterTabPreload } from "@/utils/preloadRegistry";
 
 interface Props {
   tabId: string;
@@ -23,8 +24,7 @@ const SUPPRESS_APP_PROMPTS_JS = `
   try {
     document.querySelectorAll('meta[name="apple-itunes-app"],meta[name="google-play-app"]').forEach(function(m){m.remove&&m.remove();});
     window.addEventListener('beforeinstallprompt',function(e){e.preventDefault&&e.preventDefault();},true);
-    var _nativeOpen = window.open;
-    window.open = function(url, target, features) {
+    window.open = function(url) {
       if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
         window.location.href = url;
       }
@@ -64,6 +64,12 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, isVisible }: Pro
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0);
   const [hasEverBeenVisible, setHasEverBeenVisible] = useState(isVisible);
+
+  // Register with the preload registry so onPressIn in TabBar can fire us early
+  useEffect(() => {
+    registerTabPreload(tabId, () => setHasEverBeenVisible(true));
+    return () => unregisterTabPreload(tabId);
+  }, [tabId]);
 
   useEffect(() => {
     if (isVisible && !hasEverBeenVisible) {

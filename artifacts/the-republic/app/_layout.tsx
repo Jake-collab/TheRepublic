@@ -7,6 +7,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -14,7 +15,12 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
+import {
+  setBaseUrl,
+  setAuthTokenGetter,
+  getListWebsitesQueryKey,
+  getGetUserMembershipQueryKey,
+} from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BrowserProvider } from "@/contexts/BrowserContext";
@@ -37,6 +43,25 @@ const queryClient = new QueryClient({
       refetchOnReconnect: false,
     },
   },
+});
+
+// Kick off AsyncStorage reads at module-evaluation time — BEFORE React renders anything.
+// Clerk initialization takes 400–1500 ms; this runs in parallel so cache is likely
+// resolved by the time the component tree first mounts.
+Promise.all([
+  AsyncStorage.getItem("rq:websites"),
+  AsyncStorage.getItem("rq:membership"),
+]).then(([rawWebsites, rawMembership]) => {
+  if (rawWebsites && !queryClient.getQueryData(getListWebsitesQueryKey({}))) {
+    try {
+      queryClient.setQueryData(getListWebsitesQueryKey({}), JSON.parse(rawWebsites));
+    } catch {}
+  }
+  if (rawMembership && !queryClient.getQueryData(getGetUserMembershipQueryKey())) {
+    try {
+      queryClient.setQueryData(getGetUserMembershipQueryKey(), JSON.parse(rawMembership));
+    } catch {}
+  }
 });
 
 function AuthTokenBridge() {

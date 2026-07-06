@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import CitizenVoteFeed from "@/components/CitizenVoteFeed";
 import UpgradeModal from "@/components/UpgradeModal";
@@ -17,6 +18,7 @@ import WebViewPane from "@/components/WebViewPane";
 import WebsiteTabBar from "@/components/WebsiteTabBar";
 import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
+import { triggerTabPreload } from "@/utils/preloadRegistry";
 import {
   useListWebsites,
   useGetUserMembership,
@@ -93,6 +95,7 @@ export default function BrowserScreen() {
 
   const isPro = (membership as any)?.tier === "pro";
 
+  // Sync websites from API into browser context
   useEffect(() => {
     if (!websites) return;
     const siteTabs = (websites as any[]).map((w: any) => ({
@@ -103,7 +106,14 @@ export default function BrowserScreen() {
       isFree: w.isFree,
     }));
     setTabs(siteTabs);
+    // Persist to AsyncStorage so next launch is instant
+    AsyncStorage.setItem("rq:websites", JSON.stringify(websites));
   }, [websites, setTabs]);
+
+  // Persist membership so next launch has instant Pro status
+  useEffect(() => {
+    if (membership) AsyncStorage.setItem("rq:membership", JSON.stringify(membership));
+  }, [membership]);
 
   const activeTab = useMemo(
     () => visibleTabs.find((t) => t.id === activeTabId),
@@ -123,6 +133,19 @@ export default function BrowserScreen() {
     Haptics.selectionAsync();
     setIsFullscreen(false);
   }, [setIsFullscreen]);
+
+  // After settling on a tab, silently warm the next one in the list
+  const activeIndex = useMemo(
+    () => webviewTabs.findIndex((t) => t.id === activeTabId),
+    [webviewTabs, activeTabId],
+  );
+
+  useEffect(() => {
+    const nextTab = webviewTabs[activeIndex + 1];
+    if (!nextTab) return;
+    const timer = setTimeout(() => triggerTabPreload(nextTab.id), 2500);
+    return () => clearTimeout(timer);
+  }, [activeIndex, webviewTabs]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
