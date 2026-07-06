@@ -13,6 +13,7 @@ router.get("/profile", async (req, res) => {
   const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user[0]) { res.status(404).json({ error: "Not found" }); return; }
   const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
+  res.set("Cache-Control", "private, max-age=120, stale-while-revalidate=300");
   res.json({
     id: user[0].id,
     email: user[0].email,
@@ -59,6 +60,7 @@ router.get("/membership", async (req, res) => {
   const userId = (req as any).userId as string;
   const rows = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
   const m = rows[0];
+  res.set("Cache-Control", "private, max-age=120, stale-while-revalidate=300");
   res.json({
     userId,
     plan: m?.plan ?? "free",

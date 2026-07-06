@@ -9,6 +9,7 @@ router.get("/", async (req, res) => {
   const rows = await db.select().from(categoriesTable)
     .where(eq(categoriesTable.isActive, true))
     .orderBy(asc(categoriesTable.sortOrder));
+  res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
   res.json(rows.map(r => ({
     id: r.id,
     name: r.name,

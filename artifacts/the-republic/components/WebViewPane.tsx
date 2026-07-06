@@ -67,7 +67,7 @@ function NativeWebView({ tabId, url, isVisible }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0);
-  const [hasEverBeenVisible, setHasEverBeenVisible] = useState(false);
+  const [hasEverBeenVisible, setHasEverBeenVisible] = useState(isVisible);
 
   useEffect(() => {
     if (isVisible && !hasEverBeenVisible) {
@@ -76,7 +76,7 @@ function NativeWebView({ tabId, url, isVisible }: Props) {
   }, [isVisible, hasEverBeenVisible]);
 
   if (!hasEverBeenVisible) {
-    return <View style={isVisible ? styles.webviewContainer : styles.hiddenView} />;
+    return <View style={styles.hiddenView} />;
   }
 
   try {
@@ -149,7 +149,7 @@ function NativeWebView({ tabId, url, isVisible }: Props) {
 function WebIframe({ url, isVisible }: { url: string; isVisible: boolean }) {
   const colors = useColors();
   const [loading, setLoading] = useState(true);
-  const [hasEverBeenVisible, setHasEverBeenVisible] = useState(false);
+  const [hasEverBeenVisible, setHasEverBeenVisible] = useState(isVisible);
 
   useEffect(() => {
     if (isVisible && !hasEverBeenVisible) {
@@ -158,7 +158,7 @@ function WebIframe({ url, isVisible }: { url: string; isVisible: boolean }) {
   }, [isVisible, hasEverBeenVisible]);
 
   if (!hasEverBeenVisible) {
-    return <View style={isVisible ? styles.webviewContainer : styles.hiddenView} />;
+    return <View style={styles.hiddenView} />;
   }
 
   return (

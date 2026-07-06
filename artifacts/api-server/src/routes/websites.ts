@@ -21,6 +21,7 @@ router.get("/", async (req, res) => {
     .where(and(...conditions))
     .orderBy(asc(websitesTable.cardOrder));
 
+  res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
   res.json(rows.map(r => ({
     ...r.website,
     categoryName: r.categoryName ?? null,
