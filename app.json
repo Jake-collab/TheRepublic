@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "The Republic",
+    "slug": "therepublic",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/splash.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.therepublic.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/splash.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.therepublic.app"
+    },
+    "web": {
+      "favicon": "./assets/splash.png"
+    }
+  }
+}
