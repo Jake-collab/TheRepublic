@@ -7,3 +7,4 @@
 - [Orval query options format](orval-query-options.md) — Pass params as first arg only; Partial<UseQueryOptions> not used so queryKey required if you try to pass options — just don't.
 - [Pending username pattern](pending-username.md) — Sign-up stores username in AsyncStorage("pending_username"); main screen applies it on first mount via updateProfile mutation.
 - [Working-tree restore after bad checkpoint](working-tree-restore.md) — if a Replit checkpoint commits a broken working tree, restore blobs from an earlier good commit via JS code_execution using git cat-file; JS sandbox writes ARE visible to bash.
+- [React Compiler breaks useFonts in Expo SDK 54](expo-react-compiler.md) — set reactCompiler:false in app.json experiments; React Compiler mis-transforms @expo-google-fonts useFonts causing null useState crash.
