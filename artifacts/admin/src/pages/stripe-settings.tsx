@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAdminGetStripeSettings, useAdminUpdateStripeSettings, getAdminGetStripeSettingsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-function CentsToDisplay(cents: number) {
+function centsToDisplay(cents: number) {
   return (cents / 100).toFixed(2);
 }
 
@@ -19,7 +19,6 @@ export default function StripeSettingsPage() {
   const { data: settings, isLoading } = useAdminGetStripeSettings({
     query: { queryKey: getAdminGetStripeSettingsQueryKey() }
   });
-
   const { mutateAsync: updateSettings, isPending } = useAdminUpdateStripeSettings();
 
   const [secretKey, setSecretKey] = useState("");
@@ -30,13 +29,15 @@ export default function StripeSettingsPage() {
   const [annualPrice, setAnnualPrice] = useState("");
   const [showSecretKey, setShowSecretKey] = useState(false);
   const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !initialized.current) {
+      initialized.current = true;
       setMonthlyPriceId(settings.monthlyPriceId ?? "");
       setAnnualPriceId(settings.annualPriceId ?? "");
-      setMonthlyPrice(CentsToDisplay(settings.monthlyPriceCents));
-      setAnnualPrice(CentsToDisplay(settings.annualPriceCents));
+      setMonthlyPrice(centsToDisplay(settings.monthlyPriceCents));
+      setAnnualPrice(centsToDisplay(settings.annualPriceCents));
     }
   }, [settings]);
 
@@ -54,8 +55,8 @@ export default function StripeSettingsPage() {
         data: {
           secretKey: secretKey || null,
           webhookSecret: webhookSecret || null,
-          monthlyPriceId,
-          annualPriceId,
+          monthlyPriceId: monthlyPriceId || undefined,
+          annualPriceId: annualPriceId || undefined,
           monthlyPriceCents,
           annualPriceCents,
         }
@@ -63,9 +64,14 @@ export default function StripeSettingsPage() {
       setSecretKey("");
       setWebhookSecret("");
       await queryClient.invalidateQueries({ queryKey: getAdminGetStripeSettingsQueryKey() });
+      initialized.current = false;
       toast({ title: "Stripe settings saved", description: "Your changes are now live." });
-    } catch {
-      toast({ title: "Save failed", description: "Could not save Stripe settings.", variant: "destructive" });
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = status === 403
+        ? "You don't have admin access. Please reload and try again."
+        : "Could not save Stripe settings. Check the console for details.";
+      toast({ title: "Save failed", description: msg, variant: "destructive" });
     }
   };
 
@@ -100,7 +106,7 @@ export default function StripeSettingsPage() {
                 <div className="flex items-center gap-2">
                   <Label>Secret Key</Label>
                   {settings?.secretKeyConfigured ? (
-                    <Badge variant="secondary" className="gap-1 text-green-600">
+                    <Badge variant="secondary" className="gap-1 text-emerald-600 border-emerald-500/20">
                       <CheckCircle className="h-3 w-3" /> Configured
                     </Badge>
                   ) : (
@@ -112,10 +118,12 @@ export default function StripeSettingsPage() {
                 <div className="flex gap-2">
                   <Input
                     type={showSecretKey ? "text" : "password"}
-                    placeholder={settings?.secretKeyConfigured ? "sk_live_••••••• (leave blank to keep)" : "sk_live_..."}
+                    placeholder={settings?.secretKeyConfigured ? "Leave blank to keep existing key" : "sk_live_..."}
                     value={secretKey}
                     onChange={e => setSecretKey(e.target.value)}
                     className="font-mono text-sm"
+                    autoComplete="off"
+                    spellCheck={false}
                   />
                   <Button type="button" variant="outline" size="icon" onClick={() => setShowSecretKey(v => !v)}>
                     {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -127,7 +135,7 @@ export default function StripeSettingsPage() {
                 <div className="flex items-center gap-2">
                   <Label>Webhook Secret</Label>
                   {settings?.webhookSecretConfigured ? (
-                    <Badge variant="secondary" className="gap-1 text-green-600">
+                    <Badge variant="secondary" className="gap-1 text-emerald-600 border-emerald-500/20">
                       <CheckCircle className="h-3 w-3" /> Configured
                     </Badge>
                   ) : (
@@ -139,10 +147,12 @@ export default function StripeSettingsPage() {
                 <div className="flex gap-2">
                   <Input
                     type={showWebhookSecret ? "text" : "password"}
-                    placeholder={settings?.webhookSecretConfigured ? "whsec_••••••• (leave blank to keep)" : "whsec_..."}
+                    placeholder={settings?.webhookSecretConfigured ? "Leave blank to keep existing secret" : "whsec_..."}
                     value={webhookSecret}
                     onChange={e => setWebhookSecret(e.target.value)}
                     className="font-mono text-sm"
+                    autoComplete="off"
+                    spellCheck={false}
                   />
                   <Button type="button" variant="outline" size="icon" onClick={() => setShowWebhookSecret(v => !v)}>
                     {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -156,7 +166,7 @@ export default function StripeSettingsPage() {
             <CardHeader>
               <CardTitle>Pricing</CardTitle>
               <CardDescription>
-                Stripe Price IDs and display amounts shown to users. Get Price IDs from your Stripe dashboard under Products.
+                Stripe Price IDs from your Stripe dashboard (Products → Prices). Dollar amounts are shown to users in the app.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -168,6 +178,7 @@ export default function StripeSettingsPage() {
                     value={monthlyPriceId}
                     onChange={e => setMonthlyPriceId(e.target.value)}
                     className="font-mono text-sm"
+                    spellCheck={false}
                   />
                 </div>
                 <div className="space-y-2">
@@ -195,6 +206,7 @@ export default function StripeSettingsPage() {
                     value={annualPriceId}
                     onChange={e => setAnnualPriceId(e.target.value)}
                     className="font-mono text-sm"
+                    spellCheck={false}
                   />
                 </div>
                 <div className="space-y-2">
@@ -217,7 +229,7 @@ export default function StripeSettingsPage() {
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isPending}>
+            <Button onClick={handleSave} disabled={isPending} size="lg">
               {isPending ? "Saving…" : "Save Settings"}
             </Button>
           </div>
