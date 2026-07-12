@@ -333,13 +333,16 @@ export const ListVoteCategoriesResponse = zod.object({
  */
 export const ListSupportTicketsResponseItem = zod.object({
   "id": zod.number(),
-  "userId": zod.string().optional(),
+  "userId": zod.string().nullish(),
   "userEmail": zod.string().nullish(),
   "type": zod.enum(['support', 'bug', 'feature']),
   "subject": zod.string(),
   "message": zod.string(),
   "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
   "adminReply": zod.string().nullish(),
+  "emailedAt": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -723,13 +726,16 @@ export const AdminListSupportTicketsQueryParams = zod.object({
 
 export const AdminListSupportTicketsResponseItem = zod.object({
   "id": zod.number(),
-  "userId": zod.string().optional(),
+  "userId": zod.string().nullish(),
   "userEmail": zod.string().nullish(),
   "type": zod.enum(['support', 'bug', 'feature']),
   "subject": zod.string(),
   "message": zod.string(),
   "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
   "adminReply": zod.string().nullish(),
+  "emailedAt": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -737,7 +743,7 @@ export const AdminListSupportTicketsResponse = zod.array(AdminListSupportTickets
 
 
 /**
- * @summary Update support ticket (reply, close)
+ * @summary Update support ticket (reply, status, priority)
  */
 export const AdminUpdateSupportTicketParams = zod.object({
   "id": zod.coerce.number()
@@ -745,20 +751,105 @@ export const AdminUpdateSupportTicketParams = zod.object({
 
 export const AdminUpdateSupportTicketBody = zod.object({
   "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
-  "adminReply": zod.string().nullish()
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']).optional(),
+  "adminReply": zod.string().nullish(),
+  "assignedTo": zod.string().nullish()
 })
 
 export const AdminUpdateSupportTicketResponse = zod.object({
   "id": zod.number(),
-  "userId": zod.string().optional(),
+  "userId": zod.string().nullish(),
   "userEmail": zod.string().nullish(),
   "type": zod.enum(['support', 'bug', 'feature']),
   "subject": zod.string(),
   "message": zod.string(),
   "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
   "adminReply": zod.string().nullish(),
+  "emailedAt": zod.string().nullish(),
+  "assignedTo": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Send admin reply to user via email
+ */
+export const AdminSendTicketEmailParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminSendTicketEmailResponse = zod.object({
+  "sent": zod.boolean(),
+  "message": zod.string().optional()
+})
+
+
+/**
+ * @summary Auto-close resolved tickets older than N days
+ */
+export const AdminAutoCloseTicketsBody = zod.object({
+  "daysOld": zod.number()
+})
+
+export const AdminAutoCloseTicketsResponse = zod.object({
+  "closed": zod.number()
+})
+
+
+/**
+ * @summary List canned responses
+ */
+export const AdminListCannedResponsesResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "category": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+export const AdminListCannedResponsesResponse = zod.array(AdminListCannedResponsesResponseItem)
+
+
+/**
+ * @summary Create a canned response
+ */
+export const AdminCreateCannedResponseBody = zod.object({
+  "title": zod.string(),
+  "body": zod.string(),
+  "category": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a canned response
+ */
+export const AdminUpdateCannedResponseParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminUpdateCannedResponseBody = zod.object({
+  "title": zod.string(),
+  "body": zod.string(),
+  "category": zod.string().optional()
+})
+
+export const AdminUpdateCannedResponseResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "category": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete a canned response
+ */
+export const AdminDeleteCannedResponseParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

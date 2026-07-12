@@ -4,7 +4,7 @@ export * from "./users";
 export * from "./memberships";
 export * from "./userWebsitePrefs";
 export * from "./citizenVote";
-export * from "./support";
+export * from "./support"; // exports supportTicketsTable + cannedResponsesTable
 export * from "./notifications";
 export * from "./webviewSettings";
 export * from "./auditLogs";

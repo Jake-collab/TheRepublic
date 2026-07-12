@@ -2,12 +2,13 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   categoriesTable, websitesTable, usersTable, membershipsTable,
-  supportTicketsTable, notificationsTable, webviewSettingsTable, auditLogsTable,
+  supportTicketsTable, cannedResponsesTable, notificationsTable, webviewSettingsTable, auditLogsTable,
   citizenVotePostsTable, stripeSettingsTable,
   talkCategoriesTable, talkPostsTable, talkCommentsTable, talkVotesTable,
 } from "@workspace/db";
 import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
-import { eq, desc, asc, and, sql, ilike } from "drizzle-orm";
+import { isEmailConfigured, sendTicketReplyEmail } from "../utils/email";
+import { eq, desc, asc, and, sql, ilike, lte } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAuth";
 
 const router = Router();
@@ -313,28 +314,108 @@ router.patch("/users/:userId/membership", async (req, res) => {
 
 // ── Support ───────────────────────────────────────────────────────────────────
 router.get("/support/tickets", async (req, res) => {
-  const { status, type } = req.query;
+  const { status, type, priority } = req.query;
   const conditions: any[] = [];
   if (status) conditions.push(eq(supportTicketsTable.status, status as string));
   if (type) conditions.push(eq(supportTicketsTable.type, type as string));
+  if (priority) conditions.push(eq(supportTicketsTable.priority, priority as string));
 
   const rows = await db.select().from(supportTicketsTable)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(supportTicketsTable.createdAt));
+    .orderBy(
+      sql`CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END`,
+      desc(supportTicketsTable.createdAt)
+    );
 
-  res.json(rows.map(t => ({ ...t, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() })));
+  res.json(rows.map(t => ({
+    ...t,
+    emailedAt: t.emailedAt?.toISOString() ?? null,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  })));
 });
 
 router.patch("/support/tickets/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { status, adminReply } = req.body;
+  const { status, adminReply, priority, assignedTo } = req.body;
   const updates: any = { updatedAt: new Date() };
   if (status !== undefined) updates.status = status;
   if (adminReply !== undefined) updates.adminReply = adminReply;
+  if (priority !== undefined) updates.priority = priority;
+  if (assignedTo !== undefined) updates.assignedTo = assignedTo;
 
-  const row = await db.update(supportTicketsTable).set(updates).where(eq(supportTicketsTable.id, id)).returning();
-  await logAction((req as any).userId, "update_ticket", `id=${id},status=${status}`);
-  res.json({ ...row[0], createdAt: row[0].createdAt.toISOString(), updatedAt: row[0].updatedAt.toISOString() });
+  const [row] = await db.update(supportTicketsTable).set(updates).where(eq(supportTicketsTable.id, id)).returning();
+  await logAction((req as any).userId, "update_ticket", `id=${id},status=${status ?? row.status},priority=${priority ?? row.priority}`);
+  res.json({ ...row, emailedAt: row.emailedAt?.toISOString() ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() });
+});
+
+router.post("/support/tickets/:id/send-email", async (req, res) => {
+  const id = Number(req.params.id);
+  const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, id));
+  if (!ticket) { res.status(404).json({ error: "Ticket not found" }); return; }
+  if (!ticket.adminReply) { res.status(400).json({ error: "No admin reply to send yet" }); return; }
+  if (!ticket.userEmail) { res.status(400).json({ sent: false, message: "No email address on this ticket" }); return; }
+
+  const result = await sendTicketReplyEmail({
+    to: ticket.userEmail,
+    subject: ticket.subject,
+    userMessage: ticket.message,
+    adminReply: ticket.adminReply,
+    ticketId: ticket.id,
+  });
+
+  if (result.sent) {
+    await db.update(supportTicketsTable).set({ emailedAt: new Date() }).where(eq(supportTicketsTable.id, id));
+    await logAction((req as any).userId, "email_ticket_reply", `id=${id},to=${ticket.userEmail}`);
+  }
+
+  res.json(result);
+});
+
+router.post("/support/auto-close", async (req, res) => {
+  const { daysOld } = req.body;
+  if (!daysOld || daysOld < 1) { res.status(400).json({ error: "daysOld must be >= 1" }); return; }
+  const cutoff = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000);
+  const closed = await db
+    .update(supportTicketsTable)
+    .set({ status: "closed", updatedAt: new Date() })
+    .where(and(eq(supportTicketsTable.status, "resolved"), lte(supportTicketsTable.updatedAt, cutoff)))
+    .returning();
+  await logAction((req as any).userId, "auto_close_tickets", `count=${closed.length},daysOld=${daysOld}`);
+  res.json({ closed: closed.length });
+});
+
+// ── Canned Responses ──────────────────────────────────────────────────────────
+router.get("/support/canned-responses", async (req, res) => {
+  const rows = await db.select().from(cannedResponsesTable).orderBy(asc(cannedResponsesTable.category), asc(cannedResponsesTable.title));
+  res.json(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() })));
+});
+
+router.post("/support/canned-responses", async (req, res) => {
+  const { title, body, category = "general" } = req.body;
+  if (!title?.trim() || !body?.trim()) { res.status(400).json({ error: "title and body are required" }); return; }
+  const [row] = await db.insert(cannedResponsesTable).values({ title: title.trim(), body: body.trim(), category: category.trim() }).returning();
+  await logAction((req as any).userId, "create_canned_response", `title=${title}`);
+  res.status(201).json({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() });
+});
+
+router.patch("/support/canned-responses/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { title, body, category } = req.body;
+  const updates: any = { updatedAt: new Date() };
+  if (title !== undefined) updates.title = title.trim();
+  if (body !== undefined) updates.body = body.trim();
+  if (category !== undefined) updates.category = category.trim();
+  const [row] = await db.update(cannedResponsesTable).set(updates).where(eq(cannedResponsesTable.id, id)).returning();
+  await logAction((req as any).userId, "update_canned_response", `id=${id}`);
+  res.json({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() });
+});
+
+router.delete("/support/canned-responses/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.delete(cannedResponsesTable).where(eq(cannedResponsesTable.id, id));
+  await logAction((req as any).userId, "delete_canned_response", `id=${id}`);
+  res.status(204).send();
 });
 
 // ── WebView Settings ──────────────────────────────────────────────────────────

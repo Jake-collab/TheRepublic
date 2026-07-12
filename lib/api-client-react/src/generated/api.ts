@@ -25,6 +25,7 @@ import type {
   AdminListTalkPostsParams,
   AdminListUsersParams,
   AdminListWebsitesParams,
+  AdminSendTicketEmail200,
   AdminStats,
   AdminTalkCategory,
   AdminTalkCategoryInput,
@@ -33,7 +34,11 @@ import type {
   AdminUser,
   AdminUserList,
   AuditLogList,
+  AutoCloseRequest,
+  AutoCloseResult,
   BanRequest,
+  CannedResponse,
+  CannedResponseInput,
   Category,
   CategoryInput,
   CategoryReorderInput,
@@ -3017,7 +3022,7 @@ export const getAdminUpdateSupportTicketUrl = (id: number,) => {
 }
 
 /**
- * @summary Update support ticket (reply, close)
+ * @summary Update support ticket (reply, status, priority)
  */
 export const adminUpdateSupportTicket = async (id: number,
     supportTicketAdminUpdate: SupportTicketAdminUpdate, options?: RequestInit): Promise<SupportTicket> => {
@@ -3067,7 +3072,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type AdminUpdateSupportTicketMutationError = ErrorType<unknown>
 
     /**
- * @summary Update support ticket (reply, close)
+ * @summary Update support ticket (reply, status, priority)
  */
 export const useAdminUpdateSupportTicket = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateSupportTicket>>, TError,{id: number;data: BodyType<SupportTicketAdminUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -3078,6 +3083,437 @@ export const useAdminUpdateSupportTicket = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminUpdateSupportTicketMutationOptions(options));
+    }
+
+export const getAdminSendTicketEmailUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/support/tickets/${id}/send-email`
+}
+
+/**
+ * @summary Send admin reply to user via email
+ */
+export const adminSendTicketEmail = async (id: number, options?: RequestInit): Promise<AdminSendTicketEmail200> => {
+
+  return customFetch<AdminSendTicketEmail200>(getAdminSendTicketEmailUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminSendTicketEmailMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendTicketEmail>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSendTicketEmail>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminSendTicketEmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSendTicketEmail>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminSendTicketEmail(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSendTicketEmailMutationResult = NonNullable<Awaited<ReturnType<typeof adminSendTicketEmail>>>
+
+    export type AdminSendTicketEmailMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send admin reply to user via email
+ */
+export const useAdminSendTicketEmail = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendTicketEmail>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSendTicketEmail>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminSendTicketEmailMutationOptions(options));
+    }
+
+export const getAdminAutoCloseTicketsUrl = () => {
+
+
+
+
+  return `/api/admin/support/auto-close`
+}
+
+/**
+ * @summary Auto-close resolved tickets older than N days
+ */
+export const adminAutoCloseTickets = async (autoCloseRequest: AutoCloseRequest, options?: RequestInit): Promise<AutoCloseResult> => {
+
+  return customFetch<AutoCloseResult>(getAdminAutoCloseTicketsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      autoCloseRequest,)
+  }
+);}
+
+
+
+
+export const getAdminAutoCloseTicketsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAutoCloseTickets>>, TError,{data: BodyType<AutoCloseRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAutoCloseTickets>>, TError,{data: BodyType<AutoCloseRequest>}, TContext> => {
+
+const mutationKey = ['adminAutoCloseTickets'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAutoCloseTickets>>, {data: BodyType<AutoCloseRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminAutoCloseTickets(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAutoCloseTicketsMutationResult = NonNullable<Awaited<ReturnType<typeof adminAutoCloseTickets>>>
+    export type AdminAutoCloseTicketsMutationBody = BodyType<AutoCloseRequest>
+    export type AdminAutoCloseTicketsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Auto-close resolved tickets older than N days
+ */
+export const useAdminAutoCloseTickets = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAutoCloseTickets>>, TError,{data: BodyType<AutoCloseRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAutoCloseTickets>>,
+        TError,
+        {data: BodyType<AutoCloseRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminAutoCloseTicketsMutationOptions(options));
+    }
+
+export const getAdminListCannedResponsesUrl = () => {
+
+
+
+
+  return `/api/admin/support/canned-responses`
+}
+
+/**
+ * @summary List canned responses
+ */
+export const adminListCannedResponses = async ( options?: RequestInit): Promise<CannedResponse[]> => {
+
+  return customFetch<CannedResponse[]>(getAdminListCannedResponsesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListCannedResponsesQueryKey = () => {
+    return [
+    `/api/admin/support/canned-responses`
+    ] as const;
+    }
+
+
+export const getAdminListCannedResponsesQueryOptions = <TData = Awaited<ReturnType<typeof adminListCannedResponses>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListCannedResponses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListCannedResponsesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListCannedResponses>>> = ({ signal }) => adminListCannedResponses({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListCannedResponses>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListCannedResponsesQueryResult = NonNullable<Awaited<ReturnType<typeof adminListCannedResponses>>>
+export type AdminListCannedResponsesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List canned responses
+ */
+
+export function useAdminListCannedResponses<TData = Awaited<ReturnType<typeof adminListCannedResponses>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListCannedResponses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListCannedResponsesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminCreateCannedResponseUrl = () => {
+
+
+
+
+  return `/api/admin/support/canned-responses`
+}
+
+/**
+ * @summary Create a canned response
+ */
+export const adminCreateCannedResponse = async (cannedResponseInput: CannedResponseInput, options?: RequestInit): Promise<CannedResponse> => {
+
+  return customFetch<CannedResponse>(getAdminCreateCannedResponseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cannedResponseInput,)
+  }
+);}
+
+
+
+
+export const getAdminCreateCannedResponseMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateCannedResponse>>, TError,{data: BodyType<CannedResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateCannedResponse>>, TError,{data: BodyType<CannedResponseInput>}, TContext> => {
+
+const mutationKey = ['adminCreateCannedResponse'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateCannedResponse>>, {data: BodyType<CannedResponseInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateCannedResponse(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateCannedResponseMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateCannedResponse>>>
+    export type AdminCreateCannedResponseMutationBody = BodyType<CannedResponseInput>
+    export type AdminCreateCannedResponseMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a canned response
+ */
+export const useAdminCreateCannedResponse = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateCannedResponse>>, TError,{data: BodyType<CannedResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateCannedResponse>>,
+        TError,
+        {data: BodyType<CannedResponseInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateCannedResponseMutationOptions(options));
+    }
+
+export const getAdminUpdateCannedResponseUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/support/canned-responses/${id}`
+}
+
+/**
+ * @summary Update a canned response
+ */
+export const adminUpdateCannedResponse = async (id: number,
+    cannedResponseInput: CannedResponseInput, options?: RequestInit): Promise<CannedResponse> => {
+
+  return customFetch<CannedResponse>(getAdminUpdateCannedResponseUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cannedResponseInput,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateCannedResponseMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCannedResponse>>, TError,{id: number;data: BodyType<CannedResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCannedResponse>>, TError,{id: number;data: BodyType<CannedResponseInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateCannedResponse'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateCannedResponse>>, {id: number;data: BodyType<CannedResponseInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateCannedResponse(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateCannedResponseMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateCannedResponse>>>
+    export type AdminUpdateCannedResponseMutationBody = BodyType<CannedResponseInput>
+    export type AdminUpdateCannedResponseMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a canned response
+ */
+export const useAdminUpdateCannedResponse = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateCannedResponse>>, TError,{id: number;data: BodyType<CannedResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateCannedResponse>>,
+        TError,
+        {id: number;data: BodyType<CannedResponseInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateCannedResponseMutationOptions(options));
+    }
+
+export const getAdminDeleteCannedResponseUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/support/canned-responses/${id}`
+}
+
+/**
+ * @summary Delete a canned response
+ */
+export const adminDeleteCannedResponse = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteCannedResponseUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteCannedResponseMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteCannedResponse>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteCannedResponse>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteCannedResponse'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteCannedResponse>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteCannedResponse(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteCannedResponseMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteCannedResponse>>>
+
+    export type AdminDeleteCannedResponseMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a canned response
+ */
+export const useAdminDeleteCannedResponse = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteCannedResponse>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteCannedResponse>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteCannedResponseMutationOptions(options));
     }
 
 export const getAdminGetStatsUrl = () => {

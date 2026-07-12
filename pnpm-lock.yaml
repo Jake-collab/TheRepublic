@@ -400,6 +400,9 @@ importers:
       pino-http:
         specifier: ^10.5.0
         version: 10.5.0
+      resend:
+        specifier: ^6.17.2
+        version: 6.17.2
       stripe:
         specifier: ^22.1.1
         version: 22.1.1(@types/node@25.6.2)
@@ -5260,6 +5263,9 @@ packages:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
 
+  postal-mime@2.7.4:
+    resolution: {integrity: sha512-0WdnFQYUrPGGTFu1uOqD2s7omwua8xaeYGdO6rb88oD5yJ/4pPHDA4sdWqfD8wQVfCny563n/HQS7zTFft+f/g==}
+
   postcss-selector-parser@6.0.10:
     resolution: {integrity: sha512-IQ7TZdoaqbT+LCpShg46jnZVlhWD2w6iQYAcYXfHARZ7X1t/UGhhceQDs5X0cGqKvYlHNOuv7Oa1xmb0oQuA3w==}
     engines: {node: '>=4'}
@@ -5595,6 +5601,7 @@ packages:
   recharts@2.15.4:
     resolution: {integrity: sha512-UT/q6fwS3c1dHbXv2uFgYJ9BMFHu3fwnd7AYZaEQhXuYQ4hgsxLvsUXzGdKeZrW5xopzDCvuA2N41WJ88I7zIw==}
     engines: {node: '>=14'}
+    deprecated: 1.x and 2.x branches are no longer active. Bump to Recharts v3 to receive latest features and bugfixes. See https://github.com/recharts/recharts/wiki/3.0-migration-guide
     peerDependencies:
       react: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -5641,6 +5648,15 @@ packages:
   requireg@0.2.2:
     resolution: {integrity: sha512-nYzyjnFcPNGR3lx9lwPPPnuQxv6JWEZd2Ci0u9opN7N5zUEPIhY/GbL3vMGOr2UXwEg9WwSyV9X9Y/kLFgPsOg==}
     engines: {node: '>= 4.0.0'}
+
+  resend@6.17.2:
+    resolution: {integrity: sha512-hbaXEORFIFfT2Bh03NsA/akTTTKkD1hiuJ88ke64c5dWVV6DyoLxzFve3OiZqVOQ+JKLJ5uVkPR6hlUslpJFoA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@react-email/render': '*'
+    peerDependenciesMeta:
+      '@react-email/render':
+        optional: true
 
   resolve-alpn@1.2.1:
     resolution: {integrity: sha512-0a1F4l73/ZFZOakJnQ3FvkJ2+gSTQWz/r2KE5OdDY0TxPm5h4GkqkWWfM47T7HsbnOtcJVEF4epCVy6u7Q3K+g==}
@@ -6042,6 +6058,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -12020,6 +12037,8 @@ snapshots:
 
   pngjs@5.0.0: {}
 
+  postal-mime@2.7.4: {}
+
   postcss-selector-parser@6.0.10:
     dependencies:
       cssesc: 3.0.0
@@ -12477,6 +12496,11 @@ snapshots:
       nested-error-stacks: 2.0.1
       rc: 1.2.8
       resolve: 1.7.1
+
+  resend@6.17.2:
+    dependencies:
+      postal-mime: 2.7.4
+      standardwebhooks: 1.0.0
 
   resolve-alpn@1.2.1: {}
 

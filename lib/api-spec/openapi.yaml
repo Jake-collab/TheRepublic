@@ -744,7 +744,7 @@ paths:
     patch:
       operationId: adminUpdateSupportTicket
       tags: [admin]
-      summary: Update support ticket (reply, close)
+      summary: Update support ticket (reply, status, priority)
       parameters:
         - name: id
           in: path
@@ -764,6 +764,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SupportTicket"
+
+  /admin/support/tickets/{id}/send-email:
+    post:
+      operationId: adminSendTicketEmail
+      tags: [admin]
+      summary: Send admin reply to user via email
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sent]
+                properties:
+                  sent:
+                    type: boolean
+                  message:
+                    type: string
+
+  /admin/support/auto-close:
+    post:
+      operationId: adminAutoCloseTickets
+      tags: [admin]
+      summary: Auto-close resolved tickets older than N days
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutoCloseRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoCloseResult"
+
+  /admin/support/canned-responses:
+    get:
+      operationId: adminListCannedResponses
+      tags: [admin]
+      summary: List canned responses
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CannedResponse"
+    post:
+      operationId: adminCreateCannedResponse
+      tags: [admin]
+      summary: Create a canned response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CannedResponseInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CannedResponse"
+
+  /admin/support/canned-responses/{id}:
+    patch:
+      operationId: adminUpdateCannedResponse
+      tags: [admin]
+      summary: Update a canned response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CannedResponseInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CannedResponse"
+    delete:
+      operationId: adminDeleteCannedResponse
+      tags: [admin]
+      summary: Delete a canned response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   # ── Admin: Stats ──────────────────────────────────────────────────────────────
   /admin/stats:
@@ -1577,12 +1691,12 @@ components:
     # ── Support ───────────────────────────────────────────────────────────────────
     SupportTicket:
       type: object
-      required: [id, type, subject, message, status, createdAt]
+      required: [id, type, subject, message, status, priority, createdAt]
       properties:
         id:
           type: integer
         userId:
-          type: string
+          type: ["string", "null"]
         userEmail:
           type: ["string", "null"]
         type:
@@ -1595,7 +1709,14 @@ components:
         status:
           type: string
           enum: [open, in_progress, resolved, closed]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
         adminReply:
+          type: ["string", "null"]
+        emailedAt:
+          type: ["string", "null"]
+        assignedTo:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -1620,8 +1741,55 @@ components:
         status:
           type: string
           enum: [open, in_progress, resolved, closed]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
         adminReply:
           type: ["string", "null"]
+        assignedTo:
+          type: ["string", "null"]
+
+    CannedResponse:
+      type: object
+      required: [id, title, body, category, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+        category:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    CannedResponseInput:
+      type: object
+      required: [title, body]
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        category:
+          type: string
+
+    AutoCloseRequest:
+      type: object
+      required: [daysOld]
+      properties:
+        daysOld:
+          type: integer
+
+    AutoCloseResult:
+      type: object
+      required: [closed]
+      properties:
+        closed:
+          type: integer
 
     # ── Notifications ─────────────────────────────────────────────────────────────
     Notification:

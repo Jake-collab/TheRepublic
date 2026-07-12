@@ -5,20 +5,27 @@
  * The Republic API
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportTicketPriority } from './supportTicketPriority';
 import type { SupportTicketStatus } from './supportTicketStatus';
 import type { SupportTicketType } from './supportTicketType';
 
 export interface SupportTicket {
   id: number;
-  userId?: string;
+  /** @nullable */
+  userId?: string | null;
   /** @nullable */
   userEmail?: string | null;
   type: SupportTicketType;
   subject: string;
   message: string;
   status: SupportTicketStatus;
+  priority: SupportTicketPriority;
   /** @nullable */
   adminReply?: string | null;
+  /** @nullable */
+  emailedAt?: string | null;
+  /** @nullable */
+  assignedTo?: string | null;
   createdAt: string;
   updatedAt?: string;
 }

@@ -5,10 +5,14 @@
  * The Republic API
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportTicketAdminUpdatePriority } from './supportTicketAdminUpdatePriority';
 import type { SupportTicketAdminUpdateStatus } from './supportTicketAdminUpdateStatus';
 
 export interface SupportTicketAdminUpdate {
   status?: SupportTicketAdminUpdateStatus;
+  priority?: SupportTicketAdminUpdatePriority;
   /** @nullable */
   adminReply?: string | null;
+  /** @nullable */
+  assignedTo?: string | null;
 }

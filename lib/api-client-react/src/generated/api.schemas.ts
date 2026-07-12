@@ -316,17 +316,33 @@ export const SupportTicketStatus = {
   closed: 'closed',
 } as const;
 
+export type SupportTicketPriority = typeof SupportTicketPriority[keyof typeof SupportTicketPriority];
+
+
+export const SupportTicketPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
 export interface SupportTicket {
   id: number;
-  userId?: string;
+  /** @nullable */
+  userId?: string | null;
   /** @nullable */
   userEmail?: string | null;
   type: SupportTicketType;
   subject: string;
   message: string;
   status: SupportTicketStatus;
+  priority: SupportTicketPriority;
   /** @nullable */
   adminReply?: string | null;
+  /** @nullable */
+  emailedAt?: string | null;
+  /** @nullable */
+  assignedTo?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -356,10 +372,46 @@ export const SupportTicketAdminUpdateStatus = {
   closed: 'closed',
 } as const;
 
+export type SupportTicketAdminUpdatePriority = typeof SupportTicketAdminUpdatePriority[keyof typeof SupportTicketAdminUpdatePriority];
+
+
+export const SupportTicketAdminUpdatePriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
 export interface SupportTicketAdminUpdate {
   status?: SupportTicketAdminUpdateStatus;
+  priority?: SupportTicketAdminUpdatePriority;
   /** @nullable */
   adminReply?: string | null;
+  /** @nullable */
+  assignedTo?: string | null;
+}
+
+export interface CannedResponse {
+  id: number;
+  title: string;
+  body: string;
+  category: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CannedResponseInput {
+  title: string;
+  body: string;
+  category?: string;
+}
+
+export interface AutoCloseRequest {
+  daysOld: number;
+}
+
+export interface AutoCloseResult {
+  closed: number;
 }
 
 export interface Notification {
@@ -634,6 +686,11 @@ status?: string | null;
  * @nullable
  */
 type?: string | null;
+};
+
+export type AdminSendTicketEmail200 = {
+  sent: boolean;
+  message?: string;
 };
 
 export type AdminListAuditLogsParams = {

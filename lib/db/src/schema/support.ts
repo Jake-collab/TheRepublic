@@ -11,7 +11,19 @@ export const supportTicketsTable = pgTable("support_tickets", {
   subject: text("subject").notNull(),
   message: text("message").notNull(),
   status: text("status").notNull().default("open"), // open | in_progress | resolved | closed
+  priority: text("priority").notNull().default("medium"), // low | medium | high | critical
   adminReply: text("admin_reply"),
+  emailedAt: timestamp("emailed_at"),
+  assignedTo: text("assigned_to"), // admin userId
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const cannedResponsesTable = pgTable("canned_responses", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  category: text("category").notNull().default("general"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
