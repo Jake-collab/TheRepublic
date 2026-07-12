@@ -11,7 +11,14 @@ export interface AdminUser {
   email: string;
   displayName: string;
   isPro: boolean;
+  isBanned: boolean;
+  /** @nullable */
+  bannedAt?: string | null;
+  /** @nullable */
+  banReason?: string | null;
   membershipPlan?: string;
   membershipStatus?: string;
+  /** @nullable */
+  stripeCustomerId?: string | null;
   createdAt: string;
 }

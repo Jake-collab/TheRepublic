@@ -563,8 +563,12 @@ export const AdminListUsersResponse = zod.object({
   "email": zod.string(),
   "displayName": zod.string(),
   "isPro": zod.boolean(),
+  "isBanned": zod.boolean(),
+  "bannedAt": zod.string().nullish(),
+  "banReason": zod.string().nullish(),
   "membershipPlan": zod.string().optional(),
   "membershipStatus": zod.string().optional(),
+  "stripeCustomerId": zod.string().nullish(),
   "createdAt": zod.string()
 })),
   "total": zod.number()
@@ -590,6 +594,85 @@ export const AdminUpdateUserMembershipResponse = zod.object({
   "stripeCustomerId": zod.string().nullish(),
   "stripeSubscriptionId": zod.string().nullish(),
   "currentPeriodEnd": zod.string().nullish()
+})
+
+
+/**
+ * @summary Ban a user
+ */
+export const AdminBanUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminBanUserBody = zod.object({
+  "reason": zod.string()
+})
+
+export const AdminBanUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "isPro": zod.boolean(),
+  "isBanned": zod.boolean(),
+  "bannedAt": zod.string().nullish(),
+  "banReason": zod.string().nullish(),
+  "membershipPlan": zod.string().optional(),
+  "membershipStatus": zod.string().optional(),
+  "stripeCustomerId": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Unban a user
+ */
+export const AdminUnbanUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminUnbanUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "isPro": zod.boolean(),
+  "isBanned": zod.boolean(),
+  "bannedAt": zod.string().nullish(),
+  "banReason": zod.string().nullish(),
+  "membershipPlan": zod.string().optional(),
+  "membershipStatus": zod.string().optional(),
+  "stripeCustomerId": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Get a user's full activity history
+ */
+export const AdminGetUserActivityParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminGetUserActivityResponse = zod.object({
+  "posts": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "upvotes": zod.number(),
+  "commentCount": zod.number(),
+  "createdAt": zod.string()
+})),
+  "tickets": zod.array(zod.object({
+  "id": zod.number(),
+  "type": zod.string(),
+  "subject": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.string()
+})),
+  "subscription": zod.object({
+  "plan": zod.string().optional(),
+  "status": zod.string().optional(),
+  "currentPeriodEnd": zod.string().nullish(),
+  "stripeCustomerId": zod.string().nullish()
+})
 })
 
 

@@ -128,11 +128,160 @@ router.get("/users", async (req, res) => {
       email: r.user.email,
       displayName: r.user.displayName,
       isPro: r.user.isPro,
+      isBanned: r.user.isBanned,
+      bannedAt: r.user.bannedAt?.toISOString() ?? null,
+      banReason: r.user.banReason ?? null,
       membershipPlan: r.membership?.plan ?? "free",
       membershipStatus: r.membership?.status ?? "none",
+      stripeCustomerId: r.membership?.stripeCustomerId ?? null,
       createdAt: r.user.createdAt.toISOString(),
     })),
     total: Number(total[0].count),
+  });
+});
+
+router.get("/users/export", async (req, res) => {
+  const rows = await db
+    .select({ user: usersTable, membership: membershipsTable })
+    .from(usersTable)
+    .leftJoin(membershipsTable, eq(usersTable.id, membershipsTable.userId))
+    .orderBy(desc(usersTable.createdAt));
+
+  const header = "id,email,displayName,isPro,isBanned,plan,status,stripeCustomerId,joinedAt";
+  const lines = rows.map(r =>
+    [
+      r.user.id,
+      `"${r.user.email.replace(/"/g, '""')}"`,
+      `"${r.user.displayName.replace(/"/g, '""')}"`,
+      r.user.isPro,
+      r.user.isBanned,
+      r.membership?.plan ?? "free",
+      r.membership?.status ?? "none",
+      r.membership?.stripeCustomerId ?? "",
+      r.user.createdAt.toISOString(),
+    ].join(",")
+  );
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="republic-users-${Date.now()}.csv"`);
+  res.send([header, ...lines].join("\n"));
+});
+
+router.post("/users/:userId/ban", async (req, res) => {
+  const { userId } = req.params;
+  const { reason } = req.body;
+  if (!reason?.trim()) {
+    res.status(400).json({ error: "Ban reason is required" });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ isBanned: true, bannedAt: new Date(), banReason: reason.trim(), updatedAt: new Date() })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  await logAction((req as any).userId, "ban_user", `userId=${userId},reason=${reason.trim()}`);
+  const m = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
+  res.json({
+    id: updated.id,
+    email: updated.email,
+    displayName: updated.displayName,
+    isPro: updated.isPro,
+    isBanned: updated.isBanned,
+    bannedAt: updated.bannedAt?.toISOString() ?? null,
+    banReason: updated.banReason ?? null,
+    membershipPlan: m[0]?.plan ?? "free",
+    membershipStatus: m[0]?.status ?? "none",
+    createdAt: updated.createdAt.toISOString(),
+  });
+});
+
+router.post("/users/:userId/unban", async (req, res) => {
+  const { userId } = req.params;
+  const [updated] = await db
+    .update(usersTable)
+    .set({ isBanned: false, bannedAt: null, banReason: null, updatedAt: new Date() })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  await logAction((req as any).userId, "unban_user", `userId=${userId}`);
+  const m = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
+  res.json({
+    id: updated.id,
+    email: updated.email,
+    displayName: updated.displayName,
+    isPro: updated.isPro,
+    isBanned: updated.isBanned,
+    bannedAt: null,
+    banReason: null,
+    membershipPlan: m[0]?.plan ?? "free",
+    membershipStatus: m[0]?.status ?? "none",
+    createdAt: updated.createdAt.toISOString(),
+  });
+});
+
+router.get("/users/:userId/activity", async (req, res) => {
+  const { userId } = req.params;
+
+  const [posts, tickets, membershipRows] = await Promise.all([
+    db
+      .select({
+        id: talkPostsTable.id,
+        title: talkPostsTable.title,
+        upvotes: talkPostsTable.upvotes,
+        createdAt: talkPostsTable.createdAt,
+        commentCount: sql<number>`(select count(*) from ${talkCommentsTable} where ${talkCommentsTable.postId} = ${talkPostsTable.id})`,
+      })
+      .from(talkPostsTable)
+      .where(eq(talkPostsTable.userId, userId))
+      .orderBy(desc(talkPostsTable.createdAt))
+      .limit(50),
+    db
+      .select({
+        id: supportTicketsTable.id,
+        type: supportTicketsTable.type,
+        subject: supportTicketsTable.subject,
+        status: supportTicketsTable.status,
+        createdAt: supportTicketsTable.createdAt,
+      })
+      .from(supportTicketsTable)
+      .where(eq(supportTicketsTable.userId, userId))
+      .orderBy(desc(supportTicketsTable.createdAt)),
+    db
+      .select()
+      .from(membershipsTable)
+      .where(eq(membershipsTable.userId, userId))
+      .limit(1),
+  ]);
+
+  const m = membershipRows[0];
+  res.json({
+    posts: posts.map(p => ({
+      id: p.id,
+      title: p.title,
+      upvotes: p.upvotes,
+      commentCount: Number(p.commentCount),
+      createdAt: p.createdAt.toISOString(),
+    })),
+    tickets: tickets.map(t => ({
+      id: t.id,
+      type: t.type,
+      subject: t.subject,
+      status: t.status,
+      createdAt: t.createdAt.toISOString(),
+    })),
+    subscription: {
+      plan: m?.plan ?? "free",
+      status: m?.status ?? "none",
+      currentPeriodEnd: m?.currentPeriodEnd?.toISOString() ?? null,
+      stripeCustomerId: m?.stripeCustomerId ?? null,
+    },
   });
 });
 

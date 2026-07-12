@@ -10,6 +10,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  const user = await db.select({ isBanned: usersTable.isBanned }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (user[0]?.isBanned) {
+    res.status(403).json({ error: "Account suspended. Please contact support." });
+    return;
+  }
   (req as any).userId = userId;
   next();
 }

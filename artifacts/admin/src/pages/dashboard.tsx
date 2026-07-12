@@ -20,6 +20,8 @@ const ACTION_LABELS: Record<string, string> = {
   delete_talk_category: "Deleted a discussion category",
   delete_talk_post: "Removed a discussion post",
   delete_talk_comment: "Removed a comment",
+  ban_user: "Suspended a user account",
+  unban_user: "Reinstated a user account",
 };
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {

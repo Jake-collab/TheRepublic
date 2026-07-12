@@ -25,6 +25,8 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   delete_talk_category:  { label: "Deleted Talk Category",  color: "bg-destructive/10 text-destructive border-destructive/20" },
   delete_talk_post:      { label: "Deleted Talk Post",      color: "bg-destructive/10 text-destructive border-destructive/20" },
   delete_talk_comment:   { label: "Deleted Comment",        color: "bg-destructive/10 text-destructive border-destructive/20" },
+  ban_user:              { label: "Suspended User",          color: "bg-destructive/10 text-destructive border-destructive/20" },
+  unban_user:            { label: "Reinstated User",         color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
 };
 
 const ACTION_CATEGORIES = [

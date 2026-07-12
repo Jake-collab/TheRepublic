@@ -608,6 +608,82 @@ paths:
               schema:
                 $ref: "#/components/schemas/Membership"
 
+  /admin/users/export:
+    get:
+      operationId: adminExportUsers
+      tags: [admin]
+      summary: Export all users as CSV
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /admin/users/{userId}/ban:
+    post:
+      operationId: adminBanUser
+      tags: [admin]
+      summary: Ban a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BanRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{userId}/unban:
+    post:
+      operationId: adminUnbanUser
+      tags: [admin]
+      summary: Unban a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{userId}/activity:
+    get:
+      operationId: adminGetUserActivity
+      tags: [admin]
+      summary: Get a user's full activity history
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserActivity"
+
   # ── Admin: Stripe Settings ────────────────────────────────────────────────────
   /admin/stripe-settings:
     get:
@@ -1579,7 +1655,7 @@ components:
     # ── Admin ─────────────────────────────────────────────────────────────────────
     AdminUser:
       type: object
-      required: [id, email, displayName, isPro, createdAt]
+      required: [id, email, displayName, isPro, isBanned, createdAt]
       properties:
         id:
           type: string
@@ -1589,10 +1665,18 @@ components:
           type: string
         isPro:
           type: boolean
+        isBanned:
+          type: boolean
+        bannedAt:
+          type: ["string", "null"]
+        banReason:
+          type: ["string", "null"]
         membershipPlan:
           type: string
         membershipStatus:
           type: string
+        stripeCustomerId:
+          type: ["string", "null"]
         createdAt:
           type: string
 
@@ -1606,6 +1690,61 @@ components:
             $ref: "#/components/schemas/AdminUser"
         total:
           type: integer
+
+    BanRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+
+    UserActivity:
+      type: object
+      required: [posts, tickets, subscription]
+      properties:
+        posts:
+          type: array
+          items:
+            type: object
+            required: [id, title, upvotes, commentCount, createdAt]
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+              upvotes:
+                type: integer
+              commentCount:
+                type: integer
+              createdAt:
+                type: string
+        tickets:
+          type: array
+          items:
+            type: object
+            required: [id, type, subject, status, createdAt]
+            properties:
+              id:
+                type: integer
+              type:
+                type: string
+              subject:
+                type: string
+              status:
+                type: string
+              createdAt:
+                type: string
+        subscription:
+          type: object
+          properties:
+            plan:
+              type: string
+            status:
+              type: string
+            currentPeriodEnd:
+              type: ["string", "null"]
+            stripeCustomerId:
+              type: ["string", "null"]
 
     AdminStats:
       type: object

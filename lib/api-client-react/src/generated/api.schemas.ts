@@ -383,14 +383,56 @@ export interface AdminUser {
   email: string;
   displayName: string;
   isPro: boolean;
+  isBanned: boolean;
+  /** @nullable */
+  bannedAt?: string | null;
+  /** @nullable */
+  banReason?: string | null;
   membershipPlan?: string;
   membershipStatus?: string;
+  /** @nullable */
+  stripeCustomerId?: string | null;
   createdAt: string;
 }
 
 export interface AdminUserList {
   users: AdminUser[];
   total: number;
+}
+
+export interface BanRequest {
+  reason: string;
+}
+
+export type UserActivityPostsItem = {
+  id: number;
+  title: string;
+  upvotes: number;
+  commentCount: number;
+  createdAt: string;
+};
+
+export type UserActivityTicketsItem = {
+  id: number;
+  type: string;
+  subject: string;
+  status: string;
+  createdAt: string;
+};
+
+export type UserActivitySubscription = {
+  plan?: string;
+  status?: string;
+  /** @nullable */
+  currentPeriodEnd?: string | null;
+  /** @nullable */
+  stripeCustomerId?: string | null;
+};
+
+export interface UserActivity {
+  posts: UserActivityPostsItem[];
+  tickets: UserActivityTicketsItem[];
+  subscription: UserActivitySubscription;
 }
 
 export interface AdminStats {

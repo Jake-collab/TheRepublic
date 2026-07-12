@@ -30,8 +30,10 @@ import type {
   AdminTalkCategoryInput,
   AdminTalkCategoryUpdate,
   AdminTalkPostsPage,
+  AdminUser,
   AdminUserList,
   AuditLogList,
+  BanRequest,
   Category,
   CategoryInput,
   CategoryReorderInput,
@@ -65,6 +67,7 @@ import type {
   TalkPostsPage,
   TalkVoteResult,
   UpvoteResult,
+  UserActivity,
   UserProfile,
   UserProfileUpdate,
   VoteMetadata,
@@ -2476,6 +2479,302 @@ export const useAdminUpdateUserMembership = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getAdminUpdateUserMembershipMutationOptions(options));
     }
+
+export const getAdminExportUsersUrl = () => {
+
+
+
+
+  return `/api/admin/users/export`
+}
+
+/**
+ * @summary Export all users as CSV
+ */
+export const adminExportUsers = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getAdminExportUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminExportUsersQueryKey = () => {
+    return [
+    `/api/admin/users/export`
+    ] as const;
+    }
+
+
+export const getAdminExportUsersQueryOptions = <TData = Awaited<ReturnType<typeof adminExportUsers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminExportUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminExportUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminExportUsers>>> = ({ signal }) => adminExportUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminExportUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminExportUsersQueryResult = NonNullable<Awaited<ReturnType<typeof adminExportUsers>>>
+export type AdminExportUsersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Export all users as CSV
+ */
+
+export function useAdminExportUsers<TData = Awaited<ReturnType<typeof adminExportUsers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminExportUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminExportUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminBanUserUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/ban`
+}
+
+/**
+ * @summary Ban a user
+ */
+export const adminBanUser = async (userId: string,
+    banRequest: BanRequest, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getAdminBanUserUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      banRequest,)
+  }
+);}
+
+
+
+
+export const getAdminBanUserMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBanUser>>, TError,{userId: string;data: BodyType<BanRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminBanUser>>, TError,{userId: string;data: BodyType<BanRequest>}, TContext> => {
+
+const mutationKey = ['adminBanUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminBanUser>>, {userId: string;data: BodyType<BanRequest>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  adminBanUser(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminBanUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminBanUser>>>
+    export type AdminBanUserMutationBody = BodyType<BanRequest>
+    export type AdminBanUserMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Ban a user
+ */
+export const useAdminBanUser = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBanUser>>, TError,{userId: string;data: BodyType<BanRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminBanUser>>,
+        TError,
+        {userId: string;data: BodyType<BanRequest>},
+        TContext
+      > => {
+      return useMutation(getAdminBanUserMutationOptions(options));
+    }
+
+export const getAdminUnbanUserUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/unban`
+}
+
+/**
+ * @summary Unban a user
+ */
+export const adminUnbanUser = async (userId: string, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getAdminUnbanUserUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminUnbanUserMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUnbanUser>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUnbanUser>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['adminUnbanUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUnbanUser>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminUnbanUser(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUnbanUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminUnbanUser>>>
+
+    export type AdminUnbanUserMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Unban a user
+ */
+export const useAdminUnbanUser = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUnbanUser>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUnbanUser>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAdminUnbanUserMutationOptions(options));
+    }
+
+export const getAdminGetUserActivityUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/activity`
+}
+
+/**
+ * @summary Get a user's full activity history
+ */
+export const adminGetUserActivity = async (userId: string, options?: RequestInit): Promise<UserActivity> => {
+
+  return customFetch<UserActivity>(getAdminGetUserActivityUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetUserActivityQueryKey = (userId: string,) => {
+    return [
+    `/api/admin/users/${userId}/activity`
+    ] as const;
+    }
+
+
+export const getAdminGetUserActivityQueryOptions = <TData = Awaited<ReturnType<typeof adminGetUserActivity>>, TError = ErrorType<unknown>>(userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUserActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetUserActivityQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetUserActivity>>> = ({ signal }) => adminGetUserActivity(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetUserActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetUserActivityQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetUserActivity>>>
+export type AdminGetUserActivityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a user's full activity history
+ */
+
+export function useAdminGetUserActivity<TData = Awaited<ReturnType<typeof adminGetUserActivity>>, TError = ErrorType<unknown>>(
+ userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUserActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetUserActivityQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getAdminGetStripeSettingsUrl = () => {
 
