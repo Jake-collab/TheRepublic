@@ -17,8 +17,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import * as WebBrowser from "expo-web-browser";
 import { useColors } from "@/hooks/useColors";
-import { useGetUserMembership, useListNotifications, useUpdateUserProfile } from "@workspace/api-client-react";
+import { useCreatePortalSession, useGetMembershipPricing, useGetUserMembership, useListNotifications, useUpdateUserProfile } from "@workspace/api-client-react";
 
 function SettingRow({
   icon,
@@ -75,13 +76,29 @@ export default function ProfileScreen() {
   const { user } = useUser();
   const { data: membership, isLoading: membershipLoading } = useGetUserMembership();
   const { data: notifications } = useListNotifications();
+  const { data: pricing } = useGetMembershipPricing();
   const updateProfile = useUpdateUserProfile();
+  const { mutateAsync: createPortal } = useCreatePortalSession();
 
-  const tier = (membership as any)?.tier ?? "free";
-  const isPro = tier === "pro";
+  const membershipPlan = membership?.plan ?? "free";
+  const isPro = membershipPlan !== "free" && membership?.status === "active";
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const storedDisplayName = (membership as any)?.displayName ?? "";
   const storedAvatarUrl = (membership as any)?.avatarUrl ?? "";
+
+  const handleManageSubscription = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setPortalLoading(true);
+    try {
+      const result = await createPortal();
+      if (result.url) await WebBrowser.openBrowserAsync(result.url);
+    } catch {
+      Alert.alert("Error", "Could not open subscription portal. Please try again.");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   const [editDisplayName, setEditDisplayName] = useState(
     storedDisplayName || user?.firstName || "",
@@ -271,13 +288,17 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Membership</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
           {isPro ? (
-            <SettingRow icon="credit-card" label="Manage Subscription" onPress={() => {}} />
+            <SettingRow
+              icon="credit-card"
+              label={portalLoading ? "Opening portal…" : "Manage Subscription"}
+              onPress={handleManageSubscription}
+            />
           ) : (
             <SettingRow
               icon="star"
               label="Republic Pro"
-              value="$9.99/mo"
-              onPress={() => {}}
+              value={pricing ? `$${(pricing.monthlyPriceCents / 100).toFixed(2)}/mo` : "$2.99/mo"}
+              onPress={() => router.back()}
             />
           )}
         </View>
