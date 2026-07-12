@@ -8,9 +8,15 @@
 
 export * from './adminListAuditLogsParams';
 export * from './adminListSupportTicketsParams';
+export * from './adminListTalkPostsParams';
 export * from './adminListUsersParams';
 export * from './adminListWebsitesParams';
 export * from './adminStats';
+export * from './adminTalkCategory';
+export * from './adminTalkCategoryInput';
+export * from './adminTalkCategoryUpdate';
+export * from './adminTalkPost';
+export * from './adminTalkPostsPage';
 export * from './adminUser';
 export * from './adminUserList';
 export * from './auditLog';

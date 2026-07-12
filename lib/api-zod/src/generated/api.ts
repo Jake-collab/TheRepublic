@@ -764,6 +764,127 @@ export const AdminSendNotificationBody = zod.object({
 
 
 /**
+ * @summary Admin list all talk categories
+ */
+export const AdminListTalkCategoriesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "emoji": zod.string(),
+  "sortOrder": zod.number(),
+  "isActive": zod.boolean(),
+  "postCount": zod.number()
+})
+export const AdminListTalkCategoriesResponse = zod.array(AdminListTalkCategoriesResponseItem)
+
+
+/**
+ * @summary Create a talk category
+ */
+export const AdminCreateTalkCategoryBody = zod.object({
+  "name": zod.string(),
+  "emoji": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a talk category
+ */
+export const AdminUpdateTalkCategoryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminUpdateTalkCategoryBody = zod.object({
+  "name": zod.string().optional(),
+  "emoji": zod.string().optional(),
+  "sortOrder": zod.number().optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const AdminUpdateTalkCategoryResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "emoji": zod.string(),
+  "sortOrder": zod.number(),
+  "isActive": zod.boolean(),
+  "postCount": zod.number()
+})
+
+
+/**
+ * @summary Delete a talk category
+ */
+export const AdminDeleteTalkCategoryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Admin list all talk posts
+ */
+export const adminListTalkPostsQueryLimitDefault = 50;
+
+export const AdminListTalkPostsQueryParams = zod.object({
+  "categoryId": zod.coerce.number().nullish(),
+  "search": zod.coerce.string().nullish(),
+  "cursor": zod.coerce.number().nullish(),
+  "limit": zod.coerce.number().default(adminListTalkPostsQueryLimitDefault)
+})
+
+export const AdminListTalkPostsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "userId": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "upvotes": zod.number(),
+  "commentCount": zod.number(),
+  "createdAt": zod.string()
+})),
+  "total": zod.number(),
+  "nextCursor": zod.number().nullish()
+})
+
+
+/**
+ * @summary Delete a talk post (and its comments)
+ */
+export const AdminDeleteTalkPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List comments for a talk post
+ */
+export const AdminListTalkPostCommentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminListTalkPostCommentsResponseItem = zod.object({
+  "id": zod.number(),
+  "postId": zod.number(),
+  "userId": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+export const AdminListTalkPostCommentsResponse = zod.array(AdminListTalkPostCommentsResponseItem)
+
+
+/**
+ * @summary Delete a talk comment
+ */
+export const AdminDeleteTalkCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List talk discussion categories
  */
 export const ListTalkCategoriesResponseItem = zod.object({

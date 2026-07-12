@@ -4,6 +4,7 @@ import {
   categoriesTable, websitesTable, usersTable, membershipsTable,
   supportTicketsTable, notificationsTable, webviewSettingsTable, auditLogsTable,
   citizenVotePostsTable, stripeSettingsTable,
+  talkCategoriesTable, talkPostsTable, talkCommentsTable, talkVotesTable,
 } from "@workspace/db";
 import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
 import { eq, desc, asc, and, sql, ilike } from "drizzle-orm";
@@ -273,6 +274,130 @@ router.put("/stripe-settings", async (req, res) => {
     annualPriceCents: cfg.annualPriceCents,
     updatedAt: new Date().toISOString(),
   });
+});
+
+// ── Talks: Categories ─────────────────────────────────────────────────────────
+router.get("/talks/categories", async (req, res) => {
+  const rows = await db
+    .select({
+      id: talkCategoriesTable.id,
+      name: talkCategoriesTable.name,
+      emoji: talkCategoriesTable.emoji,
+      sortOrder: talkCategoriesTable.sortOrder,
+      isActive: talkCategoriesTable.isActive,
+      postCount: sql<number>`count(${talkPostsTable.id})`,
+    })
+    .from(talkCategoriesTable)
+    .leftJoin(talkPostsTable, eq(talkPostsTable.categoryId, talkCategoriesTable.id))
+    .groupBy(talkCategoriesTable.id)
+    .orderBy(asc(talkCategoriesTable.sortOrder));
+  res.json(rows.map(r => ({ ...r, postCount: Number(r.postCount) })));
+});
+
+router.post("/talks/categories", async (req, res) => {
+  const { name, emoji } = req.body;
+  const row = await db.insert(talkCategoriesTable).values({ name, emoji: emoji ?? "💬" }).returning();
+  const r = row[0];
+  await logAction((req as any).userId, "create_talk_category", `name=${name}`);
+  res.status(201).json({ id: r.id, name: r.name, emoji: r.emoji, sortOrder: r.sortOrder, isActive: r.isActive, postCount: 0 });
+});
+
+router.patch("/talks/categories/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { name, emoji, sortOrder, isActive } = req.body;
+  const updates: any = {};
+  if (name !== undefined) updates.name = name;
+  if (emoji !== undefined) updates.emoji = emoji;
+  if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+  if (isActive !== undefined) updates.isActive = isActive;
+  const row = await db.update(talkCategoriesTable).set(updates).where(eq(talkCategoriesTable.id, id)).returning();
+  const [postCountRow] = await db.select({ count: sql<number>`count(*)` }).from(talkPostsTable).where(eq(talkPostsTable.categoryId, id));
+  await logAction((req as any).userId, "update_talk_category", `id=${id}`);
+  const r = row[0];
+  res.json({ id: r.id, name: r.name, emoji: r.emoji, sortOrder: r.sortOrder, isActive: r.isActive, postCount: Number(postCountRow.count) });
+});
+
+router.delete("/talks/categories/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.delete(talkVotesTable).where(
+    sql`${talkVotesTable.postId} IN (SELECT id FROM ${talkPostsTable} WHERE category_id = ${id})`
+  );
+  await db.delete(talkCommentsTable).where(
+    sql`${talkCommentsTable.postId} IN (SELECT id FROM ${talkPostsTable} WHERE category_id = ${id})`
+  );
+  await db.delete(talkPostsTable).where(eq(talkPostsTable.categoryId, id));
+  await db.delete(talkCategoriesTable).where(eq(talkCategoriesTable.id, id));
+  await logAction((req as any).userId, "delete_talk_category", `id=${id}`);
+  res.status(204).send();
+});
+
+// ── Talks: Posts ──────────────────────────────────────────────────────────────
+router.get("/talks/posts", async (req, res) => {
+  const { categoryId, search, cursor, limit: limitParam } = req.query;
+  const limit = Math.min(Number(limitParam ?? 50), 100);
+  const conditions: any[] = [];
+  if (categoryId) conditions.push(eq(talkPostsTable.categoryId, Number(categoryId)));
+  if (search) conditions.push(ilike(talkPostsTable.title, `%${search}%`));
+  if (cursor) conditions.push(sql`${talkPostsTable.id} < ${Number(cursor)}`);
+
+  const [rows, [{ count }]] = await Promise.all([
+    db.select({ post: talkPostsTable, categoryName: talkCategoriesTable.name })
+      .from(talkPostsTable)
+      .leftJoin(talkCategoriesTable, eq(talkPostsTable.categoryId, talkCategoriesTable.id))
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(talkPostsTable.createdAt))
+      .limit(limit + 1),
+    db.select({ count: sql<number>`count(*)` }).from(talkPostsTable)
+      .where(conditions.length > 0 && !cursor ? and(...conditions.filter((_, i) => i < conditions.length - (cursor ? 1 : 0))) : undefined),
+  ]);
+
+  const items = rows.slice(0, limit).map(r => ({
+    id: r.post.id,
+    categoryId: r.post.categoryId,
+    categoryName: r.post.categoryId ? (r.categoryName ?? "Unknown") : "Unknown",
+    userId: r.post.userId,
+    displayName: r.post.displayName,
+    avatarUrl: r.post.avatarUrl,
+    title: r.post.title,
+    body: r.post.body,
+    upvotes: r.post.upvotes,
+    commentCount: r.post.commentCount,
+    createdAt: r.post.createdAt.toISOString(),
+  }));
+
+  res.json({ items, total: Number(count), nextCursor: rows.length > limit ? items[items.length - 1]?.id : null });
+});
+
+router.delete("/talks/posts/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.delete(talkVotesTable).where(eq(talkVotesTable.postId, id));
+  await db.delete(talkCommentsTable).where(eq(talkCommentsTable.postId, id));
+  await db.delete(talkPostsTable).where(eq(talkPostsTable.id, id));
+  await logAction((req as any).userId, "delete_talk_post", `id=${id}`);
+  res.status(204).send();
+});
+
+router.get("/talks/posts/:id/comments", async (req, res) => {
+  const id = Number(req.params.id);
+  const rows = await db.select().from(talkCommentsTable)
+    .where(eq(talkCommentsTable.postId, id))
+    .orderBy(asc(talkCommentsTable.createdAt));
+  res.json(rows.map(r => ({
+    id: r.id,
+    postId: r.postId,
+    userId: r.userId,
+    displayName: r.displayName,
+    avatarUrl: r.avatarUrl,
+    body: r.body,
+    createdAt: r.createdAt.toISOString(),
+  })));
+});
+
+router.delete("/talks/comments/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.delete(talkCommentsTable).where(eq(talkCommentsTable.id, id));
+  await logAction((req as any).userId, "delete_talk_comment", `id=${id}`);
+  res.status(204).send();
 });
 
 // ── Notifications ─────────────────────────────────────────────────────────────

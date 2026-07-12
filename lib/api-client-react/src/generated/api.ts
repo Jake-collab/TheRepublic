@@ -22,9 +22,14 @@ import type {
 import type {
   AdminListAuditLogsParams,
   AdminListSupportTicketsParams,
+  AdminListTalkPostsParams,
   AdminListUsersParams,
   AdminListWebsitesParams,
   AdminStats,
+  AdminTalkCategory,
+  AdminTalkCategoryInput,
+  AdminTalkCategoryUpdate,
+  AdminTalkPostsPage,
   AdminUserList,
   AuditLogList,
   Category,
@@ -3154,6 +3159,597 @@ export const useAdminSendNotification = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminSendNotificationMutationOptions(options));
+    }
+
+export const getAdminListTalkCategoriesUrl = () => {
+
+
+
+
+  return `/api/admin/talks/categories`
+}
+
+/**
+ * @summary Admin list all talk categories
+ */
+export const adminListTalkCategories = async ( options?: RequestInit): Promise<AdminTalkCategory[]> => {
+
+  return customFetch<AdminTalkCategory[]>(getAdminListTalkCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListTalkCategoriesQueryKey = () => {
+    return [
+    `/api/admin/talks/categories`
+    ] as const;
+    }
+
+
+export const getAdminListTalkCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof adminListTalkCategories>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTalkCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListTalkCategoriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListTalkCategories>>> = ({ signal }) => adminListTalkCategories({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListTalkCategories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListTalkCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof adminListTalkCategories>>>
+export type AdminListTalkCategoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Admin list all talk categories
+ */
+
+export function useAdminListTalkCategories<TData = Awaited<ReturnType<typeof adminListTalkCategories>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTalkCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListTalkCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminCreateTalkCategoryUrl = () => {
+
+
+
+
+  return `/api/admin/talks/categories`
+}
+
+/**
+ * @summary Create a talk category
+ */
+export const adminCreateTalkCategory = async (adminTalkCategoryInput: AdminTalkCategoryInput, options?: RequestInit): Promise<AdminTalkCategory> => {
+
+  return customFetch<AdminTalkCategory>(getAdminCreateTalkCategoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminTalkCategoryInput,)
+  }
+);}
+
+
+
+
+export const getAdminCreateTalkCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateTalkCategory>>, TError,{data: BodyType<AdminTalkCategoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateTalkCategory>>, TError,{data: BodyType<AdminTalkCategoryInput>}, TContext> => {
+
+const mutationKey = ['adminCreateTalkCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateTalkCategory>>, {data: BodyType<AdminTalkCategoryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateTalkCategory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateTalkCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateTalkCategory>>>
+    export type AdminCreateTalkCategoryMutationBody = BodyType<AdminTalkCategoryInput>
+    export type AdminCreateTalkCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a talk category
+ */
+export const useAdminCreateTalkCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateTalkCategory>>, TError,{data: BodyType<AdminTalkCategoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateTalkCategory>>,
+        TError,
+        {data: BodyType<AdminTalkCategoryInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateTalkCategoryMutationOptions(options));
+    }
+
+export const getAdminUpdateTalkCategoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/talks/categories/${id}`
+}
+
+/**
+ * @summary Update a talk category
+ */
+export const adminUpdateTalkCategory = async (id: number,
+    adminTalkCategoryUpdate: AdminTalkCategoryUpdate, options?: RequestInit): Promise<AdminTalkCategory> => {
+
+  return customFetch<AdminTalkCategory>(getAdminUpdateTalkCategoryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminTalkCategoryUpdate,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateTalkCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTalkCategory>>, TError,{id: number;data: BodyType<AdminTalkCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTalkCategory>>, TError,{id: number;data: BodyType<AdminTalkCategoryUpdate>}, TContext> => {
+
+const mutationKey = ['adminUpdateTalkCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateTalkCategory>>, {id: number;data: BodyType<AdminTalkCategoryUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminUpdateTalkCategory(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateTalkCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateTalkCategory>>>
+    export type AdminUpdateTalkCategoryMutationBody = BodyType<AdminTalkCategoryUpdate>
+    export type AdminUpdateTalkCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a talk category
+ */
+export const useAdminUpdateTalkCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateTalkCategory>>, TError,{id: number;data: BodyType<AdminTalkCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateTalkCategory>>,
+        TError,
+        {id: number;data: BodyType<AdminTalkCategoryUpdate>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateTalkCategoryMutationOptions(options));
+    }
+
+export const getAdminDeleteTalkCategoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/talks/categories/${id}`
+}
+
+/**
+ * @summary Delete a talk category
+ */
+export const adminDeleteTalkCategory = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteTalkCategoryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteTalkCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkCategory>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteTalkCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteTalkCategory>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteTalkCategory(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteTalkCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteTalkCategory>>>
+
+    export type AdminDeleteTalkCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a talk category
+ */
+export const useAdminDeleteTalkCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteTalkCategory>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteTalkCategoryMutationOptions(options));
+    }
+
+export const getAdminListTalkPostsUrl = (params?: AdminListTalkPostsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/talks/posts?${stringifiedParams}` : `/api/admin/talks/posts`
+}
+
+/**
+ * @summary Admin list all talk posts
+ */
+export const adminListTalkPosts = async (params?: AdminListTalkPostsParams, options?: RequestInit): Promise<AdminTalkPostsPage> => {
+
+  return customFetch<AdminTalkPostsPage>(getAdminListTalkPostsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListTalkPostsQueryKey = (params?: AdminListTalkPostsParams,) => {
+    return [
+    `/api/admin/talks/posts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListTalkPostsQueryOptions = <TData = Awaited<ReturnType<typeof adminListTalkPosts>>, TError = ErrorType<unknown>>(params?: AdminListTalkPostsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTalkPosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListTalkPostsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListTalkPosts>>> = ({ signal }) => adminListTalkPosts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListTalkPosts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListTalkPostsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListTalkPosts>>>
+export type AdminListTalkPostsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Admin list all talk posts
+ */
+
+export function useAdminListTalkPosts<TData = Awaited<ReturnType<typeof adminListTalkPosts>>, TError = ErrorType<unknown>>(
+ params?: AdminListTalkPostsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTalkPosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListTalkPostsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminDeleteTalkPostUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/talks/posts/${id}`
+}
+
+/**
+ * @summary Delete a talk post (and its comments)
+ */
+export const adminDeleteTalkPost = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteTalkPostUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteTalkPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkPost>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteTalkPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteTalkPost>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteTalkPost(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteTalkPostMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteTalkPost>>>
+
+    export type AdminDeleteTalkPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a talk post (and its comments)
+ */
+export const useAdminDeleteTalkPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteTalkPost>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteTalkPostMutationOptions(options));
+    }
+
+export const getAdminListTalkPostCommentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/talks/posts/${id}/comments`
+}
+
+/**
+ * @summary List comments for a talk post
+ */
+export const adminListTalkPostComments = async (id: number, options?: RequestInit): Promise<TalkComment[]> => {
+
+  return customFetch<TalkComment[]>(getAdminListTalkPostCommentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListTalkPostCommentsQueryKey = (id: number,) => {
+    return [
+    `/api/admin/talks/posts/${id}/comments`
+    ] as const;
+    }
+
+
+export const getAdminListTalkPostCommentsQueryOptions = <TData = Awaited<ReturnType<typeof adminListTalkPostComments>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTalkPostComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListTalkPostCommentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListTalkPostComments>>> = ({ signal }) => adminListTalkPostComments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListTalkPostComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListTalkPostCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListTalkPostComments>>>
+export type AdminListTalkPostCommentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List comments for a talk post
+ */
+
+export function useAdminListTalkPostComments<TData = Awaited<ReturnType<typeof adminListTalkPostComments>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListTalkPostComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListTalkPostCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminDeleteTalkCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/talks/comments/${id}`
+}
+
+/**
+ * @summary Delete a talk comment
+ */
+export const adminDeleteTalkComment = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteTalkCommentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteTalkCommentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkComment>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteTalkComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteTalkComment>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteTalkComment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteTalkCommentMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteTalkComment>>>
+
+    export type AdminDeleteTalkCommentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a talk comment
+ */
+export const useAdminDeleteTalkComment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteTalkComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteTalkComment>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteTalkCommentMutationOptions(options));
     }
 
 export const getListTalkCategoriesUrl = () => {

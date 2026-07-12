@@ -494,6 +494,50 @@ export interface TalkCommentInput {
   body: string;
 }
 
+export interface AdminTalkCategory {
+  id: number;
+  name: string;
+  emoji: string;
+  sortOrder: number;
+  isActive: boolean;
+  postCount: number;
+}
+
+export interface AdminTalkCategoryInput {
+  name: string;
+  emoji?: string;
+}
+
+export interface AdminTalkCategoryUpdate {
+  name?: string;
+  emoji?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface AdminTalkPost {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  /** @nullable */
+  userId?: string | null;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  title: string;
+  body: string;
+  upvotes: number;
+  commentCount: number;
+  createdAt: string;
+}
+
+export interface AdminTalkPostsPage {
+  items: AdminTalkPost[];
+  total: number;
+  /** @nullable */
+  nextCursor?: number | null;
+}
+
 export type ListWebsitesParams = {
 /**
  * @nullable
@@ -552,6 +596,22 @@ type?: string | null;
 
 export type AdminListAuditLogsParams = {
 page?: number;
+limit?: number;
+};
+
+export type AdminListTalkPostsParams = {
+/**
+ * @nullable
+ */
+categoryId?: number | null;
+/**
+ * @nullable
+ */
+search?: string | null;
+/**
+ * @nullable
+ */
+cursor?: number | null;
 limit?: number;
 };
 

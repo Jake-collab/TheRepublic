@@ -775,6 +775,159 @@ paths:
         "201":
           description: Created
 
+  # ── Admin: Talks/Discussions ─────────────────────────────────────────────────
+  /admin/talks/categories:
+    get:
+      operationId: adminListTalkCategories
+      tags: [admin]
+      summary: Admin list all talk categories
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTalkCategory"
+    post:
+      operationId: adminCreateTalkCategory
+      tags: [admin]
+      summary: Create a talk category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminTalkCategoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTalkCategory"
+
+  /admin/talks/categories/{id}:
+    patch:
+      operationId: adminUpdateTalkCategory
+      tags: [admin]
+      summary: Update a talk category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminTalkCategoryUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTalkCategory"
+    delete:
+      operationId: adminDeleteTalkCategory
+      tags: [admin]
+      summary: Delete a talk category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/talks/posts:
+    get:
+      operationId: adminListTalkPosts
+      tags: [admin]
+      summary: Admin list all talk posts
+      parameters:
+        - name: categoryId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: cursor
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTalkPostsPage"
+
+  /admin/talks/posts/{id}:
+    delete:
+      operationId: adminDeleteTalkPost
+      tags: [admin]
+      summary: Delete a talk post (and its comments)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/talks/posts/{id}/comments:
+    get:
+      operationId: adminListTalkPostComments
+      tags: [admin]
+      summary: List comments for a talk post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TalkComment"
+
+  /admin/talks/comments/{id}:
+    delete:
+      operationId: adminDeleteTalkComment
+      tags: [admin]
+      summary: Delete a talk comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ── Talks ─────────────────────────────────────────────────────────────────────
   /talks/categories:
     get:
@@ -1635,3 +1788,81 @@ components:
       properties:
         body:
           type: string
+
+    AdminTalkCategory:
+      type: object
+      required: [id, name, emoji, sortOrder, isActive, postCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        emoji:
+          type: string
+        sortOrder:
+          type: integer
+        isActive:
+          type: boolean
+        postCount:
+          type: integer
+
+    AdminTalkCategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        emoji:
+          type: string
+
+    AdminTalkCategoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        emoji:
+          type: string
+        sortOrder:
+          type: integer
+        isActive:
+          type: boolean
+
+    AdminTalkPost:
+      type: object
+      required: [id, categoryId, categoryName, displayName, title, body, upvotes, commentCount, createdAt]
+      properties:
+        id:
+          type: integer
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        userId:
+          type: ["string", "null"]
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        title:
+          type: string
+        body:
+          type: string
+        upvotes:
+          type: integer
+        commentCount:
+          type: integer
+        createdAt:
+          type: string
+
+    AdminTalkPostsPage:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTalkPost"
+        total:
+          type: integer
+        nextCursor:
+          type: ["integer", "null"]

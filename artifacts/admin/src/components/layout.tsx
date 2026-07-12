@@ -12,6 +12,7 @@ import {
   Bell,
   LogOut,
   CreditCard,
+  MessageSquare,
   Menu,
   X
 } from "lucide-react";
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/webview-settings", label: "WebView Settings", icon: Settings },
   { href: "/audit-logs", label: "Audit Logs", icon: FileText },
   { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/discussions", label: "Discussions", icon: MessageSquare },
   { href: "/stripe-settings", label: "Stripe & Billing", icon: CreditCard },
 ];
 
