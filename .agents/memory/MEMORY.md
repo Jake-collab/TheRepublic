@@ -8,3 +8,4 @@
 - [Pending username pattern](pending-username.md) — Sign-up stores username in AsyncStorage("pending_username"); main screen applies it on first mount via updateProfile mutation.
 - [Working-tree restore after bad checkpoint](working-tree-restore.md) — if a Replit checkpoint commits a broken working tree, restore blobs from an earlier good commit via JS code_execution using git cat-file; JS sandbox writes ARE visible to bash.
 - [React Compiler breaks useFonts in Expo SDK 54](expo-react-compiler.md) — set reactCompiler:false in app.json experiments; React Compiler mis-transforms @expo-google-fonts useFonts causing null useState crash.
+- [Stripe DB-backed config pattern](stripe-db-config.md) — Stripe keys+prices in `stripe_settings` DB table (single row); seeded from env vars on first access via getStripeConfig(); invalidateStripeCache() on admin update; admin panel is the primary management UI.

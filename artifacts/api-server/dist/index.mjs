@@ -21204,7 +21204,7 @@ var require_application = __commonJS({
       return this;
     };
     app2.render = function render(name, options, callback) {
-      var cache2 = this.cache;
+      var cache3 = this.cache;
       var done = callback;
       var engines = this.engines;
       var opts = options;
@@ -21218,7 +21218,7 @@ var require_application = __commonJS({
         renderOptions.cache = this.enabled("view cache");
       }
       if (renderOptions.cache) {
-        view = cache2[name];
+        view = cache3[name];
       }
       if (!view) {
         var View3 = this.get("view");
@@ -21234,7 +21234,7 @@ var require_application = __commonJS({
           return done(err);
         }
         if (renderOptions.cache) {
-          cache2[name] = view;
+          cache3[name] = view;
         }
       }
       tryRender(view, renderOptions, done);
@@ -27063,12 +27063,12 @@ var require_levels = __commonJS({
     function genLsCache(instance) {
       const formatter = instance[formattersSym].level;
       const { labels } = instance.levels;
-      const cache2 = {};
+      const cache3 = {};
       for (const label in labels) {
         const level = formatter(labels[label], Number(label));
-        cache2[label] = JSON.stringify(level).slice(0, -1);
+        cache3[label] = JSON.stringify(level).slice(0, -1);
       }
-      instance[lsCacheSym] = cache2;
+      instance[lsCacheSym] = cache3;
       return instance;
     }
     function isStandardLevel(level, useOnlyCustomLevels) {
@@ -63079,8 +63079,8 @@ var DEFAULT_CACHE_TTL_MS = 864e5;
 var TelemetryEventThrottler = class {
   #cache;
   #cacheTtl = DEFAULT_CACHE_TTL_MS;
-  constructor(cache2) {
-    this.#cache = cache2;
+  constructor(cache3) {
+    this.#cache = cache3;
   }
   isEventThrottled(payload) {
     const now = Date.now();
@@ -63119,18 +63119,18 @@ var LocalStorageThrottlerCache = class {
   }
   setItem(key, value) {
     try {
-      const cache2 = this.#getCache();
-      cache2[key] = value;
-      localStorage.setItem(this.#storageKey, JSON.stringify(cache2));
+      const cache3 = this.#getCache();
+      cache3[key] = value;
+      localStorage.setItem(this.#storageKey, JSON.stringify(cache3));
     } catch (err) {
       if (err instanceof DOMException && (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED") && localStorage.length > 0) localStorage.removeItem(this.#storageKey);
     }
   }
   removeItem(key) {
     try {
-      const cache2 = this.#getCache();
-      delete cache2[key];
-      localStorage.setItem(this.#storageKey, JSON.stringify(cache2));
+      const cache3 = this.#getCache();
+      delete cache3[key];
+      localStorage.setItem(this.#storageKey, JSON.stringify(cache3));
     } catch {
     }
   }
@@ -69161,6 +69161,10 @@ var ListNotificationsResponse = arrayType(ListNotificationsResponseItem);
 var MarkNotificationReadParams = objectType({
   "id": coerce.number()
 });
+var GetMembershipPricingResponse = objectType({
+  "monthlyPriceCents": numberType(),
+  "annualPriceCents": numberType()
+});
 var AdminListCategoriesResponseItem = objectType({
   "id": numberType(),
   "name": stringType(),
@@ -69312,6 +69316,32 @@ var AdminUpdateUserMembershipResponse = objectType({
   "stripeCustomerId": stringType().nullish(),
   "stripeSubscriptionId": stringType().nullish(),
   "currentPeriodEnd": stringType().nullish()
+});
+var AdminGetStripeSettingsResponse = objectType({
+  "secretKeyConfigured": booleanType(),
+  "webhookSecretConfigured": booleanType(),
+  "monthlyPriceId": stringType().nullish(),
+  "annualPriceId": stringType().nullish(),
+  "monthlyPriceCents": numberType(),
+  "annualPriceCents": numberType(),
+  "updatedAt": stringType().optional()
+});
+var AdminUpdateStripeSettingsBody = objectType({
+  "secretKey": stringType().nullish(),
+  "webhookSecret": stringType().nullish(),
+  "monthlyPriceId": stringType().optional(),
+  "annualPriceId": stringType().optional(),
+  "monthlyPriceCents": numberType().optional(),
+  "annualPriceCents": numberType().optional()
+});
+var AdminUpdateStripeSettingsResponse = objectType({
+  "secretKeyConfigured": booleanType(),
+  "webhookSecretConfigured": booleanType(),
+  "monthlyPriceId": stringType().nullish(),
+  "annualPriceId": stringType().nullish(),
+  "monthlyPriceCents": numberType(),
+  "annualPriceCents": numberType(),
+  "updatedAt": stringType().optional()
 });
 var AdminListSupportTicketsQueryParams = objectType({
   "status": coerce.string().nullish(),
@@ -76006,12 +76036,12 @@ async function hashQuery(sql2, params) {
 
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.20.0_pg@8.20.0/node_modules/drizzle-orm/pg-core/session.js
 var PgPreparedQuery = class {
-  constructor(query, cache2, queryMetadata, cacheConfig) {
+  constructor(query, cache3, queryMetadata, cacheConfig) {
     this.query = query;
-    this.cache = cache2;
+    this.cache = cache3;
     this.queryMetadata = queryMetadata;
     this.cacheConfig = cacheConfig;
-    if (cache2 && cache2.strategy() === "all" && cacheConfig === void 0) {
+    if (cache3 && cache3.strategy() === "all" && cacheConfig === void 0) {
       this.cacheConfig = { enable: true, autoInvalidate: true };
     }
     if (!this.cacheConfig?.enable) {
@@ -76167,8 +76197,8 @@ var PgTransaction = class extends PgDatabase {
 // ../../node_modules/.pnpm/drizzle-orm@0.45.2_@types+pg@8.20.0_pg@8.20.0/node_modules/drizzle-orm/node-postgres/session.js
 var { Pool: Pool2, types: types2 } = esm_default;
 var NodePgPreparedQuery = class extends PgPreparedQuery {
-  constructor(client, queryString, params, logger2, cache2, queryMetadata, cacheConfig, fields, name, _isResponseInArrayMode, customResultMapper) {
-    super({ sql: queryString, params }, cache2, queryMetadata, cacheConfig);
+  constructor(client, queryString, params, logger2, cache3, queryMetadata, cacheConfig, fields, name, _isResponseInArrayMode, customResultMapper) {
+    super({ sql: queryString, params }, cache3, queryMetadata, cacheConfig);
     this.client = client;
     this.queryString = queryString;
     this.params = params;
@@ -76464,6 +76494,7 @@ __export(schema_exports, {
   insertCitizenVotePostSchema: () => insertCitizenVotePostSchema,
   insertMembershipSchema: () => insertMembershipSchema,
   insertNotificationSchema: () => insertNotificationSchema,
+  insertStripeSettingsSchema: () => insertStripeSettingsSchema,
   insertSupportTicketSchema: () => insertSupportTicketSchema,
   insertTalkCommentSchema: () => insertTalkCommentSchema,
   insertTalkPostSchema: () => insertTalkPostSchema,
@@ -76473,6 +76504,7 @@ __export(schema_exports, {
   insertWebviewSettingsSchema: () => insertWebviewSettingsSchema,
   membershipsTable: () => membershipsTable,
   notificationsTable: () => notificationsTable,
+  stripeSettingsTable: () => stripeSettingsTable,
   supportTicketsTable: () => supportTicketsTable,
   talkCategoriesTable: () => talkCategoriesTable,
   talkCommentsTable: () => talkCommentsTable,
@@ -88063,6 +88095,19 @@ var talkCommentsTable = pgTable("talk_comments", {
 var insertTalkPostSchema = createInsertSchema(talkPostsTable).omit({ id: true, upvotes: true, commentCount: true, createdAt: true });
 var insertTalkCommentSchema = createInsertSchema(talkCommentsTable).omit({ id: true, createdAt: true });
 
+// ../../lib/db/src/schema/stripeSettings.ts
+var stripeSettingsTable = pgTable("stripe_settings", {
+  id: serial("id").primaryKey(),
+  secretKey: text("secret_key"),
+  webhookSecret: text("webhook_secret"),
+  monthlyPriceId: text("monthly_price_id"),
+  annualPriceId: text("annual_price_id"),
+  monthlyPriceCents: integer("monthly_price_cents").notNull().default(299),
+  annualPriceCents: integer("annual_price_cents").notNull().default(2e3),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+var insertStripeSettingsSchema = createInsertSchema(stripeSettingsTable).omit({ id: true, updatedAt: true });
+
 // ../../lib/db/src/index.ts
 var { Pool: Pool3 } = esm_default;
 if (!process.env.DATABASE_URL) {
@@ -88167,6 +88212,47 @@ async function ensureUser(req, res, next) {
   next();
 }
 
+// src/utils/stripeHelpers.ts
+var cache2 = null;
+var CACHE_TTL_MS = 6e4;
+async function getStripeConfig() {
+  if (cache2 && cache2.expiresAt > Date.now()) return cache2.config;
+  let rows = await db.select().from(stripeSettingsTable).limit(1);
+  if (!rows[0]) {
+    const inserted = await db.insert(stripeSettingsTable).values({
+      secretKey: process.env.STRIPE_SECRET_KEY ?? null,
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? null,
+      monthlyPriceId: process.env.STRIPE_MONTHLY_PRICE_ID ?? null,
+      annualPriceId: process.env.STRIPE_ANNUAL_PRICE_ID ?? null,
+      monthlyPriceCents: 299,
+      annualPriceCents: 2e3
+    }).returning();
+    rows = inserted;
+  }
+  const row = rows[0];
+  const config2 = {
+    secretKey: row.secretKey ?? null,
+    webhookSecret: row.webhookSecret ?? null,
+    monthlyPriceId: row.monthlyPriceId ?? null,
+    annualPriceId: row.annualPriceId ?? null,
+    monthlyPriceCents: row.monthlyPriceCents,
+    annualPriceCents: row.annualPriceCents
+  };
+  cache2 = { config: config2, expiresAt: Date.now() + CACHE_TTL_MS };
+  return config2;
+}
+function invalidateStripeCache() {
+  cache2 = null;
+}
+function getAppBaseUrl() {
+  const domains = process.env.REPLIT_DOMAINS ?? process.env.REPLIT_DEV_DOMAIN;
+  if (domains) {
+    const first = domains.split(",")[0].trim();
+    return `https://${first}`;
+  }
+  return "https://example.com";
+}
+
 // src/routes/user.ts
 var router4 = (0, import_express5.Router)();
 router4.use(requireAuth, ensureUser);
@@ -88236,28 +88322,34 @@ router4.get("/membership", async (req, res) => {
 router4.post("/membership/checkout", async (req, res) => {
   const userId = req.userId;
   const { plan } = req.body;
-  if (!process.env.STRIPE_SECRET_KEY) {
-    res.json({ url: "https://stripe.com" });
+  const cfg = await getStripeConfig();
+  if (!cfg.secretKey) {
+    res.status(503).json({ error: "Stripe not configured" });
     return;
   }
   try {
     const Stripe2 = (await Promise.resolve().then(() => (init_stripe_esm_node(), stripe_esm_node_exports))).default;
-    const stripe = new Stripe2(process.env.STRIPE_SECRET_KEY);
-    const priceId = plan === "annual" ? process.env.STRIPE_ANNUAL_PRICE_ID : process.env.STRIPE_MONTHLY_PRICE_ID;
+    const stripe = new Stripe2(cfg.secretKey);
+    const priceId = plan === "annual" ? cfg.annualPriceId : cfg.monthlyPriceId;
+    if (!priceId) {
+      res.status(503).json({ error: "Price ID not configured for this plan" });
+      return;
+    }
     const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-    let membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
+    const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
     let customerId = membership[0]?.stripeCustomerId;
     if (!customerId) {
-      const customer = await stripe.customers.create({ email: user[0]?.email, metadata: { userId } });
+      const customer = await stripe.customers.create({ email: user[0]?.email ?? void 0, metadata: { userId } });
       customerId = customer.id;
     }
+    const baseUrl = getAppBaseUrl();
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.APP_URL ?? "https://example.com"}/checkout-success`,
-      cancel_url: `${process.env.APP_URL ?? "https://example.com"}/checkout-cancel`
+      success_url: `${baseUrl}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/checkout-cancel`
     });
     res.json({ url: session.url });
   } catch (err) {
@@ -88267,13 +88359,14 @@ router4.post("/membership/checkout", async (req, res) => {
 });
 router4.post("/membership/portal", async (req, res) => {
   const userId = req.userId;
-  if (!process.env.STRIPE_SECRET_KEY) {
-    res.json({ url: "https://billing.stripe.com" });
+  const cfg = await getStripeConfig();
+  if (!cfg.secretKey) {
+    res.status(503).json({ error: "Stripe not configured" });
     return;
   }
   try {
     const Stripe2 = (await Promise.resolve().then(() => (init_stripe_esm_node(), stripe_esm_node_exports))).default;
-    const stripe = new Stripe2(process.env.STRIPE_SECRET_KEY);
+    const stripe = new Stripe2(cfg.secretKey);
     const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
     if (!membership[0]?.stripeCustomerId) {
       res.status(400).json({ error: "No Stripe customer found" });
@@ -88281,7 +88374,7 @@ router4.post("/membership/portal", async (req, res) => {
     }
     const session = await stripe.billingPortal.sessions.create({
       customer: membership[0].stripeCustomerId,
-      return_url: process.env.APP_URL ?? "https://example.com"
+      return_url: getAppBaseUrl()
     });
     res.json({ url: session.url });
   } catch (err) {
@@ -88428,15 +88521,16 @@ var notifications_default = router8;
 var import_express10 = __toESM(require_express2(), 1);
 var router9 = (0, import_express10.Router)();
 router9.post("/webhook", async (req, res) => {
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+  const cfg = await getStripeConfig();
+  if (!cfg.secretKey || !cfg.webhookSecret) {
     res.json({ received: true });
     return;
   }
   try {
     const Stripe2 = (await Promise.resolve().then(() => (init_stripe_esm_node(), stripe_esm_node_exports))).default;
-    const stripe = new Stripe2(process.env.STRIPE_SECRET_KEY);
+    const stripe = new Stripe2(cfg.secretKey);
     const sig = req.headers["stripe-signature"];
-    const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    const event = stripe.webhooks.constructEvent(req.body, sig, cfg.webhookSecret);
     switch (event.type) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
@@ -88648,6 +88742,46 @@ router10.get("/audit-logs", async (req, res) => {
     total: Number(total[0].count)
   });
 });
+router10.get("/stripe-settings", async (req, res) => {
+  const cfg = await getStripeConfig();
+  res.json({
+    secretKeyConfigured: !!cfg.secretKey,
+    webhookSecretConfigured: !!cfg.webhookSecret,
+    monthlyPriceId: cfg.monthlyPriceId,
+    annualPriceId: cfg.annualPriceId,
+    monthlyPriceCents: cfg.monthlyPriceCents,
+    annualPriceCents: cfg.annualPriceCents,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
+router10.put("/stripe-settings", async (req, res) => {
+  const { secretKey, webhookSecret, monthlyPriceId, annualPriceId, monthlyPriceCents, annualPriceCents } = req.body;
+  const rows = await db.select().from(stripeSettingsTable).limit(1);
+  const updates = { updatedAt: /* @__PURE__ */ new Date() };
+  if (secretKey !== void 0 && secretKey !== null && secretKey !== "") updates.secretKey = secretKey;
+  if (webhookSecret !== void 0 && webhookSecret !== null && webhookSecret !== "") updates.webhookSecret = webhookSecret;
+  if (monthlyPriceId !== void 0) updates.monthlyPriceId = monthlyPriceId;
+  if (annualPriceId !== void 0) updates.annualPriceId = annualPriceId;
+  if (monthlyPriceCents !== void 0) updates.monthlyPriceCents = Number(monthlyPriceCents);
+  if (annualPriceCents !== void 0) updates.annualPriceCents = Number(annualPriceCents);
+  if (!rows[0]) {
+    await db.insert(stripeSettingsTable).values({ ...updates });
+  } else {
+    await db.update(stripeSettingsTable).set(updates).where(eq(stripeSettingsTable.id, rows[0].id));
+  }
+  invalidateStripeCache();
+  await logAction(req.userId, "update_stripe_settings");
+  const cfg = await getStripeConfig();
+  res.json({
+    secretKeyConfigured: !!cfg.secretKey,
+    webhookSecretConfigured: !!cfg.webhookSecret,
+    monthlyPriceId: cfg.monthlyPriceId,
+    annualPriceId: cfg.annualPriceId,
+    monthlyPriceCents: cfg.monthlyPriceCents,
+    annualPriceCents: cfg.annualPriceCents,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
 router10.post("/notifications", async (req, res) => {
   const { userId, title, message } = req.body;
   if (userId) {
@@ -88780,6 +88914,11 @@ router12.use("/notifications", notifications_default);
 router12.use("/stripe", stripe_default);
 router12.use("/talks", talks_default);
 router12.use("/admin", admin_default);
+router12.get("/membership/pricing", async (_req, res) => {
+  const cfg = await getStripeConfig();
+  res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+  res.json({ monthlyPriceCents: cfg.monthlyPriceCents, annualPriceCents: cfg.annualPriceCents });
+});
 var routes_default = router12;
 
 // src/app.ts

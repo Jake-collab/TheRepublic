@@ -1145,6 +1145,19 @@ export declare const MarkNotificationReadParams: zod.ZodObject<{
     id: number;
 }>;
 /**
+ * @summary Get current membership pricing (no auth required)
+ */
+export declare const GetMembershipPricingResponse: zod.ZodObject<{
+    monthlyPriceCents: zod.ZodNumber;
+    annualPriceCents: zod.ZodNumber;
+}, "strip", zod.ZodTypeAny, {
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+}, {
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+}>;
+/**
  * @summary Admin list all categories
  */
 export declare const AdminListCategoriesResponseItem: zod.ZodObject<{
@@ -1678,6 +1691,84 @@ export declare const AdminUpdateUserMembershipResponse: zod.ZodObject<{
     stripeCustomerId?: string | null | undefined;
     stripeSubscriptionId?: string | null | undefined;
     currentPeriodEnd?: string | null | undefined;
+}>;
+/**
+ * @summary Get Stripe configuration (sensitive fields masked)
+ */
+export declare const AdminGetStripeSettingsResponse: zod.ZodObject<{
+    secretKeyConfigured: zod.ZodBoolean;
+    webhookSecretConfigured: zod.ZodBoolean;
+    monthlyPriceId: zod.ZodOptional<zod.ZodNullable<zod.ZodString>>;
+    annualPriceId: zod.ZodOptional<zod.ZodNullable<zod.ZodString>>;
+    monthlyPriceCents: zod.ZodNumber;
+    annualPriceCents: zod.ZodNumber;
+    updatedAt: zod.ZodOptional<zod.ZodString>;
+}, "strip", zod.ZodTypeAny, {
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+    secretKeyConfigured: boolean;
+    webhookSecretConfigured: boolean;
+    updatedAt?: string | undefined;
+    monthlyPriceId?: string | null | undefined;
+    annualPriceId?: string | null | undefined;
+}, {
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+    secretKeyConfigured: boolean;
+    webhookSecretConfigured: boolean;
+    updatedAt?: string | undefined;
+    monthlyPriceId?: string | null | undefined;
+    annualPriceId?: string | null | undefined;
+}>;
+/**
+ * @summary Update Stripe configuration
+ */
+export declare const AdminUpdateStripeSettingsBody: zod.ZodObject<{
+    secretKey: zod.ZodOptional<zod.ZodNullable<zod.ZodString>>;
+    webhookSecret: zod.ZodOptional<zod.ZodNullable<zod.ZodString>>;
+    monthlyPriceId: zod.ZodOptional<zod.ZodString>;
+    annualPriceId: zod.ZodOptional<zod.ZodString>;
+    monthlyPriceCents: zod.ZodOptional<zod.ZodNumber>;
+    annualPriceCents: zod.ZodOptional<zod.ZodNumber>;
+}, "strip", zod.ZodTypeAny, {
+    monthlyPriceCents?: number | undefined;
+    annualPriceCents?: number | undefined;
+    monthlyPriceId?: string | undefined;
+    annualPriceId?: string | undefined;
+    secretKey?: string | null | undefined;
+    webhookSecret?: string | null | undefined;
+}, {
+    monthlyPriceCents?: number | undefined;
+    annualPriceCents?: number | undefined;
+    monthlyPriceId?: string | undefined;
+    annualPriceId?: string | undefined;
+    secretKey?: string | null | undefined;
+    webhookSecret?: string | null | undefined;
+}>;
+export declare const AdminUpdateStripeSettingsResponse: zod.ZodObject<{
+    secretKeyConfigured: zod.ZodBoolean;
+    webhookSecretConfigured: zod.ZodBoolean;
+    monthlyPriceId: zod.ZodOptional<zod.ZodNullable<zod.ZodString>>;
+    annualPriceId: zod.ZodOptional<zod.ZodNullable<zod.ZodString>>;
+    monthlyPriceCents: zod.ZodNumber;
+    annualPriceCents: zod.ZodNumber;
+    updatedAt: zod.ZodOptional<zod.ZodString>;
+}, "strip", zod.ZodTypeAny, {
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+    secretKeyConfigured: boolean;
+    webhookSecretConfigured: boolean;
+    updatedAt?: string | undefined;
+    monthlyPriceId?: string | null | undefined;
+    annualPriceId?: string | null | undefined;
+}, {
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+    secretKeyConfigured: boolean;
+    webhookSecretConfigured: boolean;
+    updatedAt?: string | undefined;
+    monthlyPriceId?: string | null | undefined;
+    annualPriceId?: string | null | undefined;
 }>;
 /**
  * @summary Admin list all support tickets

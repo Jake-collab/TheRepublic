@@ -398,6 +398,20 @@ paths:
         "200":
           description: OK
 
+  # ── Membership Pricing (public) ───────────────────────────────────────────────
+  /membership/pricing:
+    get:
+      operationId: getMembershipPricing
+      tags: [user]
+      summary: Get current membership pricing (no auth required)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipPricing"
+
   # ── Stripe Webhook ────────────────────────────────────────────────────────────
   /stripe/webhook:
     post:
@@ -593,6 +607,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Membership"
+
+  # ── Admin: Stripe Settings ────────────────────────────────────────────────────
+  /admin/stripe-settings:
+    get:
+      operationId: adminGetStripeSettings
+      tags: [admin]
+      summary: Get Stripe configuration (sensitive fields masked)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeSettings"
+    put:
+      operationId: adminUpdateStripeSettings
+      tags: [admin]
+      summary: Update Stripe configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StripeSettingsUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeSettings"
 
   # ── Admin: Support ────────────────────────────────────────────────────────────
   /admin/support/tickets:
@@ -1128,6 +1173,50 @@ components:
       properties:
         url:
           type: string
+
+    MembershipPricing:
+      type: object
+      required: [monthlyPriceCents, annualPriceCents]
+      properties:
+        monthlyPriceCents:
+          type: integer
+        annualPriceCents:
+          type: integer
+
+    StripeSettings:
+      type: object
+      required: [secretKeyConfigured, webhookSecretConfigured, monthlyPriceCents, annualPriceCents]
+      properties:
+        secretKeyConfigured:
+          type: boolean
+        webhookSecretConfigured:
+          type: boolean
+        monthlyPriceId:
+          type: ["string", "null"]
+        annualPriceId:
+          type: ["string", "null"]
+        monthlyPriceCents:
+          type: integer
+        annualPriceCents:
+          type: integer
+        updatedAt:
+          type: string
+
+    StripeSettingsUpdate:
+      type: object
+      properties:
+        secretKey:
+          type: ["string", "null"]
+        webhookSecret:
+          type: ["string", "null"]
+        monthlyPriceId:
+          type: string
+        annualPriceId:
+          type: string
+        monthlyPriceCents:
+          type: integer
+        annualPriceCents:
+          type: integer
 
     # ── User Website Preferences ─────────────────────────────────────────────────
     WebsitePref:

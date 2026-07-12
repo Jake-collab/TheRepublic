@@ -41,10 +41,13 @@ import type {
   ListTalkPostsParams,
   ListWebsitesParams,
   Membership,
+  MembershipPricing,
   MembershipUpdate,
   Notification,
   NotificationInput,
   PortalSession,
+  StripeSettings,
+  StripeSettingsUpdate,
   SupportTicket,
   SupportTicketAdminUpdate,
   SupportTicketInput,
@@ -1648,6 +1651,83 @@ export const useMarkAllNotificationsRead = <TError = ErrorType<unknown>,
       return useMutation(getMarkAllNotificationsReadMutationOptions(options));
     }
 
+export const getGetMembershipPricingUrl = () => {
+
+
+
+
+  return `/api/membership/pricing`
+}
+
+/**
+ * @summary Get current membership pricing (no auth required)
+ */
+export const getMembershipPricing = async ( options?: RequestInit): Promise<MembershipPricing> => {
+
+  return customFetch<MembershipPricing>(getGetMembershipPricingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMembershipPricingQueryKey = () => {
+    return [
+    `/api/membership/pricing`
+    ] as const;
+    }
+
+
+export const getGetMembershipPricingQueryOptions = <TData = Awaited<ReturnType<typeof getMembershipPricing>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMembershipPricing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMembershipPricingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMembershipPricing>>> = ({ signal }) => getMembershipPricing({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMembershipPricing>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMembershipPricingQueryResult = NonNullable<Awaited<ReturnType<typeof getMembershipPricing>>>
+export type GetMembershipPricingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current membership pricing (no auth required)
+ */
+
+export function useGetMembershipPricing<TData = Awaited<ReturnType<typeof getMembershipPricing>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMembershipPricing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMembershipPricingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getStripeWebhookUrl = () => {
 
 
@@ -2390,6 +2470,154 @@ export const useAdminUpdateUserMembership = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminUpdateUserMembershipMutationOptions(options));
+    }
+
+export const getAdminGetStripeSettingsUrl = () => {
+
+
+
+
+  return `/api/admin/stripe-settings`
+}
+
+/**
+ * @summary Get Stripe configuration (sensitive fields masked)
+ */
+export const adminGetStripeSettings = async ( options?: RequestInit): Promise<StripeSettings> => {
+
+  return customFetch<StripeSettings>(getAdminGetStripeSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetStripeSettingsQueryKey = () => {
+    return [
+    `/api/admin/stripe-settings`
+    ] as const;
+    }
+
+
+export const getAdminGetStripeSettingsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetStripeSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetStripeSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetStripeSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetStripeSettings>>> = ({ signal }) => adminGetStripeSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetStripeSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetStripeSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetStripeSettings>>>
+export type AdminGetStripeSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get Stripe configuration (sensitive fields masked)
+ */
+
+export function useAdminGetStripeSettings<TData = Awaited<ReturnType<typeof adminGetStripeSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetStripeSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetStripeSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminUpdateStripeSettingsUrl = () => {
+
+
+
+
+  return `/api/admin/stripe-settings`
+}
+
+/**
+ * @summary Update Stripe configuration
+ */
+export const adminUpdateStripeSettings = async (stripeSettingsUpdate: StripeSettingsUpdate, options?: RequestInit): Promise<StripeSettings> => {
+
+  return customFetch<StripeSettings>(getAdminUpdateStripeSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      stripeSettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateStripeSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateStripeSettings>>, TError,{data: BodyType<StripeSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateStripeSettings>>, TError,{data: BodyType<StripeSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['adminUpdateStripeSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateStripeSettings>>, {data: BodyType<StripeSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateStripeSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateStripeSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateStripeSettings>>>
+    export type AdminUpdateStripeSettingsMutationBody = BodyType<StripeSettingsUpdate>
+    export type AdminUpdateStripeSettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update Stripe configuration
+ */
+export const useAdminUpdateStripeSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateStripeSettings>>, TError,{data: BodyType<StripeSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateStripeSettings>>,
+        TError,
+        {data: BodyType<StripeSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateStripeSettingsMutationOptions(options));
     }
 
 export const getAdminListSupportTicketsUrl = (params?: AdminListSupportTicketsParams,) => {

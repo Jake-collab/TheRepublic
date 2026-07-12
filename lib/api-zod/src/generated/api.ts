@@ -379,6 +379,15 @@ export const MarkNotificationReadParams = zod.object({
 
 
 /**
+ * @summary Get current membership pricing (no auth required)
+ */
+export const GetMembershipPricingResponse = zod.object({
+  "monthlyPriceCents": zod.number(),
+  "annualPriceCents": zod.number()
+})
+
+
+/**
  * @summary Admin list all categories
  */
 export const AdminListCategoriesResponseItem = zod.object({
@@ -581,6 +590,43 @@ export const AdminUpdateUserMembershipResponse = zod.object({
   "stripeCustomerId": zod.string().nullish(),
   "stripeSubscriptionId": zod.string().nullish(),
   "currentPeriodEnd": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get Stripe configuration (sensitive fields masked)
+ */
+export const AdminGetStripeSettingsResponse = zod.object({
+  "secretKeyConfigured": zod.boolean(),
+  "webhookSecretConfigured": zod.boolean(),
+  "monthlyPriceId": zod.string().nullish(),
+  "annualPriceId": zod.string().nullish(),
+  "monthlyPriceCents": zod.number(),
+  "annualPriceCents": zod.number(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Update Stripe configuration
+ */
+export const AdminUpdateStripeSettingsBody = zod.object({
+  "secretKey": zod.string().nullish(),
+  "webhookSecret": zod.string().nullish(),
+  "monthlyPriceId": zod.string().optional(),
+  "annualPriceId": zod.string().optional(),
+  "monthlyPriceCents": zod.number().optional(),
+  "annualPriceCents": zod.number().optional()
+})
+
+export const AdminUpdateStripeSettingsResponse = zod.object({
+  "secretKeyConfigured": zod.boolean(),
+  "webhookSecretConfigured": zod.boolean(),
+  "monthlyPriceId": zod.string().nullish(),
+  "annualPriceId": zod.string().nullish(),
+  "monthlyPriceCents": zod.number(),
+  "annualPriceCents": zod.number(),
+  "updatedAt": zod.string().optional()
 })
 
 

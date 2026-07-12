@@ -3,8 +3,9 @@ import { db } from "@workspace/db";
 import {
   categoriesTable, websitesTable, usersTable, membershipsTable,
   supportTicketsTable, notificationsTable, webviewSettingsTable, auditLogsTable,
-  citizenVotePostsTable,
+  citizenVotePostsTable, stripeSettingsTable,
 } from "@workspace/db";
+import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
 import { eq, desc, asc, and, sql, ilike } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAuth";
 
@@ -223,6 +224,54 @@ router.get("/audit-logs", async (req, res) => {
   res.json({
     logs: logs.map(l => ({ ...l, createdAt: l.createdAt.toISOString() })),
     total: Number(total[0].count),
+  });
+});
+
+// ── Stripe Settings ───────────────────────────────────────────────────────────
+router.get("/stripe-settings", async (req, res) => {
+  const cfg = await getStripeConfig();
+  res.json({
+    secretKeyConfigured: !!cfg.secretKey,
+    webhookSecretConfigured: !!cfg.webhookSecret,
+    monthlyPriceId: cfg.monthlyPriceId,
+    annualPriceId: cfg.annualPriceId,
+    monthlyPriceCents: cfg.monthlyPriceCents,
+    annualPriceCents: cfg.annualPriceCents,
+    updatedAt: new Date().toISOString(),
+  });
+});
+
+router.put("/stripe-settings", async (req, res) => {
+  const { secretKey, webhookSecret, monthlyPriceId, annualPriceId, monthlyPriceCents, annualPriceCents } = req.body;
+
+  const rows = await db.select().from(stripeSettingsTable).limit(1);
+  const updates: Partial<typeof stripeSettingsTable.$inferInsert> = { updatedAt: new Date() };
+
+  if (secretKey !== undefined && secretKey !== null && secretKey !== "") updates.secretKey = secretKey;
+  if (webhookSecret !== undefined && webhookSecret !== null && webhookSecret !== "") updates.webhookSecret = webhookSecret;
+  if (monthlyPriceId !== undefined) updates.monthlyPriceId = monthlyPriceId;
+  if (annualPriceId !== undefined) updates.annualPriceId = annualPriceId;
+  if (monthlyPriceCents !== undefined) updates.monthlyPriceCents = Number(monthlyPriceCents);
+  if (annualPriceCents !== undefined) updates.annualPriceCents = Number(annualPriceCents);
+
+  if (!rows[0]) {
+    await db.insert(stripeSettingsTable).values({ ...updates });
+  } else {
+    await db.update(stripeSettingsTable).set(updates).where(eq(stripeSettingsTable.id, rows[0].id));
+  }
+
+  invalidateStripeCache();
+  await logAction((req as any).userId, "update_stripe_settings");
+
+  const cfg = await getStripeConfig();
+  res.json({
+    secretKeyConfigured: !!cfg.secretKey,
+    webhookSecretConfigured: !!cfg.webhookSecret,
+    monthlyPriceId: cfg.monthlyPriceId,
+    annualPriceId: cfg.annualPriceId,
+    monthlyPriceCents: cfg.monthlyPriceCents,
+    annualPriceCents: cfg.annualPriceCents,
+    updatedAt: new Date().toISOString(),
   });
 });
 

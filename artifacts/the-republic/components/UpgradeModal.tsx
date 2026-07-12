@@ -1,7 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React from "react";
+import * as WebBrowser from "expo-web-browser";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   StyleSheet,
@@ -10,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useCreateCheckoutSession, useGetMembershipPricing } from "@workspace/api-client-react";
 import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -21,14 +25,38 @@ const PRO_FEATURES = [
   { icon: "zap" as const, text: "Priority support" },
 ];
 
+function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
 export default function UpgradeModal() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { upgradeModalVisible, setUpgradeModalVisible } = useBrowser();
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("monthly");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleUpgrade = () => {
+  const { data: pricing } = useGetMembershipPricing();
+  const { mutateAsync: createCheckout } = useCreateCheckoutSession();
+
+  const monthlyPrice = pricing ? formatCents(pricing.monthlyPriceCents) : "$2.99";
+  const annualPrice = pricing ? formatCents(pricing.annualPriceCents) : "$20.00";
+  const monthlyPerMonth = pricing ? formatCents(Math.round(pricing.annualPriceCents / 12)) : "$1.67";
+
+  const handleUpgrade = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setUpgradeModalVisible(false);
+    setIsLoading(true);
+    try {
+      const result = await createCheckout({ data: { plan: selectedPlan } });
+      if (result.url) {
+        setUpgradeModalVisible(false);
+        await WebBrowser.openBrowserAsync(result.url);
+      }
+    } catch {
+      Alert.alert("Error", "Could not start checkout. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,6 +89,7 @@ export default function UpgradeModal() {
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           Unlock the full curated web experience
         </Text>
+
         <View style={styles.features}>
           {PRO_FEATURES.map(({ icon, text }) => (
             <View key={text} style={styles.featureRow}>
@@ -73,20 +102,51 @@ export default function UpgradeModal() {
             </View>
           ))}
         </View>
-        <View style={[styles.priceBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <Text style={[styles.price, { color: colors.primary }]}>$9.99</Text>
-          <Text style={[styles.pricePeriod, { color: colors.mutedForeground }]}>/ month</Text>
+
+        <View style={styles.planRow}>
+          <Pressable
+            style={[
+              styles.planOption,
+              { borderColor: selectedPlan === "monthly" ? colors.primary : colors.border, backgroundColor: colors.secondary },
+            ]}
+            onPress={() => setSelectedPlan("monthly")}
+          >
+            <Text style={[styles.planLabel, { color: colors.foreground }]}>Monthly</Text>
+            <Text style={[styles.planPrice, { color: colors.primary }]}>{monthlyPrice}</Text>
+            <Text style={[styles.planSub, { color: colors.mutedForeground }]}>/ month</Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.planOption,
+              { borderColor: selectedPlan === "annual" ? colors.primary : colors.border, backgroundColor: colors.secondary },
+            ]}
+            onPress={() => setSelectedPlan("annual")}
+          >
+            <View style={[styles.saveBadge, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.saveBadgeText, { color: colors.primaryForeground }]}>Save 44%</Text>
+            </View>
+            <Text style={[styles.planLabel, { color: colors.foreground }]}>Annual</Text>
+            <Text style={[styles.planPrice, { color: colors.primary }]}>{annualPrice}</Text>
+            <Text style={[styles.planSub, { color: colors.mutedForeground }]}>{monthlyPerMonth}/mo</Text>
+          </Pressable>
         </View>
+
         <Pressable
           style={({ pressed }) => [
             styles.upgradeBtn,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+            { backgroundColor: colors.primary, opacity: pressed || isLoading ? 0.85 : 1 },
           ]}
           onPress={handleUpgrade}
+          disabled={isLoading}
         >
-          <Text style={[styles.upgradeText, { color: colors.primaryForeground }]}>
-            Upgrade to Pro
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator color={colors.primaryForeground} />
+          ) : (
+            <Text style={[styles.upgradeText, { color: colors.primaryForeground }]}>
+              Upgrade to Pro
+            </Text>
+          )}
         </Pressable>
         <Pressable onPress={() => setUpgradeModalVisible(false)} style={styles.dismissBtn}>
           <Text style={[styles.dismissText, { color: colors.mutedForeground }]}>
@@ -126,34 +186,48 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  features: { gap: 10 },
+  features: { gap: 8 },
   featureRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
   featureIcon: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
   featureText: { fontSize: 14, flex: 1 },
-  priceBadge: {
+  planRow: {
     flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "center",
-    gap: 4,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    gap: 12,
     marginVertical: 4,
   },
-  price: { fontSize: 28, fontWeight: "700" },
-  pricePeriod: { fontSize: 14 },
+  planOption: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 14,
+    padding: 14,
+    alignItems: "center",
+    gap: 2,
+    position: "relative",
+  },
+  saveBadge: {
+    position: "absolute",
+    top: -10,
+    right: 8,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  saveBadgeText: { fontSize: 10, fontWeight: "700" },
+  planLabel: { fontSize: 12, fontWeight: "600" },
+  planPrice: { fontSize: 22, fontWeight: "700" },
+  planSub: { fontSize: 11 },
   upgradeBtn: {
     borderRadius: 14,
     paddingVertical: 15,

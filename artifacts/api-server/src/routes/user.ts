@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { usersTable, membershipsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, ensureUser } from "../middlewares/requireAuth";
+import { getStripeConfig, getAppBaseUrl } from "../utils/stripeHelpers";
 
 const router = Router();
 
@@ -76,34 +77,39 @@ router.post("/membership/checkout", async (req, res) => {
   const userId = (req as any).userId as string;
   const { plan } = req.body;
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    res.json({ url: "https://stripe.com" });
+  const cfg = await getStripeConfig();
+  if (!cfg.secretKey) {
+    res.status(503).json({ error: "Stripe not configured" });
     return;
   }
 
   try {
     const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-    const priceId = plan === "annual"
-      ? process.env.STRIPE_ANNUAL_PRICE_ID
-      : process.env.STRIPE_MONTHLY_PRICE_ID;
+    const stripe = new Stripe(cfg.secretKey);
+    const priceId = plan === "annual" ? cfg.annualPriceId : cfg.monthlyPriceId;
+
+    if (!priceId) {
+      res.status(503).json({ error: "Price ID not configured for this plan" });
+      return;
+    }
 
     const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-    let membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
+    const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
 
     let customerId = membership[0]?.stripeCustomerId;
     if (!customerId) {
-      const customer = await stripe.customers.create({ email: user[0]?.email, metadata: { userId } });
+      const customer = await stripe.customers.create({ email: user[0]?.email ?? undefined, metadata: { userId } });
       customerId = customer.id;
     }
 
+    const baseUrl = getAppBaseUrl();
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [{ price: priceId!, quantity: 1 }],
-      success_url: `${process.env.APP_URL ?? "https://example.com"}/checkout-success`,
-      cancel_url: `${process.env.APP_URL ?? "https://example.com"}/checkout-cancel`,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/checkout-cancel`,
     });
 
     res.json({ url: session.url });
@@ -116,14 +122,15 @@ router.post("/membership/checkout", async (req, res) => {
 router.post("/membership/portal", async (req, res) => {
   const userId = (req as any).userId as string;
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    res.json({ url: "https://billing.stripe.com" });
+  const cfg = await getStripeConfig();
+  if (!cfg.secretKey) {
+    res.status(503).json({ error: "Stripe not configured" });
     return;
   }
 
   try {
     const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    const stripe = new Stripe(cfg.secretKey);
     const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
 
     if (!membership[0]?.stripeCustomerId) {
@@ -133,7 +140,7 @@ router.post("/membership/portal", async (req, res) => {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: membership[0].stripeCustomerId,
-      return_url: process.env.APP_URL ?? "https://example.com",
+      return_url: getAppBaseUrl(),
     });
 
     res.json({ url: session.url });

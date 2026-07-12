@@ -9,4 +9,5 @@ export * from "./notifications";
 export * from "./webviewSettings";
 export * from "./auditLogs";
 export * from "./talks";
+export * from "./stripeSettings";
 //# sourceMappingURL=index.d.ts.map

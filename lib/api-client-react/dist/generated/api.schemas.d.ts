@@ -176,6 +176,31 @@ export interface CheckoutSession {
 export interface PortalSession {
     url: string;
 }
+export interface MembershipPricing {
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+}
+export interface StripeSettings {
+    secretKeyConfigured: boolean;
+    webhookSecretConfigured: boolean;
+    /** @nullable */
+    monthlyPriceId?: string | null;
+    /** @nullable */
+    annualPriceId?: string | null;
+    monthlyPriceCents: number;
+    annualPriceCents: number;
+    updatedAt?: string;
+}
+export interface StripeSettingsUpdate {
+    /** @nullable */
+    secretKey?: string | null;
+    /** @nullable */
+    webhookSecret?: string | null;
+    monthlyPriceId?: string;
+    annualPriceId?: string;
+    monthlyPriceCents?: number;
+    annualPriceCents?: number;
+}
 export interface WebsitePref {
     id: number;
     userId: string;

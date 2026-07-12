@@ -9,7 +9,8 @@ import {
   Settings, 
   FileText, 
   Bell,
-  LogOut
+  LogOut,
+  CreditCard
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/webview-settings", label: "WebView Settings", icon: Settings },
   { href: "/audit-logs", label: "Audit Logs", icon: FileText },
   { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/stripe-settings", label: "Stripe & Billing", icon: CreditCard },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

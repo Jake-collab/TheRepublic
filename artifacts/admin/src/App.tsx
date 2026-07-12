@@ -19,6 +19,7 @@ import Support from "@/pages/support";
 import WebviewSettings from "@/pages/webview-settings";
 import AuditLogs from "@/pages/audit-logs";
 import Notifications from "@/pages/notifications";
+import StripeSettingsPage from "@/pages/stripe-settings";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -170,6 +171,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/webview-settings" component={() => <ProtectedRoute component={WebviewSettings} />} />
           <Route path="/audit-logs" component={() => <ProtectedRoute component={AuditLogs} />} />
           <Route path="/notifications" component={() => <ProtectedRoute component={Notifications} />} />
+          <Route path="/stripe-settings" component={() => <ProtectedRoute component={StripeSettingsPage} />} />
 
           <Route component={NotFound} />
         </Switch>
