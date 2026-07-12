@@ -1,1 +1,0 @@
-{"version":3,"file":"citizenVotePostList.d.ts","sourceRoot":"","sources":["../../../src/generated/types/citizenVotePostList.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,mBAAmB,CAAC;AAEzD,MAAM,WAAW,mBAAmB;IAClC,KAAK,EAAE,eAAe,EAAE,CAAC;IACzB,KAAK,EAAE,MAAM,CAAC;IACd,IAAI,EAAE,MAAM,CAAC;IACb,KAAK,EAAE,MAAM,CAAC;CACf"}
