@@ -22,6 +22,7 @@ import Notifications from "@/pages/notifications";
 import StripeSettingsPage from "@/pages/stripe-settings";
 import Discussions from "@/pages/discussions";
 import Moderation from "@/pages/moderation";
+import Analytics from "@/pages/analytics";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -176,6 +177,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/stripe-settings" component={() => <ProtectedRoute component={StripeSettingsPage} />} />
           <Route path="/discussions" component={() => <ProtectedRoute component={Discussions} />} />
           <Route path="/moderation" component={() => <ProtectedRoute component={Moderation} />} />
+          <Route path="/analytics" component={() => <ProtectedRoute component={Analytics} />} />
 
           <Route component={NotFound} />
         </Switch>

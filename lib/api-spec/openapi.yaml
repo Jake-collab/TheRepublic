@@ -1170,6 +1170,105 @@ paths:
           description: Deleted
 
   # ── Admin Moderation ──────────────────────────────────────────────────────────
+  /admin/analytics/user-growth:
+    get:
+      operationId: adminGetUserGrowth
+      tags: [admin]
+      summary: Daily new user registrations
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyNewUsers"
+
+  /admin/analytics/content:
+    get:
+      operationId: adminGetContentActivity
+      tags: [admin]
+      summary: Daily content activity
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyContentActivity"
+
+  /admin/analytics/tickets:
+    get:
+      operationId: adminGetTicketTrends
+      tags: [admin]
+      summary: Daily ticket creation and resolution trends
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyTicketActivity"
+
+  /admin/analytics/top-content:
+    get:
+      operationId: adminGetTopContent
+      tags: [admin]
+      summary: Top posts by engagement
+      security:
+        - ClerkAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopContentResult"
+
+  /admin/analytics/membership:
+    get:
+      operationId: adminGetMembershipStats
+      tags: [admin]
+      summary: Membership breakdown and platform stats
+      security:
+        - ClerkAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipStats"
+
   /admin/moderation/flags:
     get:
       operationId: adminListContentFlags
@@ -2392,6 +2491,99 @@ components:
           enum: [spam, harassment, misinformation, hate_speech, other]
         details:
           type: string
+
+    DailyNewUsers:
+      type: object
+      required: [date, newUsers]
+      properties:
+        date:
+          type: string
+        newUsers:
+          type: integer
+
+    DailyContentActivity:
+      type: object
+      required: [date, talkPosts, citizenVotes, comments]
+      properties:
+        date:
+          type: string
+        talkPosts:
+          type: integer
+        citizenVotes:
+          type: integer
+        comments:
+          type: integer
+
+    DailyTicketActivity:
+      type: object
+      required: [date, created, resolved]
+      properties:
+        date:
+          type: string
+        created:
+          type: integer
+        resolved:
+          type: integer
+
+    TopTalkPost:
+      type: object
+      required: [id, title, upvotes, commentCount, displayName]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        upvotes:
+          type: integer
+        commentCount:
+          type: integer
+        displayName:
+          type: string
+
+    TopCitizenVotePost:
+      type: object
+      required: [id, content, upvotes, category, displayName]
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        upvotes:
+          type: integer
+        category:
+          type: string
+        displayName:
+          type: string
+
+    TopContentResult:
+      type: object
+      required: [topTalkPosts, topCitizenVotes]
+      properties:
+        topTalkPosts:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopTalkPost"
+        topCitizenVotes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopCitizenVotePost"
+
+    MembershipStats:
+      type: object
+      required: [total, pro, free, conversionRate, newThisMonth, pendingFlags]
+      properties:
+        total:
+          type: integer
+        pro:
+          type: integer
+        free:
+          type: integer
+        conversionRate:
+          type: number
+        newThisMonth:
+          type: integer
+        pendingFlags:
+          type: integer
 
     AdminTalkPost:
       type: object

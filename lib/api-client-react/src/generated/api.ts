@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminGetContentActivityParams,
+  AdminGetTicketTrendsParams,
+  AdminGetUserGrowthParams,
   AdminListAuditLogsParams,
   AdminListContentFlagsParams,
   AdminListSupportTicketsParams,
@@ -52,6 +55,9 @@ import type {
   CitizenVotePostInput,
   CitizenVotePostList,
   ContentFlag,
+  DailyContentActivity,
+  DailyNewUsers,
+  DailyTicketActivity,
   FlagInput,
   HealthStatus,
   ListCitizenVotePostsParams,
@@ -59,6 +65,7 @@ import type {
   ListWebsitesParams,
   Membership,
   MembershipPricing,
+  MembershipStats,
   MembershipUpdate,
   Notification,
   NotificationInput,
@@ -76,6 +83,7 @@ import type {
   TalkPostInput,
   TalkPostsPage,
   TalkVoteResult,
+  TopContentResult,
   UpvoteResult,
   UserActivity,
   UserProfile,
@@ -4703,6 +4711,412 @@ export const useAdminDeleteTalkComment = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getAdminDeleteTalkCommentMutationOptions(options));
     }
+
+export const getAdminGetUserGrowthUrl = (params?: AdminGetUserGrowthParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/analytics/user-growth?${stringifiedParams}` : `/api/admin/analytics/user-growth`
+}
+
+/**
+ * @summary Daily new user registrations
+ */
+export const adminGetUserGrowth = async (params?: AdminGetUserGrowthParams, options?: RequestInit): Promise<DailyNewUsers[]> => {
+
+  return customFetch<DailyNewUsers[]>(getAdminGetUserGrowthUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetUserGrowthQueryKey = (params?: AdminGetUserGrowthParams,) => {
+    return [
+    `/api/admin/analytics/user-growth`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminGetUserGrowthQueryOptions = <TData = Awaited<ReturnType<typeof adminGetUserGrowth>>, TError = ErrorType<unknown>>(params?: AdminGetUserGrowthParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUserGrowth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetUserGrowthQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetUserGrowth>>> = ({ signal }) => adminGetUserGrowth(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetUserGrowth>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetUserGrowthQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetUserGrowth>>>
+export type AdminGetUserGrowthQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Daily new user registrations
+ */
+
+export function useAdminGetUserGrowth<TData = Awaited<ReturnType<typeof adminGetUserGrowth>>, TError = ErrorType<unknown>>(
+ params?: AdminGetUserGrowthParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetUserGrowth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetUserGrowthQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminGetContentActivityUrl = (params?: AdminGetContentActivityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/analytics/content?${stringifiedParams}` : `/api/admin/analytics/content`
+}
+
+/**
+ * @summary Daily content activity
+ */
+export const adminGetContentActivity = async (params?: AdminGetContentActivityParams, options?: RequestInit): Promise<DailyContentActivity[]> => {
+
+  return customFetch<DailyContentActivity[]>(getAdminGetContentActivityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetContentActivityQueryKey = (params?: AdminGetContentActivityParams,) => {
+    return [
+    `/api/admin/analytics/content`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminGetContentActivityQueryOptions = <TData = Awaited<ReturnType<typeof adminGetContentActivity>>, TError = ErrorType<unknown>>(params?: AdminGetContentActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetContentActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetContentActivityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetContentActivity>>> = ({ signal }) => adminGetContentActivity(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetContentActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetContentActivityQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetContentActivity>>>
+export type AdminGetContentActivityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Daily content activity
+ */
+
+export function useAdminGetContentActivity<TData = Awaited<ReturnType<typeof adminGetContentActivity>>, TError = ErrorType<unknown>>(
+ params?: AdminGetContentActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetContentActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetContentActivityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminGetTicketTrendsUrl = (params?: AdminGetTicketTrendsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/analytics/tickets?${stringifiedParams}` : `/api/admin/analytics/tickets`
+}
+
+/**
+ * @summary Daily ticket creation and resolution trends
+ */
+export const adminGetTicketTrends = async (params?: AdminGetTicketTrendsParams, options?: RequestInit): Promise<DailyTicketActivity[]> => {
+
+  return customFetch<DailyTicketActivity[]>(getAdminGetTicketTrendsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetTicketTrendsQueryKey = (params?: AdminGetTicketTrendsParams,) => {
+    return [
+    `/api/admin/analytics/tickets`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminGetTicketTrendsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetTicketTrends>>, TError = ErrorType<unknown>>(params?: AdminGetTicketTrendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTicketTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetTicketTrendsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetTicketTrends>>> = ({ signal }) => adminGetTicketTrends(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetTicketTrends>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetTicketTrendsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetTicketTrends>>>
+export type AdminGetTicketTrendsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Daily ticket creation and resolution trends
+ */
+
+export function useAdminGetTicketTrends<TData = Awaited<ReturnType<typeof adminGetTicketTrends>>, TError = ErrorType<unknown>>(
+ params?: AdminGetTicketTrendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTicketTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetTicketTrendsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminGetTopContentUrl = () => {
+
+
+
+
+  return `/api/admin/analytics/top-content`
+}
+
+/**
+ * @summary Top posts by engagement
+ */
+export const adminGetTopContent = async ( options?: RequestInit): Promise<TopContentResult> => {
+
+  return customFetch<TopContentResult>(getAdminGetTopContentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetTopContentQueryKey = () => {
+    return [
+    `/api/admin/analytics/top-content`
+    ] as const;
+    }
+
+
+export const getAdminGetTopContentQueryOptions = <TData = Awaited<ReturnType<typeof adminGetTopContent>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTopContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetTopContentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetTopContent>>> = ({ signal }) => adminGetTopContent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetTopContent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetTopContentQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetTopContent>>>
+export type AdminGetTopContentQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Top posts by engagement
+ */
+
+export function useAdminGetTopContent<TData = Awaited<ReturnType<typeof adminGetTopContent>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetTopContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetTopContentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminGetMembershipStatsUrl = () => {
+
+
+
+
+  return `/api/admin/analytics/membership`
+}
+
+/**
+ * @summary Membership breakdown and platform stats
+ */
+export const adminGetMembershipStats = async ( options?: RequestInit): Promise<MembershipStats> => {
+
+  return customFetch<MembershipStats>(getAdminGetMembershipStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetMembershipStatsQueryKey = () => {
+    return [
+    `/api/admin/analytics/membership`
+    ] as const;
+    }
+
+
+export const getAdminGetMembershipStatsQueryOptions = <TData = Awaited<ReturnType<typeof adminGetMembershipStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetMembershipStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetMembershipStatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetMembershipStats>>> = ({ signal }) => adminGetMembershipStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetMembershipStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetMembershipStatsQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetMembershipStats>>>
+export type AdminGetMembershipStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Membership breakdown and platform stats
+ */
+
+export function useAdminGetMembershipStats<TData = Awaited<ReturnType<typeof adminGetMembershipStats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetMembershipStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetMembershipStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getAdminListContentFlagsUrl = (params?: AdminListContentFlagsParams,) => {
   const normalizedParams = new URLSearchParams();

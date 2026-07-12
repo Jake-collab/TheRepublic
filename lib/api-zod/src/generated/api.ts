@@ -1091,6 +1091,91 @@ export const AdminDeleteTalkCommentParams = zod.object({
 
 
 /**
+ * @summary Daily new user registrations
+ */
+export const adminGetUserGrowthQueryDaysDefault = 30;
+
+export const AdminGetUserGrowthQueryParams = zod.object({
+  "days": zod.coerce.number().default(adminGetUserGrowthQueryDaysDefault)
+})
+
+export const AdminGetUserGrowthResponseItem = zod.object({
+  "date": zod.string(),
+  "newUsers": zod.number()
+})
+export const AdminGetUserGrowthResponse = zod.array(AdminGetUserGrowthResponseItem)
+
+
+/**
+ * @summary Daily content activity
+ */
+export const adminGetContentActivityQueryDaysDefault = 30;
+
+export const AdminGetContentActivityQueryParams = zod.object({
+  "days": zod.coerce.number().default(adminGetContentActivityQueryDaysDefault)
+})
+
+export const AdminGetContentActivityResponseItem = zod.object({
+  "date": zod.string(),
+  "talkPosts": zod.number(),
+  "citizenVotes": zod.number(),
+  "comments": zod.number()
+})
+export const AdminGetContentActivityResponse = zod.array(AdminGetContentActivityResponseItem)
+
+
+/**
+ * @summary Daily ticket creation and resolution trends
+ */
+export const adminGetTicketTrendsQueryDaysDefault = 30;
+
+export const AdminGetTicketTrendsQueryParams = zod.object({
+  "days": zod.coerce.number().default(adminGetTicketTrendsQueryDaysDefault)
+})
+
+export const AdminGetTicketTrendsResponseItem = zod.object({
+  "date": zod.string(),
+  "created": zod.number(),
+  "resolved": zod.number()
+})
+export const AdminGetTicketTrendsResponse = zod.array(AdminGetTicketTrendsResponseItem)
+
+
+/**
+ * @summary Top posts by engagement
+ */
+export const AdminGetTopContentResponse = zod.object({
+  "topTalkPosts": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "upvotes": zod.number(),
+  "commentCount": zod.number(),
+  "displayName": zod.string()
+})),
+  "topCitizenVotes": zod.array(zod.object({
+  "id": zod.number(),
+  "content": zod.string(),
+  "upvotes": zod.number(),
+  "category": zod.string(),
+  "displayName": zod.string()
+}))
+})
+
+
+/**
+ * @summary Membership breakdown and platform stats
+ */
+export const AdminGetMembershipStatsResponse = zod.object({
+  "total": zod.number(),
+  "pro": zod.number(),
+  "free": zod.number(),
+  "conversionRate": zod.number(),
+  "newThisMonth": zod.number(),
+  "pendingFlags": zod.number()
+})
+
+
+/**
  * @summary List content flags
  */
 export const AdminListContentFlagsQueryParams = zod.object({

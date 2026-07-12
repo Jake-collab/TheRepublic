@@ -14,6 +14,7 @@ import {
   CreditCard,
   MessageSquare,
   ShieldAlert,
+  BarChart2,
   Menu,
   X
 } from "lucide-react";
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/discussions", label: "Discussions", icon: MessageSquare },
   { href: "/moderation", label: "Moderation", icon: ShieldAlert },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/stripe-settings", label: "Stripe & Billing", icon: CreditCard },
 ];
 

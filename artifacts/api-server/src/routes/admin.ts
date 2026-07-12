@@ -732,6 +732,151 @@ router.post("/talks/posts/:id/unpin", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Analytics ─────────────────────────────────────────────────────────────────
+function buildDateRange(days: number): string[] {
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  return dates;
+}
+
+router.get("/analytics/user-growth", async (req, res) => {
+  const days = Math.min(Math.max(Number(req.query.days ?? 30), 1), 90);
+  const rows = await db
+    .select({
+      date: sql<string>`date_trunc('day', ${usersTable.createdAt})::date::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(usersTable)
+    .where(sql`${usersTable.createdAt} >= now() - interval '${sql.raw(String(days))} days'`)
+    .groupBy(sql`1`)
+    .orderBy(sql`1`);
+
+  const byDate = Object.fromEntries(rows.map((r) => [r.date, r.count]));
+  res.json(buildDateRange(days).map((date) => ({ date, newUsers: Number(byDate[date] ?? 0) })));
+});
+
+router.get("/analytics/content", async (req, res) => {
+  const days = Math.min(Math.max(Number(req.query.days ?? 30), 1), 90);
+  const [postsRows, votesRows, commentsRows] = await Promise.all([
+    db.select({
+      date: sql<string>`date_trunc('day', ${talkPostsTable.createdAt})::date::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(talkPostsTable)
+    .where(sql`${talkPostsTable.createdAt} >= now() - interval '${sql.raw(String(days))} days'`)
+    .groupBy(sql`1`).orderBy(sql`1`),
+
+    db.select({
+      date: sql<string>`date_trunc('day', ${citizenVotePostsTable.createdAt})::date::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(citizenVotePostsTable)
+    .where(sql`${citizenVotePostsTable.createdAt} >= now() - interval '${sql.raw(String(days))} days'`)
+    .groupBy(sql`1`).orderBy(sql`1`),
+
+    db.select({
+      date: sql<string>`date_trunc('day', ${talkCommentsTable.createdAt})::date::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(talkCommentsTable)
+    .where(sql`${talkCommentsTable.createdAt} >= now() - interval '${sql.raw(String(days))} days'`)
+    .groupBy(sql`1`).orderBy(sql`1`),
+  ]);
+
+  const postsByDate = Object.fromEntries(postsRows.map((r) => [r.date, r.count]));
+  const votesByDate = Object.fromEntries(votesRows.map((r) => [r.date, r.count]));
+  const commentsByDate = Object.fromEntries(commentsRows.map((r) => [r.date, r.count]));
+
+  res.json(buildDateRange(days).map((date) => ({
+    date,
+    talkPosts: Number(postsByDate[date] ?? 0),
+    citizenVotes: Number(votesByDate[date] ?? 0),
+    comments: Number(commentsByDate[date] ?? 0),
+  })));
+});
+
+router.get("/analytics/tickets", async (req, res) => {
+  const days = Math.min(Math.max(Number(req.query.days ?? 30), 1), 90);
+  const [createdRows, resolvedRows] = await Promise.all([
+    db.select({
+      date: sql<string>`date_trunc('day', ${supportTicketsTable.createdAt})::date::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(supportTicketsTable)
+    .where(sql`${supportTicketsTable.createdAt} >= now() - interval '${sql.raw(String(days))} days'`)
+    .groupBy(sql`1`).orderBy(sql`1`),
+
+    db.select({
+      date: sql<string>`date_trunc('day', ${supportTicketsTable.updatedAt})::date::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(supportTicketsTable)
+    .where(and(
+      sql`${supportTicketsTable.updatedAt} >= now() - interval '${sql.raw(String(days))} days'`,
+      eq(supportTicketsTable.status, "resolved"),
+    ))
+    .groupBy(sql`1`).orderBy(sql`1`),
+  ]);
+
+  const createdByDate = Object.fromEntries(createdRows.map((r) => [r.date, r.count]));
+  const resolvedByDate = Object.fromEntries(resolvedRows.map((r) => [r.date, r.count]));
+
+  res.json(buildDateRange(days).map((date) => ({
+    date,
+    created: Number(createdByDate[date] ?? 0),
+    resolved: Number(resolvedByDate[date] ?? 0),
+  })));
+});
+
+router.get("/analytics/top-content", async (req, res) => {
+  const [topTalkPosts, topCitizenVotes] = await Promise.all([
+    db.select({
+      id: talkPostsTable.id,
+      title: talkPostsTable.title,
+      upvotes: talkPostsTable.upvotes,
+      commentCount: talkPostsTable.commentCount,
+      displayName: talkPostsTable.displayName,
+    }).from(talkPostsTable).orderBy(desc(talkPostsTable.upvotes)).limit(10),
+
+    db.select({
+      id: citizenVotePostsTable.id,
+      content: citizenVotePostsTable.content,
+      upvotes: citizenVotePostsTable.upvotes,
+      category: citizenVotePostsTable.category,
+      displayName: citizenVotePostsTable.displayName,
+    }).from(citizenVotePostsTable).orderBy(desc(citizenVotePostsTable.upvotes)).limit(10),
+  ]);
+
+  res.json({ topTalkPosts, topCitizenVotes });
+});
+
+router.get("/analytics/membership", async (req, res) => {
+  const [totalRow, proRow, monthRow, flagRow] = await Promise.all([
+    db.select({ count: sql<number>`count(*)::int` }).from(usersTable),
+    db.select({ count: sql<number>`count(*)::int` }).from(usersTable).where(eq(usersTable.isPro, true)),
+    db.select({ count: sql<number>`count(*)::int` }).from(usersTable).where(sql`${usersTable.createdAt} >= date_trunc('month', now())`),
+    db.select({ count: sql<number>`count(*)::int` }).from(contentFlagsTable).where(eq(contentFlagsTable.status, "pending")),
+  ]);
+
+  const total = Number(totalRow[0].count);
+  const pro = Number(proRow[0].count);
+  const free = total - pro;
+  const conversionRate = total > 0 ? Math.round((pro / total) * 1000) / 10 : 0;
+
+  res.json({
+    total,
+    pro,
+    free,
+    conversionRate,
+    newThisMonth: Number(monthRow[0].count),
+    pendingFlags: Number(flagRow[0].count),
+  });
+});
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 router.post("/notifications", async (req, res) => {
   const { userId, title, message } = req.body;

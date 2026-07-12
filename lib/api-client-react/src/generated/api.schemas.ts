@@ -658,6 +658,54 @@ export interface FlagInput {
   details?: string;
 }
 
+export interface DailyNewUsers {
+  date: string;
+  newUsers: number;
+}
+
+export interface DailyContentActivity {
+  date: string;
+  talkPosts: number;
+  citizenVotes: number;
+  comments: number;
+}
+
+export interface DailyTicketActivity {
+  date: string;
+  created: number;
+  resolved: number;
+}
+
+export interface TopTalkPost {
+  id: number;
+  title: string;
+  upvotes: number;
+  commentCount: number;
+  displayName: string;
+}
+
+export interface TopCitizenVotePost {
+  id: number;
+  content: string;
+  upvotes: number;
+  category: string;
+  displayName: string;
+}
+
+export interface TopContentResult {
+  topTalkPosts: TopTalkPost[];
+  topCitizenVotes: TopCitizenVotePost[];
+}
+
+export interface MembershipStats {
+  total: number;
+  pro: number;
+  free: number;
+  conversionRate: number;
+  newThisMonth: number;
+  pendingFlags: number;
+}
+
 export interface AdminTalkPost {
   id: number;
   categoryId: number;
@@ -764,6 +812,18 @@ search?: string | null;
  */
 cursor?: number | null;
 limit?: number;
+};
+
+export type AdminGetUserGrowthParams = {
+days?: number;
+};
+
+export type AdminGetContentActivityParams = {
+days?: number;
+};
+
+export type AdminGetTicketTrendsParams = {
+days?: number;
 };
 
 export type AdminListContentFlagsParams = {

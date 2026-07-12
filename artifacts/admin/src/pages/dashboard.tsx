@@ -1,9 +1,12 @@
 import { useAdminGetStats, useAdminListAuditLogs, getAdminGetStatsQueryKey, getAdminListAuditLogsQueryKey } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Globe, LifeBuoy, TrendingUp, Crown, MessageSquare } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Users, Globe, LifeBuoy, TrendingUp, Crown, MessageSquare, ShieldAlert } from "lucide-react";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const ACTION_LABELS: Record<string, string> = {
   create_category: "Added a website category",
@@ -22,6 +25,12 @@ const ACTION_LABELS: Record<string, string> = {
   delete_talk_comment: "Removed a comment",
   ban_user: "Suspended a user account",
   unban_user: "Reinstated a user account",
+  dismiss_flag: "Dismissed a content flag",
+  remove_flagged_content: "Removed flagged content",
+  add_blocked_word: "Added a blocked word",
+  delete_blocked_word: "Removed a blocked word",
+  pin_talk_post: "Pinned a discussion post",
+  unpin_talk_post: "Unpinned a discussion post",
 };
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
@@ -30,6 +39,10 @@ const ACTION_ICONS: Record<string, React.ReactNode> = {
   send_notification: <MessageSquare className="w-3.5 h-3.5" />,
   create_website: <Globe className="w-3.5 h-3.5" />,
   delete_talk_post: <MessageSquare className="w-3.5 h-3.5" />,
+  dismiss_flag: <ShieldAlert className="w-3.5 h-3.5" />,
+  remove_flagged_content: <ShieldAlert className="w-3.5 h-3.5" />,
+  ban_user: <Users className="w-3.5 h-3.5" />,
+  unban_user: <Users className="w-3.5 h-3.5" />,
 };
 
 function StatCard({ title, value, sub, icon, loading, accent }: {
@@ -68,6 +81,14 @@ export default function Dashboard() {
     { page: 1, limit: 10 },
     { query: { queryKey: getAdminListAuditLogsQueryKey({ page: 1, limit: 10 }) } }
   );
+  const { data: membership } = useQuery({
+    queryKey: ["dashboard", "membership"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/admin/analytics/membership`, { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json() as Promise<{ pendingFlags: number; conversionRate: number }>;
+    },
+  });
 
   const recentLogs = logsData?.logs ?? [];
 
@@ -78,28 +99,21 @@ export default function Dashboard() {
         <p className="text-muted-foreground text-sm mt-1">Overview of The Republic platform.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <div className="xl:col-span-1">
-          <StatCard title="Total Users" value={stats?.totalUsers} icon={<Users className="h-4 w-4" />} loading={statsLoading} />
-        </div>
-        <div className="xl:col-span-1">
-          <StatCard title="Pro Users" value={stats?.proUsers}
-            sub={stats ? `${stats.freeUsers} free` : undefined}
-            icon={<Crown className="h-4 w-4" />} loading={statsLoading} accent="text-primary" />
-        </div>
-        <div className="xl:col-span-1">
-          <StatCard title="New This Week" value={stats?.recentSignups} icon={<TrendingUp className="h-4 w-4" />} loading={statsLoading} />
-        </div>
-        <div className="xl:col-span-1">
-          <StatCard title="Active Sites" value={stats?.activeWebsites} icon={<Globe className="h-4 w-4" />} loading={statsLoading} />
-        </div>
-        <div className="xl:col-span-1">
-          <StatCard title="Open Tickets" value={stats?.openTickets} icon={<LifeBuoy className="h-4 w-4" />} loading={statsLoading}
-            accent={stats?.openTickets ? "text-destructive" : "text-muted-foreground"} />
-        </div>
-        <div className="xl:col-span-1">
-          <StatCard title="Discussion Posts" value={stats?.totalPosts} icon={<MessageSquare className="h-4 w-4" />} loading={statsLoading} />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <StatCard title="Total Users" value={stats?.totalUsers} icon={<Users className="h-4 w-4" />} loading={statsLoading} />
+        <StatCard title="Pro Subscribers" value={stats?.proUsers}
+          sub={membership ? `${membership.conversionRate}% conversion` : `${stats?.freeUsers ?? 0} free`}
+          icon={<Crown className="h-4 w-4" />} loading={statsLoading} accent="text-primary" />
+        <StatCard title="New This Week" value={stats?.recentSignups} icon={<TrendingUp className="h-4 w-4" />} loading={statsLoading} />
+        <StatCard title="Active Sites" value={stats?.activeWebsites} icon={<Globe className="h-4 w-4" />} loading={statsLoading} />
+        <StatCard title="Open Tickets" value={stats?.openTickets} icon={<LifeBuoy className="h-4 w-4" />} loading={statsLoading}
+          accent={stats?.openTickets ? "text-destructive" : "text-muted-foreground"} />
+        <StatCard title="Discussion Posts" value={stats?.totalPosts} icon={<MessageSquare className="h-4 w-4" />} loading={statsLoading} />
+        <StatCard title="Pending Flags" value={membership?.pendingFlags}
+          sub="awaiting review"
+          icon={<ShieldAlert className="h-4 w-4" />}
+          loading={statsLoading}
+          accent={membership?.pendingFlags ? "text-destructive" : "text-muted-foreground"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -116,7 +130,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Pro conversion rate</span>
                   <span className="font-medium">
-                    {stats?.totalUsers ? Math.round((stats.proUsers / stats.totalUsers) * 100) : 0}%
+                    {membership?.conversionRate ?? (stats?.totalUsers ? Math.round((stats.proUsers / stats.totalUsers) * 100) : 0)}%
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -128,6 +142,16 @@ export default function Dashboard() {
                   {(stats?.openTickets ?? 0) > 0 ? (
                     <Badge className="bg-destructive/10 text-destructive border-destructive/20">
                       {stats?.openTickets} open
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-emerald-500 border-emerald-500/20">All clear</Badge>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Pending content flags</span>
+                  {(membership?.pendingFlags ?? 0) > 0 ? (
+                    <Badge className="bg-destructive/10 text-destructive border-destructive/20">
+                      {membership?.pendingFlags} flagged
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-emerald-500 border-emerald-500/20">All clear</Badge>
