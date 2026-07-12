@@ -6,7 +6,9 @@ import {
   talkVotesTable,
   talkCommentsTable,
   usersTable,
+  contentFlagsTable,
 } from "@workspace/db";
+import { containsBlockedWord } from "../utils/blockedWords";
 import { eq, desc, asc, sql, and, lt, ilike, or } from "drizzle-orm";
 import { requireAuth, optionalAuth, ensureUser } from "../middlewares/requireAuth";
 
@@ -178,6 +180,26 @@ router.post("/posts/:id/comments", requireAuth, ensureUser, async (req, res) => 
     .where(eq(talkPostsTable.id, postId));
 
   res.status(201).json({ ...comment, createdAt: comment.createdAt.toISOString() });
+});
+
+// ── Flag post ─────────────────────────────────────────────────────────────────
+router.post("/posts/:id/flag", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const contentId = Number(req.params.id);
+  const { reason, details } = req.body;
+  if (!reason) { res.status(400).json({ error: "reason is required" }); return; }
+  await db.insert(contentFlagsTable).values({ contentType: "talk_post", contentId, userId, reason, details: details ?? null });
+  res.status(201).json({ ok: true });
+});
+
+// ── Flag comment ──────────────────────────────────────────────────────────────
+router.post("/comments/:id/flag", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const contentId = Number(req.params.id);
+  const { reason, details } = req.body;
+  if (!reason) { res.status(400).json({ error: "reason is required" }); return; }
+  await db.insert(contentFlagsTable).values({ contentType: "talk_comment", contentId, userId, reason, details: details ?? null });
+  res.status(201).json({ ok: true });
 });
 
 export default router;

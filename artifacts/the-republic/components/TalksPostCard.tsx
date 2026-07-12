@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import {
+  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -21,6 +22,7 @@ export interface TalkPost {
   upvotes: number;
   commentCount: number;
   hasVoted: boolean;
+  isPinned?: boolean;
   createdAt: string;
 }
 
@@ -28,7 +30,16 @@ interface Props {
   post: TalkPost;
   onVote: (id: number) => void;
   onPress: (post: TalkPost) => void;
+  onFlag?: (id: number, reason: string) => void;
 }
+
+const FLAG_REASONS = [
+  { label: "Spam", value: "spam" },
+  { label: "Harassment", value: "harassment" },
+  { label: "Misinformation", value: "misinformation" },
+  { label: "Hate Speech", value: "hate_speech" },
+  { label: "Other", value: "other" },
+];
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -67,17 +78,43 @@ function Avatar({ name, url, size = 36 }: { name: string; url?: string | null; s
   );
 }
 
-const TalksPostCard = memo(function TalksPostCard({ post, onVote, onPress }: Props) {
+const TalksPostCard = memo(function TalksPostCard({ post, onVote, onPress, onFlag }: Props) {
   const colors = useColors();
+  const [flagged, setFlagged] = useState(false);
+
+  const handleFlag = () => {
+    if (flagged) return;
+    Alert.alert(
+      "Report Post",
+      "Why are you reporting this post?",
+      [
+        ...FLAG_REASONS.map((r) => ({
+          text: r.label,
+          onPress: () => {
+            setFlagged(true);
+            onFlag?.(post.id, r.value);
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ]
+    );
+  };
 
   return (
     <Pressable
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.9 : 1 },
+        { backgroundColor: colors.card, borderColor: post.isPinned ? colors.primary : colors.border, opacity: pressed ? 0.9 : 1 },
       ]}
       onPress={() => onPress(post)}
     >
+      {post.isPinned && (
+        <View style={[styles.pinnedBanner, { backgroundColor: colors.primary + "18" }]}>
+          <Feather name="bookmark" size={11} color={colors.primary} />
+          <Text style={[styles.pinnedText, { color: colors.primary }]}>Pinned</Text>
+        </View>
+      )}
+
       <View style={styles.topRow}>
         <Avatar name={post.displayName} url={post.avatarUrl} />
         <View style={styles.meta}>
@@ -129,6 +166,18 @@ const TalksPostCard = memo(function TalksPostCard({ post, onVote, onPress }: Pro
             {post.commentCount}
           </Text>
         </View>
+
+        <Pressable
+          style={[styles.flagBtn]}
+          onPress={(e) => { e.stopPropagation?.(); handleFlag(); }}
+          hitSlop={8}
+        >
+          <Feather
+            name="flag"
+            size={13}
+            color={flagged ? colors.primary : colors.mutedForeground}
+          />
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -145,6 +194,20 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     padding: 14,
     gap: 8,
+  },
+  pinnedBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    marginBottom: 2,
+  },
+  pinnedText: {
+    fontSize: 11,
+    fontWeight: "600",
   },
   topRow: {
     flexDirection: "row",
@@ -171,6 +234,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginTop: 2,
+    alignItems: "center",
   },
   actionBtn: {
     flexDirection: "row",
@@ -181,4 +245,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   actionCount: { fontSize: 12, fontWeight: "600" },
+  flagBtn: {
+    marginLeft: "auto",
+    padding: 5,
+  },
 });

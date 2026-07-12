@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { citizenVotePostsTable, citizenVoteUpvotesTable } from "@workspace/db";
+import { citizenVotePostsTable, citizenVoteUpvotesTable, contentFlagsTable } from "@workspace/db";
 import { eq, desc, asc, sql, and } from "drizzle-orm";
 import { requireAuth, optionalAuth, ensureUser } from "../middlewares/requireAuth";
+import { containsBlockedWord } from "../utils/blockedWords";
 
 const router = Router();
 
@@ -87,6 +88,16 @@ router.post("/posts/:id/upvote", requireAuth, ensureUser, async (req, res) => {
     const post = await db.select().from(citizenVotePostsTable).where(eq(citizenVotePostsTable.id, postId)).limit(1);
     res.json({ upvotes: post[0].upvotes, hasUpvoted: true });
   }
+});
+
+// ── Flag post ─────────────────────────────────────────────────────────────────
+router.post("/posts/:id/flag", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const contentId = Number(req.params.id);
+  const { reason, details } = req.body;
+  if (!reason) { res.status(400).json({ error: "reason is required" }); return; }
+  await db.insert(contentFlagsTable).values({ contentType: "citizen_vote", contentId, userId, reason, details: details ?? null });
+  res.status(201).json({ ok: true });
 });
 
 export default router;

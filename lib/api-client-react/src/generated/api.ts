@@ -21,6 +21,7 @@ import type {
 
 import type {
   AdminListAuditLogsParams,
+  AdminListContentFlagsParams,
   AdminListSupportTicketsParams,
   AdminListTalkPostsParams,
   AdminListUsersParams,
@@ -37,6 +38,8 @@ import type {
   AutoCloseRequest,
   AutoCloseResult,
   BanRequest,
+  BlockedWord,
+  BlockedWordInput,
   CannedResponse,
   CannedResponseInput,
   Category,
@@ -48,6 +51,8 @@ import type {
   CitizenVotePost,
   CitizenVotePostInput,
   CitizenVotePostList,
+  ContentFlag,
+  FlagInput,
   HealthStatus,
   ListCitizenVotePostsParams,
   ListTalkPostsParams,
@@ -1150,6 +1155,78 @@ export const useCreateCitizenVotePost = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateCitizenVotePostMutationOptions(options));
+    }
+
+export const getFlagCitizenVotePostUrl = (id: number,) => {
+
+
+
+
+  return `/api/citizen-vote/posts/${id}/flag`
+}
+
+/**
+ * @summary Report/flag a citizen vote post
+ */
+export const flagCitizenVotePost = async (id: number,
+    flagInput: FlagInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getFlagCitizenVotePostUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      flagInput,)
+  }
+);}
+
+
+
+
+export const getFlagCitizenVotePostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flagCitizenVotePost>>, TError,{id: number;data: BodyType<FlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof flagCitizenVotePost>>, TError,{id: number;data: BodyType<FlagInput>}, TContext> => {
+
+const mutationKey = ['flagCitizenVotePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof flagCitizenVotePost>>, {id: number;data: BodyType<FlagInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  flagCitizenVotePost(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FlagCitizenVotePostMutationResult = NonNullable<Awaited<ReturnType<typeof flagCitizenVotePost>>>
+    export type FlagCitizenVotePostMutationBody = BodyType<FlagInput>
+    export type FlagCitizenVotePostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Report/flag a citizen vote post
+ */
+export const useFlagCitizenVotePost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flagCitizenVotePost>>, TError,{id: number;data: BodyType<FlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof flagCitizenVotePost>>,
+        TError,
+        {id: number;data: BodyType<FlagInput>},
+        TContext
+      > => {
+      return useMutation(getFlagCitizenVotePostMutationOptions(options));
     }
 
 export const getUpvoteCitizenVotePostUrl = (id: number,) => {
@@ -4340,6 +4417,146 @@ export const useAdminDeleteTalkPost = <TError = ErrorType<unknown>,
       return useMutation(getAdminDeleteTalkPostMutationOptions(options));
     }
 
+export const getAdminPinTalkPostUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/talks/posts/${id}/pin`
+}
+
+/**
+ * @summary Pin a talk post
+ */
+export const adminPinTalkPost = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminPinTalkPostUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminPinTalkPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPinTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminPinTalkPost>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminPinTalkPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminPinTalkPost>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminPinTalkPost(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminPinTalkPostMutationResult = NonNullable<Awaited<ReturnType<typeof adminPinTalkPost>>>
+
+    export type AdminPinTalkPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Pin a talk post
+ */
+export const useAdminPinTalkPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminPinTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminPinTalkPost>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminPinTalkPostMutationOptions(options));
+    }
+
+export const getAdminUnpinTalkPostUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/talks/posts/${id}/unpin`
+}
+
+/**
+ * @summary Unpin a talk post
+ */
+export const adminUnpinTalkPost = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminUnpinTalkPostUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminUnpinTalkPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUnpinTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUnpinTalkPost>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminUnpinTalkPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUnpinTalkPost>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminUnpinTalkPost(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUnpinTalkPostMutationResult = NonNullable<Awaited<ReturnType<typeof adminUnpinTalkPost>>>
+
+    export type AdminUnpinTalkPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Unpin a talk post
+ */
+export const useAdminUnpinTalkPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUnpinTalkPost>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUnpinTalkPost>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminUnpinTalkPostMutationOptions(options));
+    }
+
 export const getAdminListTalkPostCommentsUrl = (id: number,) => {
 
 
@@ -4485,6 +4702,448 @@ export const useAdminDeleteTalkComment = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminDeleteTalkCommentMutationOptions(options));
+    }
+
+export const getAdminListContentFlagsUrl = (params?: AdminListContentFlagsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/moderation/flags?${stringifiedParams}` : `/api/admin/moderation/flags`
+}
+
+/**
+ * @summary List content flags
+ */
+export const adminListContentFlags = async (params?: AdminListContentFlagsParams, options?: RequestInit): Promise<ContentFlag[]> => {
+
+  return customFetch<ContentFlag[]>(getAdminListContentFlagsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListContentFlagsQueryKey = (params?: AdminListContentFlagsParams,) => {
+    return [
+    `/api/admin/moderation/flags`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListContentFlagsQueryOptions = <TData = Awaited<ReturnType<typeof adminListContentFlags>>, TError = ErrorType<unknown>>(params?: AdminListContentFlagsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListContentFlags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListContentFlagsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListContentFlags>>> = ({ signal }) => adminListContentFlags(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListContentFlags>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListContentFlagsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListContentFlags>>>
+export type AdminListContentFlagsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List content flags
+ */
+
+export function useAdminListContentFlags<TData = Awaited<ReturnType<typeof adminListContentFlags>>, TError = ErrorType<unknown>>(
+ params?: AdminListContentFlagsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListContentFlags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListContentFlagsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminDismissFlagUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/moderation/flags/${id}/dismiss`
+}
+
+/**
+ * @summary Dismiss a content flag
+ */
+export const adminDismissFlag = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDismissFlagUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDismissFlagMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDismissFlag>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDismissFlag>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDismissFlag'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDismissFlag>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDismissFlag(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDismissFlagMutationResult = NonNullable<Awaited<ReturnType<typeof adminDismissFlag>>>
+
+    export type AdminDismissFlagMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Dismiss a content flag
+ */
+export const useAdminDismissFlag = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDismissFlag>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDismissFlag>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDismissFlagMutationOptions(options));
+    }
+
+export const getAdminRemoveFlaggedContentUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/moderation/flags/${id}/remove-content`
+}
+
+/**
+ * @summary Remove flagged content and mark flag reviewed
+ */
+export const adminRemoveFlaggedContent = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminRemoveFlaggedContentUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRemoveFlaggedContentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminRemoveFlaggedContent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRemoveFlaggedContent(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRemoveFlaggedContentMutationResult = NonNullable<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>>
+
+    export type AdminRemoveFlaggedContentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove flagged content and mark flag reviewed
+ */
+export const useAdminRemoveFlaggedContent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRemoveFlaggedContent>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRemoveFlaggedContent>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminRemoveFlaggedContentMutationOptions(options));
+    }
+
+export const getAdminListBlockedWordsUrl = () => {
+
+
+
+
+  return `/api/admin/moderation/blocked-words`
+}
+
+/**
+ * @summary List all blocked words
+ */
+export const adminListBlockedWords = async ( options?: RequestInit): Promise<BlockedWord[]> => {
+
+  return customFetch<BlockedWord[]>(getAdminListBlockedWordsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListBlockedWordsQueryKey = () => {
+    return [
+    `/api/admin/moderation/blocked-words`
+    ] as const;
+    }
+
+
+export const getAdminListBlockedWordsQueryOptions = <TData = Awaited<ReturnType<typeof adminListBlockedWords>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListBlockedWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListBlockedWordsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListBlockedWords>>> = ({ signal }) => adminListBlockedWords({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListBlockedWords>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListBlockedWordsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListBlockedWords>>>
+export type AdminListBlockedWordsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all blocked words
+ */
+
+export function useAdminListBlockedWords<TData = Awaited<ReturnType<typeof adminListBlockedWords>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListBlockedWords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListBlockedWordsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminAddBlockedWordUrl = () => {
+
+
+
+
+  return `/api/admin/moderation/blocked-words`
+}
+
+/**
+ * @summary Add a blocked word
+ */
+export const adminAddBlockedWord = async (blockedWordInput: BlockedWordInput, options?: RequestInit): Promise<BlockedWord> => {
+
+  return customFetch<BlockedWord>(getAdminAddBlockedWordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      blockedWordInput,)
+  }
+);}
+
+
+
+
+export const getAdminAddBlockedWordMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddBlockedWord>>, TError,{data: BodyType<BlockedWordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddBlockedWord>>, TError,{data: BodyType<BlockedWordInput>}, TContext> => {
+
+const mutationKey = ['adminAddBlockedWord'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddBlockedWord>>, {data: BodyType<BlockedWordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminAddBlockedWord(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddBlockedWordMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddBlockedWord>>>
+    export type AdminAddBlockedWordMutationBody = BodyType<BlockedWordInput>
+    export type AdminAddBlockedWordMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a blocked word
+ */
+export const useAdminAddBlockedWord = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddBlockedWord>>, TError,{data: BodyType<BlockedWordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddBlockedWord>>,
+        TError,
+        {data: BodyType<BlockedWordInput>},
+        TContext
+      > => {
+      return useMutation(getAdminAddBlockedWordMutationOptions(options));
+    }
+
+export const getAdminDeleteBlockedWordUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/moderation/blocked-words/${id}`
+}
+
+/**
+ * @summary Delete a blocked word
+ */
+export const adminDeleteBlockedWord = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteBlockedWordUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteBlockedWordMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteBlockedWord>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteBlockedWord>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteBlockedWord'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteBlockedWord>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteBlockedWord(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteBlockedWordMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteBlockedWord>>>
+
+    export type AdminDeleteBlockedWordMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a blocked word
+ */
+export const useAdminDeleteBlockedWord = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteBlockedWord>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteBlockedWord>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteBlockedWordMutationOptions(options));
     }
 
 export const getListTalkCategoriesUrl = () => {
@@ -4787,6 +5446,150 @@ export const useVoteTalkPost = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getVoteTalkPostMutationOptions(options));
+    }
+
+export const getFlagTalkPostUrl = (id: number,) => {
+
+
+
+
+  return `/api/talks/posts/${id}/flag`
+}
+
+/**
+ * @summary Report/flag a talk post
+ */
+export const flagTalkPost = async (id: number,
+    flagInput: FlagInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getFlagTalkPostUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      flagInput,)
+  }
+);}
+
+
+
+
+export const getFlagTalkPostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flagTalkPost>>, TError,{id: number;data: BodyType<FlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof flagTalkPost>>, TError,{id: number;data: BodyType<FlagInput>}, TContext> => {
+
+const mutationKey = ['flagTalkPost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof flagTalkPost>>, {id: number;data: BodyType<FlagInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  flagTalkPost(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FlagTalkPostMutationResult = NonNullable<Awaited<ReturnType<typeof flagTalkPost>>>
+    export type FlagTalkPostMutationBody = BodyType<FlagInput>
+    export type FlagTalkPostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Report/flag a talk post
+ */
+export const useFlagTalkPost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flagTalkPost>>, TError,{id: number;data: BodyType<FlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof flagTalkPost>>,
+        TError,
+        {id: number;data: BodyType<FlagInput>},
+        TContext
+      > => {
+      return useMutation(getFlagTalkPostMutationOptions(options));
+    }
+
+export const getFlagTalkCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/talks/comments/${id}/flag`
+}
+
+/**
+ * @summary Report/flag a talk comment
+ */
+export const flagTalkComment = async (id: number,
+    flagInput: FlagInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getFlagTalkCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      flagInput,)
+  }
+);}
+
+
+
+
+export const getFlagTalkCommentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flagTalkComment>>, TError,{id: number;data: BodyType<FlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof flagTalkComment>>, TError,{id: number;data: BodyType<FlagInput>}, TContext> => {
+
+const mutationKey = ['flagTalkComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof flagTalkComment>>, {id: number;data: BodyType<FlagInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  flagTalkComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FlagTalkCommentMutationResult = NonNullable<Awaited<ReturnType<typeof flagTalkComment>>>
+    export type FlagTalkCommentMutationBody = BodyType<FlagInput>
+    export type FlagTalkCommentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Report/flag a talk comment
+ */
+export const useFlagTalkComment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof flagTalkComment>>, TError,{id: number;data: BodyType<FlagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof flagTalkComment>>,
+        TError,
+        {id: number;data: BodyType<FlagInput>},
+        TContext
+      > => {
+      return useMutation(getFlagTalkCommentMutationOptions(options));
     }
 
 export const getListTalkCommentsUrl = (id: number,) => {

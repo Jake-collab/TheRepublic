@@ -33,7 +33,7 @@ export default function NotificationsScreen() {
   const unreadCount = items.filter((n: any) => !n.isRead).length;
 
   const handleMarkAll = () => {
-    markAll({}, { onSuccess: () => refetch() });
+    markAll(undefined as any, { onSuccess: () => refetch() });
   };
 
   const handleMarkOne = (id: number) => {

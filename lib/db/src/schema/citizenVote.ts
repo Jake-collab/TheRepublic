@@ -12,6 +12,8 @@ export const citizenVotePostsTable = pgTable("citizen_vote_posts", {
   geo: text("geo"),
   isNational: boolean("is_national").notNull().default(false),
   upvotes: integer("upvotes").notNull().default(0),
+  isPinned: boolean("is_pinned").notNull().default(false),
+  pinnedAt: timestamp("pinned_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

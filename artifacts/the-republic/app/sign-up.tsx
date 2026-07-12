@@ -204,7 +204,7 @@ export default function SignUpScreen() {
 
           {errors?.global && (
             <Text style={[styles.errorText, { color: colors.destructive }]}>
-              {errors.global.message}
+              {(errors.global as any).longMessage ?? (errors.global as any).message ?? "An error occurred"}
             </Text>
           )}
 

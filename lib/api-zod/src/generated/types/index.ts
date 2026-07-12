@@ -7,6 +7,9 @@
  */
 
 export * from './adminListAuditLogsParams';
+export * from './adminListContentFlagsContentType';
+export * from './adminListContentFlagsParams';
+export * from './adminListContentFlagsStatus';
 export * from './adminListSupportTicketsParams';
 export * from './adminListTalkPostsParams';
 export * from './adminListUsersParams';
@@ -25,6 +28,8 @@ export * from './auditLogList';
 export * from './autoCloseRequest';
 export * from './autoCloseResult';
 export * from './banRequest';
+export * from './blockedWord';
+export * from './blockedWordInput';
 export * from './cannedResponse';
 export * from './cannedResponseInput';
 export * from './category';
@@ -37,6 +42,9 @@ export * from './checkoutSession';
 export * from './citizenVotePost';
 export * from './citizenVotePostInput';
 export * from './citizenVotePostList';
+export * from './contentFlag';
+export * from './flagInput';
+export * from './flagInputReason';
 export * from './healthStatus';
 export * from './listCitizenVotePostsParams';
 export * from './listCitizenVotePostsSort';

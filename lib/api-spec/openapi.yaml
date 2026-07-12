@@ -293,6 +293,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/CitizenVotePost"
 
+  /citizen-vote/posts/{id}/flag:
+    post:
+      operationId: flagCitizenVotePost
+      tags: [citizen-vote]
+      summary: Report/flag a citizen vote post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlagInput"
+      responses:
+        "201":
+          description: Flagged
+
   /citizen-vote/posts/{id}/upvote:
     post:
       operationId: upvoteCitizenVotePost
@@ -1082,6 +1103,36 @@ paths:
         "204":
           description: Deleted
 
+  /admin/talks/posts/{id}/pin:
+    post:
+      operationId: adminPinTalkPost
+      tags: [admin]
+      summary: Pin a talk post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /admin/talks/posts/{id}/unpin:
+    post:
+      operationId: adminUnpinTalkPost
+      tags: [admin]
+      summary: Unpin a talk post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
   /admin/talks/posts/{id}/comments:
     get:
       operationId: adminListTalkPostComments
@@ -1108,6 +1159,110 @@ paths:
       operationId: adminDeleteTalkComment
       tags: [admin]
       summary: Delete a talk comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Admin Moderation ──────────────────────────────────────────────────────────
+  /admin/moderation/flags:
+    get:
+      operationId: adminListContentFlags
+      tags: [admin]
+      summary: List content flags
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, reviewed, dismissed]
+        - name: contentType
+          in: query
+          schema:
+            type: string
+            enum: [talk_post, talk_comment, citizen_vote]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContentFlag"
+
+  /admin/moderation/flags/{id}/dismiss:
+    post:
+      operationId: adminDismissFlag
+      tags: [admin]
+      summary: Dismiss a content flag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /admin/moderation/flags/{id}/remove-content:
+    post:
+      operationId: adminRemoveFlaggedContent
+      tags: [admin]
+      summary: Remove flagged content and mark flag reviewed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /admin/moderation/blocked-words:
+    get:
+      operationId: adminListBlockedWords
+      tags: [admin]
+      summary: List all blocked words
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BlockedWord"
+    post:
+      operationId: adminAddBlockedWord
+      tags: [admin]
+      summary: Add a blocked word
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockedWordInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockedWord"
+
+  /admin/moderation/blocked-words/{id}:
+    delete:
+      operationId: adminDeleteBlockedWord
+      tags: [admin]
+      summary: Delete a blocked word
       parameters:
         - name: id
           in: path
@@ -1206,6 +1361,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TalkVoteResult"
+
+  /talks/posts/{id}/flag:
+    post:
+      operationId: flagTalkPost
+      tags: [talks]
+      summary: Report/flag a talk post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlagInput"
+      responses:
+        "201":
+          description: Flagged
+
+  /talks/comments/{id}/flag:
+    post:
+      operationId: flagTalkComment
+      tags: [talks]
+      summary: Report/flag a talk comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlagInput"
+      responses:
+        "201":
+          description: Flagged
 
   /talks/posts/{id}/comments:
     get:
@@ -1634,6 +1831,8 @@ components:
           type: integer
         hasUpvoted:
           type: boolean
+        isPinned:
+          type: boolean
         createdAt:
           type: string
 
@@ -2036,6 +2235,8 @@ components:
           type: integer
         hasVoted:
           type: boolean
+        isPinned:
+          type: boolean
         createdAt:
           type: string
 
@@ -2134,6 +2335,64 @@ components:
         isActive:
           type: boolean
 
+    # ── Moderation ────────────────────────────────────────────────────────────
+    ContentFlag:
+      type: object
+      required: [id, contentType, contentId, reason, status, createdAt]
+      properties:
+        id:
+          type: integer
+        contentType:
+          type: string
+        contentId:
+          type: integer
+        userId:
+          type: ["string", "null"]
+        reason:
+          type: string
+        details:
+          type: ["string", "null"]
+        status:
+          type: string
+        reviewedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        reporterEmail:
+          type: ["string", "null"]
+        reporterName:
+          type: ["string", "null"]
+
+    BlockedWord:
+      type: object
+      required: [id, word, createdAt]
+      properties:
+        id:
+          type: integer
+        word:
+          type: string
+        addedBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    BlockedWordInput:
+      type: object
+      required: [word]
+      properties:
+        word:
+          type: string
+
+    FlagInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [spam, harassment, misinformation, hate_speech, other]
+        details:
+          type: string
+
     AdminTalkPost:
       type: object
       required: [id, categoryId, categoryName, displayName, title, body, upvotes, commentCount, createdAt]
@@ -2158,6 +2417,10 @@ components:
           type: integer
         commentCount:
           type: integer
+        isPinned:
+          type: boolean
+        pinnedAt:
+          type: ["string", "null"]
         createdAt:
           type: string
 

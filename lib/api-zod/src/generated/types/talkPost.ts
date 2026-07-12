@@ -19,5 +19,6 @@ export interface TalkPost {
   upvotes: number;
   commentCount: number;
   hasVoted: boolean;
+  isPinned?: boolean;
   createdAt: string;
 }

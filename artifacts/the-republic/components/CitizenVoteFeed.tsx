@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import React, { useState, useCallback, memo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -25,7 +26,16 @@ import {
 
 const GEO_OPTIONS = ["National", "Local", "State", "Global"];
 const CAT_OPTIONS = ["Economy", "Health", "Education", "Environment", "Safety", "Housing", "Other"];
+const FLAG_REASONS = [
+  { label: "Spam", value: "spam" },
+  { label: "Harassment", value: "harassment" },
+  { label: "Misinformation", value: "misinformation" },
+  { label: "Hate Speech", value: "hate_speech" },
+  { label: "Other", value: "other" },
+];
 const postKeyExtractor = (item: { id: number }) => String(item.id);
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
 
 interface Post {
   id: number;
@@ -36,6 +46,7 @@ interface Post {
   upvoteCount: number;
   didUpvote: boolean;
   authorName: string;
+  isPinned?: boolean;
   createdAt: string;
 }
 
@@ -50,8 +61,50 @@ function timeAgo(iso: string) {
 
 const PostCard = memo(function PostCard({ post, onUpvote }: { post: Post; onUpvote: (id: number) => void }) {
   const colors = useColors();
+  const [flagged, setFlagged] = useState(false);
+
+  const handleFlag = () => {
+    if (flagged) return;
+    Alert.alert(
+      "Report Vote",
+      "Why are you reporting this?",
+      [
+        ...FLAG_REASONS.map((r) => ({
+          text: r.label,
+          onPress: async () => {
+            try {
+              await fetch(`${BASE_URL}/api/citizen-vote/posts/${post.id}/flag`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ reason: r.value }),
+              });
+              setFlagged(true);
+            } catch {
+              // silent — flag is best-effort
+            }
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ]
+    );
+  };
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[
+      styles.card,
+      {
+        backgroundColor: colors.card,
+        borderColor: post.isPinned ? colors.primary : colors.border,
+        borderWidth: post.isPinned ? 1.5 : StyleSheet.hairlineWidth,
+      },
+    ]}>
+      {post.isPinned && (
+        <View style={[styles.pinnedBanner, { backgroundColor: colors.primary + "18" }]}>
+          <Feather name="bookmark" size={10} color={colors.primary} />
+          <Text style={[styles.pinnedText, { color: colors.primary }]}>Pinned</Text>
+        </View>
+      )}
       <View style={styles.cardHeader}>
         <View style={[styles.badge, { backgroundColor: colors.secondary }]}>
           <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>
@@ -76,31 +129,40 @@ const PostCard = memo(function PostCard({ post, onUpvote }: { post: Post; onUpvo
         <Text style={[styles.authorText, { color: colors.mutedForeground }]}>
           {post.authorName}
         </Text>
-        <Pressable
-          style={({ pressed }) => [
-            styles.upvoteBtn,
-            {
-              backgroundColor: post.didUpvote ? colors.primary : colors.secondary,
-              borderColor: post.didUpvote ? colors.primary : colors.border,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
-          onPress={() => onUpvote(post.id)}
-        >
-          <Feather
-            name="arrow-up"
-            size={13}
-            color={post.didUpvote ? colors.primaryForeground : colors.mutedForeground}
-          />
-          <Text
-            style={[
-              styles.upvoteText,
-              { color: post.didUpvote ? colors.primaryForeground : colors.mutedForeground },
+        <View style={styles.footerActions}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.upvoteBtn,
+              {
+                backgroundColor: post.didUpvote ? colors.primary : colors.secondary,
+                borderColor: post.didUpvote ? colors.primary : colors.border,
+                opacity: pressed ? 0.7 : 1,
+              },
             ]}
+            onPress={() => onUpvote(post.id)}
           >
-            {post.upvoteCount}
-          </Text>
-        </Pressable>
+            <Feather
+              name="arrow-up"
+              size={13}
+              color={post.didUpvote ? colors.primaryForeground : colors.mutedForeground}
+            />
+            <Text
+              style={[
+                styles.upvoteText,
+                { color: post.didUpvote ? colors.primaryForeground : colors.mutedForeground },
+              ]}
+            >
+              {post.upvoteCount}
+            </Text>
+          </Pressable>
+          <Pressable onPress={handleFlag} hitSlop={8} style={styles.flagBtn}>
+            <Feather
+              name="flag"
+              size={13}
+              color={flagged ? colors.primary : colors.mutedForeground}
+            />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -225,14 +287,17 @@ export default function CitizenVoteFeed() {
     upvoteMutation.mutate({ id });
   }, [upvoteMutation]);
 
-  const handleCreate = (body: {
+  const handleCreate = (formData: {
     title: string;
     body: string;
     category: string;
     geo: string;
   }) => {
+    const content = formData.body.trim()
+      ? `${formData.title}\n\n${formData.body}`
+      : formData.title;
     createMutation.mutate(
-      { data: body },
+      { data: { content, category: formData.category, geo: formData.geo } },
       { onSuccess: () => refetch() }
     );
   };
@@ -321,9 +386,19 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     padding: 14,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },
+  pinnedBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    marginBottom: 2,
+  },
+  pinnedText: { fontSize: 11, fontWeight: "600" },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
   badge: {
     flexDirection: "row",
@@ -339,6 +414,7 @@ const styles = StyleSheet.create({
   cardBody: { fontSize: 13, lineHeight: 19 },
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 },
   authorText: { fontSize: 12 },
+  footerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   upvoteBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -349,6 +425,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   upvoteText: { fontSize: 12, fontWeight: "600" },
+  flagBtn: { padding: 4 },
   fab: {
     position: "absolute",
     bottom: 24,

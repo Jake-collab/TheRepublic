@@ -17,5 +17,6 @@ export interface CitizenVotePost {
   isNational?: boolean;
   upvotes: number;
   hasUpvoted?: boolean;
+  isPinned?: boolean;
   createdAt: string;
 }

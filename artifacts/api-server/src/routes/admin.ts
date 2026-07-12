@@ -5,7 +5,9 @@ import {
   supportTicketsTable, cannedResponsesTable, notificationsTable, webviewSettingsTable, auditLogsTable,
   citizenVotePostsTable, stripeSettingsTable,
   talkCategoriesTable, talkPostsTable, talkCommentsTable, talkVotesTable,
+  contentFlagsTable, blockedWordsTable,
 } from "@workspace/db";
+import { invalidateBlockedWordsCache } from "../utils/blockedWords";
 import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
 import { isEmailConfigured, sendTicketReplyEmail } from "../utils/email";
 import { eq, desc, asc, and, sql, ilike, lte } from "drizzle-orm";
@@ -628,6 +630,106 @@ router.delete("/talks/comments/:id", async (req, res) => {
   await db.delete(talkCommentsTable).where(eq(talkCommentsTable.id, id));
   await logAction((req as any).userId, "delete_talk_comment", `id=${id}`);
   res.status(204).send();
+});
+
+// ── Moderation: Flags ─────────────────────────────────────────────────────────
+router.get("/moderation/flags", async (req, res) => {
+  const { status, contentType } = req.query;
+  const conditions = [];
+  if (status && typeof status === "string") conditions.push(eq(contentFlagsTable.status, status));
+  if (contentType && typeof contentType === "string") conditions.push(eq(contentFlagsTable.contentType, contentType));
+
+  const rows = await db
+    .select({
+      flag: contentFlagsTable,
+      reporterEmail: usersTable.email,
+      reporterName: usersTable.displayName,
+    })
+    .from(contentFlagsTable)
+    .leftJoin(usersTable, eq(contentFlagsTable.userId, usersTable.id))
+    .where(conditions.length ? and(...(conditions as [ReturnType<typeof eq>])) : undefined)
+    .orderBy(desc(contentFlagsTable.createdAt))
+    .limit(200);
+
+  res.json(rows.map((r) => ({
+    ...r.flag,
+    reporterEmail: r.reporterEmail ?? null,
+    reporterName: r.reporterName ?? null,
+  })));
+});
+
+router.post("/moderation/flags/:id/dismiss", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.update(contentFlagsTable)
+    .set({ status: "dismissed", reviewedAt: new Date() })
+    .where(eq(contentFlagsTable.id, id));
+  await logAction((req as any).userId, "dismiss_flag", `id=${id}`);
+  res.json({ ok: true });
+});
+
+router.post("/moderation/flags/:id/remove-content", async (req, res) => {
+  const id = Number(req.params.id);
+  const [flag] = await db.select().from(contentFlagsTable).where(eq(contentFlagsTable.id, id));
+  if (!flag) { res.status(404).json({ error: "Flag not found" }); return; }
+
+  if (flag.contentType === "talk_post") {
+    await db.delete(talkCommentsTable).where(eq(talkCommentsTable.postId, flag.contentId));
+    await db.delete(talkVotesTable).where(eq(talkVotesTable.postId, flag.contentId));
+    await db.delete(talkPostsTable).where(eq(talkPostsTable.id, flag.contentId));
+  } else if (flag.contentType === "talk_comment") {
+    await db.delete(talkCommentsTable).where(eq(talkCommentsTable.id, flag.contentId));
+  } else if (flag.contentType === "citizen_vote") {
+    await db.delete(citizenVotePostsTable).where(eq(citizenVotePostsTable.id, flag.contentId));
+  }
+
+  await db.update(contentFlagsTable)
+    .set({ status: "reviewed", reviewedAt: new Date() })
+    .where(eq(contentFlagsTable.id, id));
+
+  await logAction((req as any).userId, "remove_flagged_content", `flagId=${id} type=${flag.contentType}`);
+  res.json({ ok: true });
+});
+
+// ── Moderation: Blocked Words ─────────────────────────────────────────────────
+router.get("/moderation/blocked-words", async (req, res) => {
+  const words = await db.select().from(blockedWordsTable).orderBy(asc(blockedWordsTable.word));
+  res.json(words);
+});
+
+router.post("/moderation/blocked-words", async (req, res) => {
+  const { word } = req.body;
+  if (!word?.trim()) { res.status(400).json({ error: "word is required" }); return; }
+  const [created] = await db
+    .insert(blockedWordsTable)
+    .values({ word: word.trim().toLowerCase(), addedBy: (req as any).userId })
+    .onConflictDoNothing()
+    .returning();
+  invalidateBlockedWordsCache();
+  await logAction((req as any).userId, "add_blocked_word", `word=${word.trim()}`);
+  res.status(201).json(created ?? { word: word.trim() });
+});
+
+router.delete("/moderation/blocked-words/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.delete(blockedWordsTable).where(eq(blockedWordsTable.id, id));
+  invalidateBlockedWordsCache();
+  await logAction((req as any).userId, "remove_blocked_word", `id=${id}`);
+  res.status(204).send();
+});
+
+// ── Talks: Pin / Unpin ────────────────────────────────────────────────────────
+router.post("/talks/posts/:id/pin", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.update(talkPostsTable).set({ isPinned: true, pinnedAt: new Date() }).where(eq(talkPostsTable.id, id));
+  await logAction((req as any).userId, "pin_talk_post", `id=${id}`);
+  res.json({ ok: true });
+});
+
+router.post("/talks/posts/:id/unpin", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.update(talkPostsTable).set({ isPinned: false, pinnedAt: null }).where(eq(talkPostsTable.id, id));
+  await logAction((req as any).userId, "unpin_talk_post", `id=${id}`);
+  res.json({ ok: true });
 });
 
 // ── Notifications ─────────────────────────────────────────────────────────────

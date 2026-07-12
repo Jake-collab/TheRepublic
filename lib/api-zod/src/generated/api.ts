@@ -283,6 +283,7 @@ export const ListCitizenVotePostsResponse = zod.object({
   "isNational": zod.boolean().optional(),
   "upvotes": zod.number(),
   "hasUpvoted": zod.boolean().optional(),
+  "isPinned": zod.boolean().optional(),
   "createdAt": zod.string()
 })),
   "total": zod.number(),
@@ -303,6 +304,19 @@ export const CreateCitizenVotePostBody = zod.object({
   "category": zod.string(),
   "geo": zod.string().nullish(),
   "isNational": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Report/flag a citizen vote post
+ */
+export const FlagCitizenVotePostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const FlagCitizenVotePostBody = zod.object({
+  "reason": zod.enum(['spam', 'harassment', 'misinformation', 'hate_speech', 'other']),
+  "details": zod.string().optional()
 })
 
 
@@ -1016,6 +1030,8 @@ export const AdminListTalkPostsResponse = zod.object({
   "body": zod.string(),
   "upvotes": zod.number(),
   "commentCount": zod.number(),
+  "isPinned": zod.boolean().optional(),
+  "pinnedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })),
   "total": zod.number(),
@@ -1027,6 +1043,22 @@ export const AdminListTalkPostsResponse = zod.object({
  * @summary Delete a talk post (and its comments)
  */
 export const AdminDeleteTalkPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Pin a talk post
+ */
+export const AdminPinTalkPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Unpin a talk post
+ */
+export const AdminUnpinTalkPostParams = zod.object({
   "id": zod.coerce.number()
 })
 
@@ -1054,6 +1086,74 @@ export const AdminListTalkPostCommentsResponse = zod.array(AdminListTalkPostComm
  * @summary Delete a talk comment
  */
 export const AdminDeleteTalkCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List content flags
+ */
+export const AdminListContentFlagsQueryParams = zod.object({
+  "status": zod.enum(['pending', 'reviewed', 'dismissed']).optional(),
+  "contentType": zod.enum(['talk_post', 'talk_comment', 'citizen_vote']).optional()
+})
+
+export const AdminListContentFlagsResponseItem = zod.object({
+  "id": zod.number(),
+  "contentType": zod.string(),
+  "contentId": zod.number(),
+  "userId": zod.string().nullish(),
+  "reason": zod.string(),
+  "details": zod.string().nullish(),
+  "status": zod.string(),
+  "reviewedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reporterEmail": zod.string().nullish(),
+  "reporterName": zod.string().nullish()
+})
+export const AdminListContentFlagsResponse = zod.array(AdminListContentFlagsResponseItem)
+
+
+/**
+ * @summary Dismiss a content flag
+ */
+export const AdminDismissFlagParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Remove flagged content and mark flag reviewed
+ */
+export const AdminRemoveFlaggedContentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all blocked words
+ */
+export const AdminListBlockedWordsResponseItem = zod.object({
+  "id": zod.number(),
+  "word": zod.string(),
+  "addedBy": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const AdminListBlockedWordsResponse = zod.array(AdminListBlockedWordsResponseItem)
+
+
+/**
+ * @summary Add a blocked word
+ */
+export const AdminAddBlockedWordBody = zod.object({
+  "word": zod.string()
+})
+
+
+/**
+ * @summary Delete a blocked word
+ */
+export const AdminDeleteBlockedWordParams = zod.object({
   "id": zod.coerce.number()
 })
 
@@ -1097,6 +1197,7 @@ export const ListTalkPostsResponse = zod.object({
   "upvotes": zod.number(),
   "commentCount": zod.number(),
   "hasVoted": zod.boolean(),
+  "isPinned": zod.boolean().optional(),
   "createdAt": zod.string()
 })),
   "nextCursor": zod.number().nullish()
@@ -1123,6 +1224,32 @@ export const VoteTalkPostParams = zod.object({
 export const VoteTalkPostResponse = zod.object({
   "upvotes": zod.number(),
   "hasVoted": zod.boolean()
+})
+
+
+/**
+ * @summary Report/flag a talk post
+ */
+export const FlagTalkPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const FlagTalkPostBody = zod.object({
+  "reason": zod.enum(['spam', 'harassment', 'misinformation', 'hate_speech', 'other']),
+  "details": zod.string().optional()
+})
+
+
+/**
+ * @summary Report/flag a talk comment
+ */
+export const FlagTalkCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const FlagTalkCommentBody = zod.object({
+  "reason": zod.enum(['spam', 'harassment', 'misinformation', 'hate_speech', 'other']),
+  "details": zod.string().optional()
 })
 
 

@@ -19,5 +19,8 @@ export interface AdminTalkPost {
   body: string;
   upvotes: number;
   commentCount: number;
+  isPinned?: boolean;
+  /** @nullable */
+  pinnedAt?: string | null;
   createdAt: string;
 }

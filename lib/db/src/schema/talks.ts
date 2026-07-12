@@ -22,6 +22,8 @@ export const talkPostsTable = pgTable("talk_posts", {
   body: text("body").notNull(),
   upvotes: integer("upvotes").notNull().default(0),
   commentCount: integer("comment_count").notNull().default(0),
+  isPinned: boolean("is_pinned").notNull().default(false),
+  pinnedAt: timestamp("pinned_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -15,12 +15,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import { useCreateSupportTicket } from "@workspace/api-client-react";
+import { useCreateSupportTicket, SupportTicketInputType } from "@workspace/api-client-react";
 
-const TICKET_TYPES = [
-  { value: "support", label: "General support" },
-  { value: "bug", label: "Report a bug" },
-  { value: "feature", label: "Feature request" },
+const TICKET_TYPES: { value: SupportTicketInputType; label: string }[] = [
+  { value: SupportTicketInputType.support, label: "General support" },
+  { value: SupportTicketInputType.bug, label: "Report a bug" },
+  { value: SupportTicketInputType.feature, label: "Feature request" },
 ];
 
 export default function SupportScreen() {
@@ -29,7 +29,7 @@ export default function SupportScreen() {
   const router = useRouter();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const [type, setType] = useState("support");
+  const [type, setType] = useState<SupportTicketInputType>(SupportTicketInputType.support);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);

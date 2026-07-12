@@ -268,6 +268,7 @@ export interface CitizenVotePost {
   isNational?: boolean;
   upvotes: number;
   hasUpvoted?: boolean;
+  isPinned?: boolean;
   createdAt: string;
 }
 
@@ -552,6 +553,7 @@ export interface TalkPost {
   upvotes: number;
   commentCount: number;
   hasVoted: boolean;
+  isPinned?: boolean;
   createdAt: string;
 }
 
@@ -609,6 +611,53 @@ export interface AdminTalkCategoryUpdate {
   isActive?: boolean;
 }
 
+export interface ContentFlag {
+  id: number;
+  contentType: string;
+  contentId: number;
+  /** @nullable */
+  userId?: string | null;
+  reason: string;
+  /** @nullable */
+  details?: string | null;
+  status: string;
+  /** @nullable */
+  reviewedAt?: string | null;
+  createdAt: string;
+  /** @nullable */
+  reporterEmail?: string | null;
+  /** @nullable */
+  reporterName?: string | null;
+}
+
+export interface BlockedWord {
+  id: number;
+  word: string;
+  /** @nullable */
+  addedBy?: string | null;
+  createdAt: string;
+}
+
+export interface BlockedWordInput {
+  word: string;
+}
+
+export type FlagInputReason = typeof FlagInputReason[keyof typeof FlagInputReason];
+
+
+export const FlagInputReason = {
+  spam: 'spam',
+  harassment: 'harassment',
+  misinformation: 'misinformation',
+  hate_speech: 'hate_speech',
+  other: 'other',
+} as const;
+
+export interface FlagInput {
+  reason: FlagInputReason;
+  details?: string;
+}
+
 export interface AdminTalkPost {
   id: number;
   categoryId: number;
@@ -622,6 +671,9 @@ export interface AdminTalkPost {
   body: string;
   upvotes: number;
   commentCount: number;
+  isPinned?: boolean;
+  /** @nullable */
+  pinnedAt?: string | null;
   createdAt: string;
 }
 
@@ -713,6 +765,29 @@ search?: string | null;
 cursor?: number | null;
 limit?: number;
 };
+
+export type AdminListContentFlagsParams = {
+status?: AdminListContentFlagsStatus;
+contentType?: AdminListContentFlagsContentType;
+};
+
+export type AdminListContentFlagsStatus = typeof AdminListContentFlagsStatus[keyof typeof AdminListContentFlagsStatus];
+
+
+export const AdminListContentFlagsStatus = {
+  pending: 'pending',
+  reviewed: 'reviewed',
+  dismissed: 'dismissed',
+} as const;
+
+export type AdminListContentFlagsContentType = typeof AdminListContentFlagsContentType[keyof typeof AdminListContentFlagsContentType];
+
+
+export const AdminListContentFlagsContentType = {
+  talk_post: 'talk_post',
+  talk_comment: 'talk_comment',
+  citizen_vote: 'citizen_vote',
+} as const;
 
 export type ListTalkPostsParams = {
 /**
