@@ -1,3 +1,4 @@
 - [Moderation schema](moderation-schema.md) — contentFlagsTable + blockedWordsTable live in lib/db/src/schema/moderation.ts; blocklist cache TTL 60s in api-server/src/utils/blockedWords.ts
 - [Mobile TS quirks](mobile-ts-quirks.md) — 4 pre-existing TS errors in mobile app fixed: useColors unknown-cast, markAll undefined, ClerkError.message→longMessage, SupportTicketInputType enum
 - [Analytics time-series pattern](analytics-pattern.md) — date-gap-filling pattern for daily aggregates, Recharts dark-theme config
+- [Website/category management patterns](website-management.md) — bulk ops with inArray, CSV export via res.setHeader, HTML5 DnD for category reorder

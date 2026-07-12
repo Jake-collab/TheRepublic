@@ -3,14 +3,14 @@ import { db } from "@workspace/db";
 import {
   categoriesTable, websitesTable, usersTable, membershipsTable,
   supportTicketsTable, cannedResponsesTable, notificationsTable, webviewSettingsTable, auditLogsTable,
-  citizenVotePostsTable, stripeSettingsTable,
+  citizenVotePostsTable, stripeSettingsTable, userWebsitePrefsTable,
   talkCategoriesTable, talkPostsTable, talkCommentsTable, talkVotesTable,
   contentFlagsTable, blockedWordsTable,
 } from "@workspace/db";
 import { invalidateBlockedWordsCache } from "../utils/blockedWords";
 import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
 import { isEmailConfigured, sendTicketReplyEmail } from "../utils/email";
-import { eq, desc, asc, and, sql, ilike, lte } from "drizzle-orm";
+import { eq, desc, asc, and, sql, ilike, lte, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAuth";
 
 const router = Router();
@@ -48,8 +48,19 @@ router.get("/stats", async (req, res) => {
 
 // ── Categories ────────────────────────────────────────────────────────────────
 router.get("/categories", async (req, res) => {
-  const rows = await db.select().from(categoriesTable).orderBy(asc(categoriesTable.sortOrder));
-  res.json(rows.map(r => ({ id: r.id, name: r.name, isActive: r.isActive, sortOrder: r.sortOrder })));
+  const rows = await db
+    .select({
+      id: categoriesTable.id,
+      name: categoriesTable.name,
+      isActive: categoriesTable.isActive,
+      sortOrder: categoriesTable.sortOrder,
+      websiteCount: sql<number>`count(${websitesTable.id})::int`,
+    })
+    .from(categoriesTable)
+    .leftJoin(websitesTable, eq(websitesTable.categoryId, categoriesTable.id))
+    .groupBy(categoriesTable.id)
+    .orderBy(asc(categoriesTable.sortOrder));
+  res.json(rows);
 });
 
 router.post("/categories", async (req, res) => {
@@ -107,6 +118,88 @@ router.patch("/websites/:id", async (req, res) => {
   const cat = row[0].categoryId ? await db.select().from(categoriesTable).where(eq(categoriesTable.id, row[0].categoryId)).limit(1) : [];
   await logAction((req as any).userId, "update_website", `id=${id}`);
   res.json({ ...row[0], categoryName: cat[0]?.name ?? null });
+});
+
+router.get("/websites/usage", async (req, res) => {
+  const rows = await db
+    .select({
+      id: websitesTable.id,
+      name: websitesTable.name,
+      url: websitesTable.url,
+      displayDomain: websitesTable.displayDomain,
+      iconUrl: websitesTable.iconUrl,
+      isFree: websitesTable.isFree,
+      isActive: websitesTable.isActive,
+      categoryId: websitesTable.categoryId,
+      categoryName: categoriesTable.name,
+      tabOrder: websitesTable.tabOrder,
+      cardOrder: websitesTable.cardOrder,
+      canBeTab: websitesTable.canBeTab,
+      canPreload: websitesTable.canPreload,
+      remembersUrl: websitesTable.remembersUrl,
+      popupMitigationEnabled: websitesTable.popupMitigationEnabled,
+      notes: websitesTable.notes,
+      userCount: sql<number>`count(${userWebsitePrefsTable.id})::int`,
+    })
+    .from(websitesTable)
+    .leftJoin(categoriesTable, eq(websitesTable.categoryId, categoriesTable.id))
+    .leftJoin(userWebsitePrefsTable, eq(websitesTable.id, userWebsitePrefsTable.websiteId))
+    .groupBy(websitesTable.id, categoriesTable.name)
+    .orderBy(asc(websitesTable.tabOrder));
+  res.json(rows);
+});
+
+router.get("/websites/export", async (req, res) => {
+  const rows = await db
+    .select({ w: websitesTable, categoryName: categoriesTable.name })
+    .from(websitesTable)
+    .leftJoin(categoriesTable, eq(websitesTable.categoryId, categoriesTable.id))
+    .orderBy(asc(websitesTable.tabOrder));
+
+  const esc = (v: string | null | undefined) => `"${(v ?? "").replace(/"/g, '""')}"`;
+  const header = "id,name,url,displayDomain,category,isFree,isActive,tabOrder,notes";
+  const body = rows.map(r =>
+    [r.w.id, esc(r.w.name), esc(r.w.url), esc(r.w.displayDomain), esc(r.categoryName), r.w.isFree, r.w.isActive, r.w.tabOrder, esc(r.w.notes)].join(",")
+  ).join("\n");
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="websites-${new Date().toISOString().split("T")[0]}.csv"`);
+  res.send(`${header}\n${body}`);
+});
+
+router.post("/websites/bulk-update", async (req, res) => {
+  const { ids, updates } = req.body as { ids: number[]; updates: { isActive?: boolean; isFree?: boolean } };
+  if (!ids?.length) { res.status(400).json({ error: "ids required" }); return; }
+  await db.update(websitesTable).set(updates).where(inArray(websitesTable.id, ids));
+  await logAction((req as any).userId, "bulk_update_websites", `count=${ids.length}`);
+  res.json({ ok: true });
+});
+
+router.post("/websites/reorder", async (req, res) => {
+  const { ids } = req.body as { ids: number[] };
+  if (!ids?.length) { res.status(400).json({ error: "ids required" }); return; }
+  await Promise.all(ids.map((id, idx) => db.update(websitesTable).set({ tabOrder: idx }).where(eq(websitesTable.id, id))));
+  await logAction((req as any).userId, "reorder_websites");
+  res.json({ ok: true });
+});
+
+router.delete("/websites/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  await db.delete(userWebsitePrefsTable).where(eq(userWebsitePrefsTable.websiteId, id));
+  await db.delete(websitesTable).where(eq(websitesTable.id, id));
+  await logAction((req as any).userId, "delete_website", `id=${id}`);
+  res.json({ ok: true });
+});
+
+router.delete("/categories/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const [cnt] = await db.select({ count: sql<number>`count(*)::int` }).from(websitesTable).where(eq(websitesTable.categoryId, id));
+  if (Number(cnt.count) > 0) {
+    res.status(409).json({ error: `Cannot delete: ${cnt.count} website(s) still use this category. Reassign them first.` }); return;
+  }
+  await db.delete(categoriesTable).where(eq(categoriesTable.id, id));
+  await logAction((req as any).userId, "delete_category", `id=${id}`);
+  res.json({ ok: true });
 });
 
 // ── Users ─────────────────────────────────────────────────────────────────────

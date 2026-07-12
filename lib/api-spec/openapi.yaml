@@ -477,6 +477,23 @@ paths:
                 $ref: "#/components/schemas/Category"
 
   /admin/categories/{id}:
+    delete:
+      operationId: adminDeleteCategory
+      tags: [admin]
+      summary: Delete a category (fails if websites are assigned to it)
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+        "409":
+          description: Category has websites
     patch:
       operationId: adminUpdateCategory
       tags: [admin]
@@ -554,7 +571,88 @@ paths:
               schema:
                 $ref: "#/components/schemas/Website"
 
+  /admin/websites/usage:
+    get:
+      operationId: adminGetWebsitesWithUsage
+      tags: [admin]
+      summary: List websites with user preference counts
+      security:
+        - ClerkAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WebsiteWithUsage"
+
+  /admin/websites/export:
+    get:
+      operationId: adminExportWebsites
+      tags: [admin]
+      summary: Export websites as CSV
+      security:
+        - ClerkAuth: []
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /admin/websites/bulk-update:
+    post:
+      operationId: adminBulkUpdateWebsites
+      tags: [admin]
+      summary: Bulk activate/deactivate or change tier for websites
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkWebsiteUpdateInput"
+      responses:
+        "200":
+          description: OK
+
+  /admin/websites/reorder:
+    post:
+      operationId: adminReorderWebsites
+      tags: [admin]
+      summary: Reorder websites by tab order
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryReorderInput"
+      responses:
+        "200":
+          description: OK
+
   /admin/websites/{id}:
+    delete:
+      operationId: adminDeleteWebsite
+      tags: [admin]
+      summary: Delete a website and all user preferences for it
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
     patch:
       operationId: adminUpdateWebsite
       tags: [admin]
@@ -1559,7 +1657,7 @@ components:
     # ── Category ────────────────────────────────────────────────────────────────
     Category:
       type: object
-      required: [id, name, isActive, sortOrder]
+      required: [id, name, isActive, sortOrder, websiteCount]
       properties:
         id:
           type: integer
@@ -1568,6 +1666,8 @@ components:
         isActive:
           type: boolean
         sortOrder:
+          type: integer
+        websiteCount:
           type: integer
 
     CategoryInput:
@@ -1597,6 +1697,61 @@ components:
           type: array
           items:
             type: integer
+
+    WebsiteWithUsage:
+      type: object
+      required: [id, name, url, displayDomain, isFree, isActive, tabOrder, cardOrder, userCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        url:
+          type: string
+        displayDomain:
+          type: string
+        iconUrl:
+          type: ["string", "null"]
+        isFree:
+          type: boolean
+        isActive:
+          type: boolean
+        categoryId:
+          type: ["integer", "null"]
+        categoryName:
+          type: ["string", "null"]
+        tabOrder:
+          type: integer
+        cardOrder:
+          type: integer
+        canBeTab:
+          type: boolean
+        canPreload:
+          type: boolean
+        remembersUrl:
+          type: boolean
+        popupMitigationEnabled:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        userCount:
+          type: integer
+
+    BulkWebsiteUpdateInput:
+      type: object
+      required: [ids, updates]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+        updates:
+          type: object
+          properties:
+            isActive:
+              type: boolean
+            isFree:
+              type: boolean
 
     # ── Website ──────────────────────────────────────────────────────────────────
     Website:

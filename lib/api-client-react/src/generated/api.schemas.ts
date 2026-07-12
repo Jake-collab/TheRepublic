@@ -14,6 +14,7 @@ export interface Category {
   name: string;
   isActive: boolean;
   sortOrder: number;
+  websiteCount: number;
 }
 
 export interface CategoryInput {
@@ -29,6 +30,40 @@ export interface CategoryUpdate {
 
 export interface CategoryReorderInput {
   ids: number[];
+}
+
+export interface WebsiteWithUsage {
+  id: number;
+  name: string;
+  url: string;
+  displayDomain: string;
+  /** @nullable */
+  iconUrl?: string | null;
+  isFree: boolean;
+  isActive: boolean;
+  /** @nullable */
+  categoryId?: number | null;
+  /** @nullable */
+  categoryName?: string | null;
+  tabOrder: number;
+  cardOrder: number;
+  canBeTab?: boolean;
+  canPreload?: boolean;
+  remembersUrl?: boolean;
+  popupMitigationEnabled?: boolean;
+  /** @nullable */
+  notes?: string | null;
+  userCount: number;
+}
+
+export type BulkWebsiteUpdateInputUpdates = {
+  isActive?: boolean;
+  isFree?: boolean;
+};
+
+export interface BulkWebsiteUpdateInput {
+  ids: number[];
+  updates: BulkWebsiteUpdateInputUpdates;
 }
 
 export interface Website {

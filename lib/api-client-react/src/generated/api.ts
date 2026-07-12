@@ -43,6 +43,7 @@ import type {
   BanRequest,
   BlockedWord,
   BlockedWordInput,
+  BulkWebsiteUpdateInput,
   CannedResponse,
   CannedResponseInput,
   Category,
@@ -94,6 +95,7 @@ import type {
   WebsitePref,
   WebsitePrefInput,
   WebsiteUpdate,
+  WebsiteWithUsage,
   WebviewSettings,
   WebviewSettingsUpdate
 } from './api.schemas';
@@ -2044,6 +2046,76 @@ export const useAdminCreateCategory = <TError = ErrorType<unknown>,
       return useMutation(getAdminCreateCategoryMutationOptions(options));
     }
 
+export const getAdminDeleteCategoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/categories/${id}`
+}
+
+/**
+ * @summary Delete a category (fails if websites are assigned to it)
+ */
+export const adminDeleteCategory = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteCategoryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteCategoryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteCategory>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteCategory>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteCategory(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteCategory>>>
+
+    export type AdminDeleteCategoryMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a category (fails if websites are assigned to it)
+ */
+export const useAdminDeleteCategory = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteCategory>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteCategoryMutationOptions(options));
+    }
+
 export const getAdminUpdateCategoryUrl = (id: number,) => {
 
 
@@ -2340,6 +2412,372 @@ export const useAdminCreateWebsite = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminCreateWebsiteMutationOptions(options));
+    }
+
+export const getAdminGetWebsitesWithUsageUrl = () => {
+
+
+
+
+  return `/api/admin/websites/usage`
+}
+
+/**
+ * @summary List websites with user preference counts
+ */
+export const adminGetWebsitesWithUsage = async ( options?: RequestInit): Promise<WebsiteWithUsage[]> => {
+
+  return customFetch<WebsiteWithUsage[]>(getAdminGetWebsitesWithUsageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetWebsitesWithUsageQueryKey = () => {
+    return [
+    `/api/admin/websites/usage`
+    ] as const;
+    }
+
+
+export const getAdminGetWebsitesWithUsageQueryOptions = <TData = Awaited<ReturnType<typeof adminGetWebsitesWithUsage>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetWebsitesWithUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetWebsitesWithUsageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetWebsitesWithUsage>>> = ({ signal }) => adminGetWebsitesWithUsage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetWebsitesWithUsage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetWebsitesWithUsageQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetWebsitesWithUsage>>>
+export type AdminGetWebsitesWithUsageQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List websites with user preference counts
+ */
+
+export function useAdminGetWebsitesWithUsage<TData = Awaited<ReturnType<typeof adminGetWebsitesWithUsage>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetWebsitesWithUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetWebsitesWithUsageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminExportWebsitesUrl = () => {
+
+
+
+
+  return `/api/admin/websites/export`
+}
+
+/**
+ * @summary Export websites as CSV
+ */
+export const adminExportWebsites = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getAdminExportWebsitesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminExportWebsitesQueryKey = () => {
+    return [
+    `/api/admin/websites/export`
+    ] as const;
+    }
+
+
+export const getAdminExportWebsitesQueryOptions = <TData = Awaited<ReturnType<typeof adminExportWebsites>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminExportWebsites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminExportWebsitesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminExportWebsites>>> = ({ signal }) => adminExportWebsites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminExportWebsites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminExportWebsitesQueryResult = NonNullable<Awaited<ReturnType<typeof adminExportWebsites>>>
+export type AdminExportWebsitesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Export websites as CSV
+ */
+
+export function useAdminExportWebsites<TData = Awaited<ReturnType<typeof adminExportWebsites>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminExportWebsites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminExportWebsitesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminBulkUpdateWebsitesUrl = () => {
+
+
+
+
+  return `/api/admin/websites/bulk-update`
+}
+
+/**
+ * @summary Bulk activate/deactivate or change tier for websites
+ */
+export const adminBulkUpdateWebsites = async (bulkWebsiteUpdateInput: BulkWebsiteUpdateInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminBulkUpdateWebsitesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkWebsiteUpdateInput,)
+  }
+);}
+
+
+
+
+export const getAdminBulkUpdateWebsitesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBulkUpdateWebsites>>, TError,{data: BodyType<BulkWebsiteUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminBulkUpdateWebsites>>, TError,{data: BodyType<BulkWebsiteUpdateInput>}, TContext> => {
+
+const mutationKey = ['adminBulkUpdateWebsites'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminBulkUpdateWebsites>>, {data: BodyType<BulkWebsiteUpdateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminBulkUpdateWebsites(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminBulkUpdateWebsitesMutationResult = NonNullable<Awaited<ReturnType<typeof adminBulkUpdateWebsites>>>
+    export type AdminBulkUpdateWebsitesMutationBody = BodyType<BulkWebsiteUpdateInput>
+    export type AdminBulkUpdateWebsitesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bulk activate/deactivate or change tier for websites
+ */
+export const useAdminBulkUpdateWebsites = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminBulkUpdateWebsites>>, TError,{data: BodyType<BulkWebsiteUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminBulkUpdateWebsites>>,
+        TError,
+        {data: BodyType<BulkWebsiteUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getAdminBulkUpdateWebsitesMutationOptions(options));
+    }
+
+export const getAdminReorderWebsitesUrl = () => {
+
+
+
+
+  return `/api/admin/websites/reorder`
+}
+
+/**
+ * @summary Reorder websites by tab order
+ */
+export const adminReorderWebsites = async (categoryReorderInput: CategoryReorderInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminReorderWebsitesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      categoryReorderInput,)
+  }
+);}
+
+
+
+
+export const getAdminReorderWebsitesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminReorderWebsites>>, TError,{data: BodyType<CategoryReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminReorderWebsites>>, TError,{data: BodyType<CategoryReorderInput>}, TContext> => {
+
+const mutationKey = ['adminReorderWebsites'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminReorderWebsites>>, {data: BodyType<CategoryReorderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminReorderWebsites(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminReorderWebsitesMutationResult = NonNullable<Awaited<ReturnType<typeof adminReorderWebsites>>>
+    export type AdminReorderWebsitesMutationBody = BodyType<CategoryReorderInput>
+    export type AdminReorderWebsitesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reorder websites by tab order
+ */
+export const useAdminReorderWebsites = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminReorderWebsites>>, TError,{data: BodyType<CategoryReorderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminReorderWebsites>>,
+        TError,
+        {data: BodyType<CategoryReorderInput>},
+        TContext
+      > => {
+      return useMutation(getAdminReorderWebsitesMutationOptions(options));
+    }
+
+export const getAdminDeleteWebsiteUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/websites/${id}`
+}
+
+/**
+ * @summary Delete a website and all user preferences for it
+ */
+export const adminDeleteWebsite = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteWebsiteUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteWebsiteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteWebsite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteWebsite>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteWebsite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteWebsite>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteWebsite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteWebsiteMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteWebsite>>>
+
+    export type AdminDeleteWebsiteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a website and all user preferences for it
+ */
+export const useAdminDeleteWebsite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteWebsite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteWebsite>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteWebsiteMutationOptions(options));
     }
 
 export const getAdminUpdateWebsiteUrl = (id: number,) => {

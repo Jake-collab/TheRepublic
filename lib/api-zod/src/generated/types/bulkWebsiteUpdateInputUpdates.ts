@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Category {
-  id: number;
-  name: string;
-  isActive: boolean;
-  sortOrder: number;
-  websiteCount: number;
-}
+export type BulkWebsiteUpdateInputUpdates = {
+  isActive?: boolean;
+  isFree?: boolean;
+};

@@ -23,7 +23,8 @@ export const ListCategoriesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "isActive": zod.boolean(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "websiteCount": zod.number()
 })
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
 
@@ -411,7 +412,8 @@ export const AdminListCategoriesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "isActive": zod.boolean(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "websiteCount": zod.number()
 })
 export const AdminListCategoriesResponse = zod.array(AdminListCategoriesResponseItem)
 
@@ -422,6 +424,14 @@ export const AdminListCategoriesResponse = zod.array(AdminListCategoriesResponse
 export const AdminCreateCategoryBody = zod.object({
   "name": zod.string(),
   "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a category (fails if websites are assigned to it)
+ */
+export const AdminDeleteCategoryParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
@@ -442,7 +452,8 @@ export const AdminUpdateCategoryResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "isActive": zod.boolean(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "websiteCount": zod.number()
 })
 
 
@@ -508,6 +519,59 @@ export const AdminCreateWebsiteBody = zod.object({
   "appBannerHideSelectors": zod.string().nullish(),
   "popupMitigationEnabled": zod.boolean().optional(),
   "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary List websites with user preference counts
+ */
+export const AdminGetWebsitesWithUsageResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "displayDomain": zod.string(),
+  "iconUrl": zod.string().nullish(),
+  "isFree": zod.boolean(),
+  "isActive": zod.boolean(),
+  "categoryId": zod.number().nullish(),
+  "categoryName": zod.string().nullish(),
+  "tabOrder": zod.number(),
+  "cardOrder": zod.number(),
+  "canBeTab": zod.boolean().optional(),
+  "canPreload": zod.boolean().optional(),
+  "remembersUrl": zod.boolean().optional(),
+  "popupMitigationEnabled": zod.boolean().optional(),
+  "notes": zod.string().nullish(),
+  "userCount": zod.number()
+})
+export const AdminGetWebsitesWithUsageResponse = zod.array(AdminGetWebsitesWithUsageResponseItem)
+
+
+/**
+ * @summary Bulk activate/deactivate or change tier for websites
+ */
+export const AdminBulkUpdateWebsitesBody = zod.object({
+  "ids": zod.array(zod.number()),
+  "updates": zod.object({
+  "isActive": zod.boolean().optional(),
+  "isFree": zod.boolean().optional()
+})
+})
+
+
+/**
+ * @summary Reorder websites by tab order
+ */
+export const AdminReorderWebsitesBody = zod.object({
+  "ids": zod.array(zod.number())
+})
+
+
+/**
+ * @summary Delete a website and all user preferences for it
+ */
+export const AdminDeleteWebsiteParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
