@@ -803,6 +803,67 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserActivity"
 
+  /admin/users/{userId}/resync-subscription:
+    post:
+      operationId: adminResyncSubscription
+      tags: [admin]
+      summary: Re-sync a user's Stripe subscription status
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResyncSubscriptionResult"
+        "422":
+          description: Stripe not configured
+
+  /admin/users/{userId}/clear-session:
+    post:
+      operationId: adminClearUserSession
+      tags: [admin]
+      summary: Clear a user's WebView cache and session prefs
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClearSessionResult"
+
+  /admin/users/{userId}/force-refresh:
+    post:
+      operationId: adminForceRefreshWebsites
+      tags: [admin]
+      summary: Force-refresh the website list on a user's device
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+
   # ── Admin: App Configuration ─────────────────────────────────────────────────
   /admin/app-config:
     get:
@@ -2501,6 +2562,32 @@ components:
               type: ["string", "null"]
             stripeCustomerId:
               type: ["string", "null"]
+
+    ResyncSubscriptionResult:
+      type: object
+      required: [ok, changed, plan, status, isPro]
+      properties:
+        ok:
+          type: boolean
+        changed:
+          type: boolean
+        plan:
+          type: string
+        status:
+          type: string
+        isPro:
+          type: boolean
+        message:
+          type: string
+
+    ClearSessionResult:
+      type: object
+      required: [ok, prefsCleared]
+      properties:
+        ok:
+          type: boolean
+        prefsCleared:
+          type: integer
 
     AdminStats:
       type: object

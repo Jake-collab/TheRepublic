@@ -59,6 +59,7 @@ import type {
   CitizenVotePost,
   CitizenVotePostInput,
   CitizenVotePostList,
+  ClearSessionResult,
   ContentFlag,
   DailyContentActivity,
   DailyNewUsers,
@@ -75,6 +76,7 @@ import type {
   Notification,
   NotificationInput,
   PortalSession,
+  ResyncSubscriptionResult,
   StripeSettings,
   StripeSettingsUpdate,
   SupportTicket,
@@ -3307,6 +3309,216 @@ export function useAdminGetUserActivity<TData = Awaited<ReturnType<typeof adminG
 
 
 
+
+export const getAdminResyncSubscriptionUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/resync-subscription`
+}
+
+/**
+ * @summary Re-sync a user's Stripe subscription status
+ */
+export const adminResyncSubscription = async (userId: string, options?: RequestInit): Promise<ResyncSubscriptionResult> => {
+
+  return customFetch<ResyncSubscriptionResult>(getAdminResyncSubscriptionUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminResyncSubscriptionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResyncSubscription>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminResyncSubscription>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['adminResyncSubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminResyncSubscription>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminResyncSubscription(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminResyncSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof adminResyncSubscription>>>
+
+    export type AdminResyncSubscriptionMutationError = ErrorType<void>
+
+    /**
+ * @summary Re-sync a user's Stripe subscription status
+ */
+export const useAdminResyncSubscription = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResyncSubscription>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminResyncSubscription>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAdminResyncSubscriptionMutationOptions(options));
+    }
+
+export const getAdminClearUserSessionUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/clear-session`
+}
+
+/**
+ * @summary Clear a user's WebView cache and session prefs
+ */
+export const adminClearUserSession = async (userId: string, options?: RequestInit): Promise<ClearSessionResult> => {
+
+  return customFetch<ClearSessionResult>(getAdminClearUserSessionUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminClearUserSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminClearUserSession>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminClearUserSession>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['adminClearUserSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminClearUserSession>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminClearUserSession(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminClearUserSessionMutationResult = NonNullable<Awaited<ReturnType<typeof adminClearUserSession>>>
+
+    export type AdminClearUserSessionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Clear a user's WebView cache and session prefs
+ */
+export const useAdminClearUserSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminClearUserSession>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminClearUserSession>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAdminClearUserSessionMutationOptions(options));
+    }
+
+export const getAdminForceRefreshWebsitesUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/force-refresh`
+}
+
+/**
+ * @summary Force-refresh the website list on a user's device
+ */
+export const adminForceRefreshWebsites = async (userId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminForceRefreshWebsitesUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminForceRefreshWebsitesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminForceRefreshWebsites>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminForceRefreshWebsites>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['adminForceRefreshWebsites'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminForceRefreshWebsites>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminForceRefreshWebsites(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminForceRefreshWebsitesMutationResult = NonNullable<Awaited<ReturnType<typeof adminForceRefreshWebsites>>>
+
+    export type AdminForceRefreshWebsitesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Force-refresh the website list on a user's device
+ */
+export const useAdminForceRefreshWebsites = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminForceRefreshWebsites>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminForceRefreshWebsites>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAdminForceRefreshWebsitesMutationOptions(options));
+    }
 
 export const getAdminGetAppConfigUrl = () => {
 

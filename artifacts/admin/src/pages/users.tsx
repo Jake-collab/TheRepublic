@@ -6,6 +6,9 @@ import {
   useAdminBanUser,
   useAdminUnbanUser,
   useAdminGetUserActivity,
+  useAdminResyncSubscription,
+  useAdminClearUserSession,
+  useAdminForceRefreshWebsites,
   getAdminListUsersQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,6 +27,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Search, Crown, MessageSquare, ChevronLeft, ChevronRight,
   Download, Ban, CheckCircle, LifeBuoy, FileText, AlertTriangle,
+  RefreshCw, Trash2, Wifi,
 } from "lucide-react";
 
 type AdminUser = {
@@ -142,14 +146,54 @@ function UserSheet({ user, open, onOpenChange }: {
   const { mutateAsync: sendNotification, isPending: isSendingNotif } = useAdminSendNotification();
   const { mutateAsync: banUser, isPending: isBanning } = useAdminBanUser();
   const { mutateAsync: unbanUser, isPending: isUnbanning } = useAdminUnbanUser();
+  const { mutateAsync: resyncSubscription, isPending: isResyncing } = useAdminResyncSubscription();
+  const { mutateAsync: clearSession, isPending: isClearing } = useAdminClearUserSession();
+  const { mutateAsync: forceRefresh, isPending: isForcing } = useAdminForceRefreshWebsites();
 
   const [activeTab, setActiveTab] = useState("manage");
+  const [resyncResult, setResyncResult] = useState<{ changed: boolean; plan: string; status: string; isPro: boolean; message: string } | null>(null);
+  const [clearResult, setClearResult] = useState<{ prefsCleared: number } | null>(null);
+  const [refreshDone, setRefreshDone] = useState(false);
   const [notifTitle, setNotifTitle] = useState("");
   const [notifMessage, setNotifMessage] = useState("");
   const [banReason, setBanReason] = useState("");
   const [showBanConfirm, setShowBanConfirm] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: getAdminListUsersQueryKey({}) });
+
+  const handleResync = async () => {
+    setResyncResult(null);
+    try {
+      const result = await resyncSubscription({ userId: user.id });
+      setResyncResult(result as any);
+      if ((result as any).changed) await refresh();
+      toast({ title: (result as any).changed ? "Subscription synced" : "Already up to date", description: (result as any).message });
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.error ?? "Resync failed", variant: "destructive" });
+    }
+  };
+
+  const handleClearSession = async () => {
+    setClearResult(null);
+    try {
+      const result = await clearSession({ userId: user.id });
+      setClearResult(result as any);
+      toast({ title: "Session cleared", description: `Removed ${(result as any).prefsCleared} saved pref${(result as any).prefsCleared !== 1 ? "s" : ""}` });
+    } catch {
+      toast({ title: "Failed to clear session", variant: "destructive" });
+    }
+  };
+
+  const handleForceRefresh = async () => {
+    setRefreshDone(false);
+    try {
+      await forceRefresh({ userId: user.id });
+      setRefreshDone(true);
+      toast({ title: "Website refresh triggered", description: "User will see the refresh prompt on next app open." });
+    } catch {
+      toast({ title: "Failed to trigger refresh", variant: "destructive" });
+    }
+  };
 
   const handleGrantPro = async () => {
     try {
@@ -225,6 +269,7 @@ function UserSheet({ user, open, onOpenChange }: {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full mb-4">
             <TabsTrigger value="manage" className="flex-1">Manage</TabsTrigger>
+            <TabsTrigger value="quickfix" className="flex-1">Quick Fix</TabsTrigger>
             <TabsTrigger value="activity" className="flex-1">Activity</TabsTrigger>
           </TabsList>
 
@@ -327,6 +372,118 @@ function UserSheet({ user, open, onOpenChange }: {
                   Suspend Account
                 </Button>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quickfix" className="mt-0 space-y-4">
+            <p className="text-xs text-muted-foreground pb-1">
+              Use these tools when a user reports a bug or their app appears out of sync. Each action is logged in the audit trail.
+            </p>
+
+            {/* 1 — Re-sync Stripe subscription */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-md bg-primary/10 p-2 mt-0.5">
+                  <RefreshCw className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Re-sync Stripe Subscription</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Fetches the live subscription from Stripe and corrects any drift — useful when a webhook was missed and the user's Pro status is wrong.
+                  </p>
+                </div>
+              </div>
+
+              {resyncResult && (
+                <div className={`rounded-md px-3 py-2 text-xs space-y-1 ${resyncResult.changed ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" : "bg-muted/50 border text-muted-foreground"}`}>
+                  <p className="font-medium">{resyncResult.message}</p>
+                  <p>Plan: <span className="font-mono">{resyncResult.plan}</span> · Status: <span className="font-mono">{resyncResult.status}</span> · Pro: {resyncResult.isPro ? "✓ Yes" : "✗ No"}</p>
+                </div>
+              )}
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={handleResync}
+                disabled={isResyncing}
+              >
+                {isResyncing ? (
+                  <><RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />Fetching from Stripe…</>
+                ) : (
+                  <><RefreshCw className="w-3.5 h-3.5 mr-2" />Re-sync Subscription</>
+                )}
+              </Button>
+            </div>
+
+            {/* 2 — Clear WebView session */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-md bg-orange-500/10 p-2 mt-0.5">
+                  <Trash2 className="w-4 h-4 text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Clear WebView Cache &amp; Session</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Deletes the user's saved tab URLs and custom tab order. Stamps a reset timestamp the app checks on next load. Useful when a site is stuck on a cached page.
+                  </p>
+                </div>
+              </div>
+
+              {clearResult && (
+                <div className="rounded-md px-3 py-2 text-xs bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                  ✓ Cleared {clearResult.prefsCleared} saved preference{clearResult.prefsCleared !== 1 ? "s" : ""}. User's tab order and cached URLs have been reset.
+                </div>
+              )}
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300"
+                onClick={handleClearSession}
+                disabled={isClearing}
+              >
+                {isClearing ? (
+                  <><RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />Clearing…</>
+                ) : (
+                  <><Trash2 className="w-3.5 h-3.5 mr-2" />Clear Session &amp; Cache</>
+                )}
+              </Button>
+            </div>
+
+            {/* 3 — Force-refresh website list */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-md bg-blue-500/10 p-2 mt-0.5">
+                  <Wifi className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Force-Refresh Website List</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Sends the user an in-app notification and stamps a refresh flag their app checks on next launch — forces a fresh fetch of the curated sites list.
+                  </p>
+                </div>
+              </div>
+
+              {refreshDone && (
+                <div className="rounded-md px-3 py-2 text-xs bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                  ✓ Refresh flag set and in-app notification sent. User will reload the website list on their next app open.
+                </div>
+              )}
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-blue-500/30 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300"
+                onClick={handleForceRefresh}
+                disabled={isForcing}
+              >
+                {isForcing ? (
+                  <><RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />Triggering…</>
+                ) : (
+                  <><Wifi className="w-3.5 h-3.5 mr-2" />Force Refresh Websites</>
+                )}
+              </Button>
             </div>
           </TabsContent>
 

@@ -15,6 +15,8 @@ export const usersTable = pgTable("users", {
   theme: text("theme").notNull().default("system"),
   acceptedTermsAt: timestamp("accepted_terms_at"),
   acceptedPrivacyAt: timestamp("accepted_privacy_at"),
+  sessionResetAt: timestamp("session_reset_at"),
+  forceRefreshAt: timestamp("force_refresh_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

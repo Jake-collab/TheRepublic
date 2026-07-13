@@ -758,6 +758,44 @@ export const AdminGetUserActivityResponse = zod.object({
 
 
 /**
+ * @summary Re-sync a user's Stripe subscription status
+ */
+export const AdminResyncSubscriptionParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminResyncSubscriptionResponse = zod.object({
+  "ok": zod.boolean(),
+  "changed": zod.boolean(),
+  "plan": zod.string(),
+  "status": zod.string(),
+  "isPro": zod.boolean(),
+  "message": zod.string().optional()
+})
+
+
+/**
+ * @summary Clear a user's WebView cache and session prefs
+ */
+export const AdminClearUserSessionParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminClearUserSessionResponse = zod.object({
+  "ok": zod.boolean(),
+  "prefsCleared": zod.number()
+})
+
+
+/**
+ * @summary Force-refresh the website list on a user's device
+ */
+export const AdminForceRefreshWebsitesParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+
+/**
  * @summary Get global app configuration
  */
 export const AdminGetAppConfigResponse = zod.object({

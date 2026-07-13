@@ -3,3 +3,4 @@
 - [Analytics time-series pattern](analytics-pattern.md) — date-gap-filling pattern for daily aggregates, Recharts dark-theme config
 - [Website/category management patterns](website-management.md) — bulk ops with inArray, CSV export via res.setHeader, HTML5 DnD for category reorder
 - [App config singleton pattern](app-config-singleton.md) — upsert pattern for singleton DB rows (app_settings, stripe_settings)
+- [Quick-fix tool patterns](quick-fix-tools.md) — Stripe resync, session clear, force-refresh patterns for per-user repair actions

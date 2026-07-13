@@ -558,6 +558,20 @@ export interface UserActivity {
   subscription: UserActivitySubscription;
 }
 
+export interface ResyncSubscriptionResult {
+  ok: boolean;
+  changed: boolean;
+  plan: string;
+  status: string;
+  isPro: boolean;
+  message?: string;
+}
+
+export interface ClearSessionResult {
+  ok: boolean;
+  prefsCleared: number;
+}
+
 export interface AdminStats {
   totalUsers: number;
   proUsers: number;

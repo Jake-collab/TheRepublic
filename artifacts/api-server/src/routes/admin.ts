@@ -971,6 +971,87 @@ router.get("/analytics/membership", async (req, res) => {
   });
 });
 
+// ── Quick-Fix Tools ───────────────────────────────────────────────────────────
+router.post("/users/:userId/resync-subscription", async (req, res) => {
+  const { userId } = req.params;
+  const cfg = await getStripeConfig();
+
+  if (!cfg.secretKey) {
+    res.status(422).json({ error: "Stripe secret key is not configured. Set it in Stripe & Billing settings." });
+    return;
+  }
+
+  const [membership] = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
+
+  if (!membership?.stripeSubscriptionId && !membership?.stripeCustomerId) {
+    res.status(422).json({ error: "No Stripe subscription or customer ID found for this user. They may never have started a subscription." });
+    return;
+  }
+
+  const Stripe = (await import("stripe")).default;
+  const stripe = new Stripe(cfg.secretKey, { apiVersion: "2026-04-22.dahlia" });
+
+  let plan = "free";
+  let status = "none";
+  let isPro = false;
+
+  if (membership.stripeSubscriptionId) {
+    const sub = await stripe.subscriptions.retrieve(membership.stripeSubscriptionId);
+    status = sub.status;
+    isPro = sub.status === "active" || sub.status === "trialing";
+    const priceId = sub.items.data[0]?.price?.id;
+    if (priceId === cfg.annualPriceId) plan = "annual";
+    else if (priceId === cfg.monthlyPriceId) plan = "monthly";
+    else plan = "monthly";
+  } else if (membership.stripeCustomerId) {
+    const subs = await stripe.subscriptions.list({ customer: membership.stripeCustomerId, limit: 1, status: "all" });
+    const sub = subs.data[0];
+    if (sub) {
+      status = sub.status;
+      isPro = sub.status === "active" || sub.status === "trialing";
+      const priceId = sub.items.data[0]?.price?.id;
+      if (priceId === cfg.annualPriceId) plan = "annual";
+      else plan = "monthly";
+    }
+  }
+
+  const prevIsPro = membership.plan !== "free" && membership.status === "active";
+  const changed = isPro !== prevIsPro || plan !== membership.plan || status !== membership.status;
+
+  if (changed) {
+    await db.update(membershipsTable).set({ plan: isPro ? plan : "free", status, updatedAt: new Date() }).where(eq(membershipsTable.userId, userId));
+    await db.update(usersTable).set({ isPro, updatedAt: new Date() }).where(eq(usersTable.id, userId));
+  }
+
+  await logAction((req as any).userId, "resync_subscription", `userId=${userId},plan=${plan},status=${status},changed=${changed}`);
+  res.json({ ok: true, changed, plan: isPro ? plan : "free", status, isPro, message: changed ? `Subscription synced: ${plan} (${status})` : "Already up to date — no changes needed." });
+});
+
+router.post("/users/:userId/clear-session", async (req, res) => {
+  const { userId } = req.params;
+
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(userWebsitePrefsTable).where(eq(userWebsitePrefsTable.userId, userId));
+  await db.delete(userWebsitePrefsTable).where(eq(userWebsitePrefsTable.userId, userId));
+  await db.update(usersTable).set({ sessionResetAt: new Date(), updatedAt: new Date() }).where(eq(usersTable.id, userId));
+
+  await logAction((req as any).userId, "clear_user_session", `userId=${userId},prefsCleared=${count}`);
+  res.json({ ok: true, prefsCleared: Number(count) });
+});
+
+router.post("/users/:userId/force-refresh", async (req, res) => {
+  const { userId } = req.params;
+
+  await db.update(usersTable).set({ forceRefreshAt: new Date(), updatedAt: new Date() }).where(eq(usersTable.id, userId));
+  await db.insert(notificationsTable).values({
+    userId,
+    title: "App update available",
+    message: "Your website list has been refreshed by an admin. Please restart the app to load the latest changes.",
+  });
+
+  await logAction((req as any).userId, "force_refresh_websites", `userId=${userId}`);
+  res.json({ ok: true });
+});
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 router.get("/notifications/campaigns", async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
