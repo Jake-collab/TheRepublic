@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   BarChart2,
   Menu,
-  X
+  X,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/moderation", label: "Moderation", icon: ShieldAlert },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/stripe-settings", label: "Stripe & Billing", icon: CreditCard },
+  { href: "/app-config", label: "App Configuration", icon: SlidersHorizontal },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

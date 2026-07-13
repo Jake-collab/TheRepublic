@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface NotificationInput {
-  /** @nullable */
-  userId?: string | null;
+export interface NotificationCampaign {
+  id: number;
+  adminId: string;
   title: string;
   message: string;
-  segment?: string;
+  segment: string;
+  recipientCount: number;
+  sentAt: Date;
 }

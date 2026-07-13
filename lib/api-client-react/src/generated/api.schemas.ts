@@ -450,6 +450,40 @@ export interface AutoCloseResult {
   closed: number;
 }
 
+export interface NotificationCampaign {
+  id: number;
+  adminId: string;
+  title: string;
+  message: string;
+  segment: string;
+  recipientCount: number;
+  sentAt: string;
+}
+
+export interface AppConfig {
+  id: number;
+  maintenanceMode: boolean;
+  /** @nullable */
+  maintenanceBanner?: string | null;
+  /** @nullable */
+  announcementBanner?: string | null;
+  announcementActive: boolean;
+  minAppVersion: string;
+  citizenVoteEnabled: boolean;
+  discussionsEnabled: boolean;
+  updatedAt: string;
+}
+
+export interface AppConfigInput {
+  maintenanceMode?: boolean;
+  maintenanceBanner?: string;
+  announcementBanner?: string;
+  announcementActive?: boolean;
+  minAppVersion?: string;
+  citizenVoteEnabled?: boolean;
+  discussionsEnabled?: boolean;
+}
+
 export interface Notification {
   id: number;
   userId?: string;
@@ -464,6 +498,7 @@ export interface NotificationInput {
   userId?: string | null;
   title: string;
   message: string;
+  segment?: string;
 }
 
 export interface AdminUser {
@@ -831,6 +866,16 @@ export type AdminSendTicketEmail200 = {
 export type AdminListAuditLogsParams = {
 page?: number;
 limit?: number;
+};
+
+export type AdminListNotificationCampaignsParams = {
+page?: number;
+limit?: number;
+};
+
+export type AdminListNotificationCampaigns200 = {
+  campaigns: NotificationCampaign[];
+  total: number;
 };
 
 export type AdminListTalkPostsParams = {

@@ -6,6 +6,7 @@ import {
   citizenVotePostsTable, stripeSettingsTable, userWebsitePrefsTable,
   talkCategoriesTable, talkPostsTable, talkCommentsTable, talkVotesTable,
   contentFlagsTable, blockedWordsTable,
+  notificationCampaignsTable, appSettingsTable,
 } from "@workspace/db";
 import { invalidateBlockedWordsCache } from "../utils/blockedWords";
 import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
@@ -971,16 +972,96 @@ router.get("/analytics/membership", async (req, res) => {
 });
 
 // ── Notifications ─────────────────────────────────────────────────────────────
+router.get("/notifications/campaigns", async (req, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(100, Number(req.query.limit) || 25);
+  const offset = (page - 1) * limit;
+
+  const [campaigns, [{ count }]] = await Promise.all([
+    db.select().from(notificationCampaignsTable).orderBy(desc(notificationCampaignsTable.sentAt)).limit(limit).offset(offset),
+    db.select({ count: sql<number>`count(*)::int` }).from(notificationCampaignsTable),
+  ]);
+
+  res.json({
+    campaigns: campaigns.map(c => ({ ...c, sentAt: c.sentAt.toISOString() })),
+    total: Number(count),
+  });
+});
+
 router.post("/notifications", async (req, res) => {
-  const { userId, title, message } = req.body;
+  const { userId, title, message, segment = "all" } = req.body;
+  const adminId = (req as any).userId as string;
+
+  let recipientCount = 0;
+
   if (userId) {
     await db.insert(notificationsTable).values({ userId, title, message });
+    recipientCount = 1;
   } else {
-    const users = await db.select({ id: usersTable.id }).from(usersTable);
-    await Promise.all(users.map(u => db.insert(notificationsTable).values({ userId: u.id, title, message })));
+    let query = db.select({ id: usersTable.id }).from(usersTable);
+    let users: { id: string }[];
+    if (segment === "pro") {
+      users = await (query as any).where(eq(usersTable.isPro, true));
+    } else if (segment === "free") {
+      users = await (query as any).where(eq(usersTable.isPro, false));
+    } else {
+      users = await query;
+    }
+    recipientCount = users.length;
+    if (users.length > 0) {
+      await Promise.all(users.map(u => db.insert(notificationsTable).values({ userId: u.id, title, message })));
+    }
   }
-  await logAction((req as any).userId, "send_notification", `title=${title}`);
-  res.status(201).json({ ok: true });
+
+  await db.insert(notificationCampaignsTable).values({
+    adminId,
+    title,
+    message,
+    segment: userId ? "individual" : segment,
+    recipientCount,
+  });
+
+  await logAction(adminId, "send_notification", `title=${title},segment=${userId ? "individual" : segment},count=${recipientCount}`);
+  res.status(201).json({ ok: true, recipientCount });
+});
+
+// ── App Config ─────────────────────────────────────────────────────────────────
+router.get("/app-config", async (req, res) => {
+  const rows = await db.select().from(appSettingsTable).limit(1);
+  if (rows.length === 0) {
+    const [created] = await db.insert(appSettingsTable).values({}).returning();
+    res.json({ ...created, updatedAt: created.updatedAt.toISOString() });
+    return;
+  }
+  res.json({ ...rows[0], updatedAt: rows[0].updatedAt.toISOString() });
+});
+
+router.put("/app-config", async (req, res) => {
+  const {
+    maintenanceMode, maintenanceBanner, announcementBanner,
+    announcementActive, minAppVersion, citizenVoteEnabled, discussionsEnabled,
+  } = req.body;
+
+  const rows = await db.select().from(appSettingsTable).limit(1);
+  const updates: Partial<typeof appSettingsTable.$inferInsert> = { updatedAt: new Date() };
+
+  if (maintenanceMode !== undefined) updates.maintenanceMode = maintenanceMode;
+  if (maintenanceBanner !== undefined) updates.maintenanceBanner = maintenanceBanner || null;
+  if (announcementBanner !== undefined) updates.announcementBanner = announcementBanner || null;
+  if (announcementActive !== undefined) updates.announcementActive = announcementActive;
+  if (minAppVersion !== undefined) updates.minAppVersion = minAppVersion;
+  if (citizenVoteEnabled !== undefined) updates.citizenVoteEnabled = citizenVoteEnabled;
+  if (discussionsEnabled !== undefined) updates.discussionsEnabled = discussionsEnabled;
+
+  let result;
+  if (rows.length === 0) {
+    [result] = await db.insert(appSettingsTable).values(updates as typeof appSettingsTable.$inferInsert).returning();
+  } else {
+    [result] = await db.update(appSettingsTable).set(updates).where(eq(appSettingsTable.id, rows[0].id)).returning();
+  }
+
+  await logAction((req as any).userId, "update_app_config");
+  res.json({ ...result, updatedAt: result.updatedAt.toISOString() });
 });
 
 export default router;

@@ -25,6 +25,8 @@ import type {
   AdminGetUserGrowthParams,
   AdminListAuditLogsParams,
   AdminListContentFlagsParams,
+  AdminListNotificationCampaigns200,
+  AdminListNotificationCampaignsParams,
   AdminListSupportTicketsParams,
   AdminListTalkPostsParams,
   AdminListUsersParams,
@@ -37,6 +39,8 @@ import type {
   AdminTalkPostsPage,
   AdminUser,
   AdminUserList,
+  AppConfig,
+  AppConfigInput,
   AuditLogList,
   AutoCloseRequest,
   AutoCloseResult,
@@ -3304,6 +3308,154 @@ export function useAdminGetUserActivity<TData = Awaited<ReturnType<typeof adminG
 
 
 
+export const getAdminGetAppConfigUrl = () => {
+
+
+
+
+  return `/api/admin/app-config`
+}
+
+/**
+ * @summary Get global app configuration
+ */
+export const adminGetAppConfig = async ( options?: RequestInit): Promise<AppConfig> => {
+
+  return customFetch<AppConfig>(getAdminGetAppConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetAppConfigQueryKey = () => {
+    return [
+    `/api/admin/app-config`
+    ] as const;
+    }
+
+
+export const getAdminGetAppConfigQueryOptions = <TData = Awaited<ReturnType<typeof adminGetAppConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetAppConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetAppConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetAppConfig>>> = ({ signal }) => adminGetAppConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetAppConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetAppConfigQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetAppConfig>>>
+export type AdminGetAppConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get global app configuration
+ */
+
+export function useAdminGetAppConfig<TData = Awaited<ReturnType<typeof adminGetAppConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetAppConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetAppConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminUpdateAppConfigUrl = () => {
+
+
+
+
+  return `/api/admin/app-config`
+}
+
+/**
+ * @summary Update global app configuration
+ */
+export const adminUpdateAppConfig = async (appConfigInput: AppConfigInput, options?: RequestInit): Promise<AppConfig> => {
+
+  return customFetch<AppConfig>(getAdminUpdateAppConfigUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      appConfigInput,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateAppConfigMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAppConfig>>, TError,{data: BodyType<AppConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAppConfig>>, TError,{data: BodyType<AppConfigInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateAppConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateAppConfig>>, {data: BodyType<AppConfigInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateAppConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateAppConfigMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateAppConfig>>>
+    export type AdminUpdateAppConfigMutationBody = BodyType<AppConfigInput>
+    export type AdminUpdateAppConfigMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update global app configuration
+ */
+export const useAdminUpdateAppConfig = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAppConfig>>, TError,{data: BodyType<AppConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateAppConfig>>,
+        TError,
+        {data: BodyType<AppConfigInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateAppConfigMutationOptions(options));
+    }
+
 export const getAdminGetStripeSettingsUrl = () => {
 
 
@@ -4336,6 +4488,90 @@ export function useAdminListAuditLogs<TData = Awaited<ReturnType<typeof adminLis
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getAdminListAuditLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminListNotificationCampaignsUrl = (params?: AdminListNotificationCampaignsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/notifications/campaigns?${stringifiedParams}` : `/api/admin/notifications/campaigns`
+}
+
+/**
+ * @summary List sent notification campaigns with recipient counts
+ */
+export const adminListNotificationCampaigns = async (params?: AdminListNotificationCampaignsParams, options?: RequestInit): Promise<AdminListNotificationCampaigns200> => {
+
+  return customFetch<AdminListNotificationCampaigns200>(getAdminListNotificationCampaignsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListNotificationCampaignsQueryKey = (params?: AdminListNotificationCampaignsParams,) => {
+    return [
+    `/api/admin/notifications/campaigns`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getAdminListNotificationCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof adminListNotificationCampaigns>>, TError = ErrorType<unknown>>(params?: AdminListNotificationCampaignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNotificationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListNotificationCampaignsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListNotificationCampaigns>>> = ({ signal }) => adminListNotificationCampaigns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListNotificationCampaigns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListNotificationCampaignsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListNotificationCampaigns>>>
+export type AdminListNotificationCampaignsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List sent notification campaigns with recipient counts
+ */
+
+export function useAdminListNotificationCampaigns<TData = Awaited<ReturnType<typeof adminListNotificationCampaigns>>, TError = ErrorType<unknown>>(
+ params?: AdminListNotificationCampaignsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListNotificationCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListNotificationCampaignsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

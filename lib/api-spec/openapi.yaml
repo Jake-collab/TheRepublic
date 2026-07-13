@@ -803,6 +803,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserActivity"
 
+  # ── Admin: App Configuration ─────────────────────────────────────────────────
+  /admin/app-config:
+    get:
+      operationId: adminGetAppConfig
+      tags: [admin]
+      summary: Get global app configuration
+      security:
+        - ClerkAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppConfig"
+    put:
+      operationId: adminUpdateAppConfig
+      tags: [admin]
+      summary: Update global app configuration
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppConfigInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppConfig"
+
   # ── Admin: Stripe Settings ────────────────────────────────────────────────────
   /admin/stripe-settings:
     get:
@@ -1069,6 +1104,40 @@ paths:
                 $ref: "#/components/schemas/AuditLogList"
 
   # ── Admin: Notifications ──────────────────────────────────────────────────────
+  /admin/notifications/campaigns:
+    get:
+      operationId: adminListNotificationCampaigns
+      tags: [admin]
+      summary: List sent notification campaigns with recipient counts
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [campaigns, total]
+                properties:
+                  campaigns:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationCampaign"
+                  total:
+                    type: integer
+
   /admin/notifications:
     post:
       operationId: adminSendNotification
@@ -2244,6 +2313,70 @@ components:
         closed:
           type: integer
 
+    # ── Notification Campaigns ────────────────────────────────────────────────────
+    NotificationCampaign:
+      type: object
+      required: [id, adminId, title, message, segment, recipientCount, sentAt]
+      properties:
+        id:
+          type: integer
+        adminId:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        segment:
+          type: string
+        recipientCount:
+          type: integer
+        sentAt:
+          type: string
+          format: date-time
+
+    # ── App Config ────────────────────────────────────────────────────────────────
+    AppConfig:
+      type: object
+      required: [id, maintenanceMode, announcementActive, minAppVersion, citizenVoteEnabled, discussionsEnabled, updatedAt]
+      properties:
+        id:
+          type: integer
+        maintenanceMode:
+          type: boolean
+        maintenanceBanner:
+          type: ["string", "null"]
+        announcementBanner:
+          type: ["string", "null"]
+        announcementActive:
+          type: boolean
+        minAppVersion:
+          type: string
+        citizenVoteEnabled:
+          type: boolean
+        discussionsEnabled:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    AppConfigInput:
+      type: object
+      properties:
+        maintenanceMode:
+          type: boolean
+        maintenanceBanner:
+          type: string
+        announcementBanner:
+          type: string
+        announcementActive:
+          type: boolean
+        minAppVersion:
+          type: string
+        citizenVoteEnabled:
+          type: boolean
+        discussionsEnabled:
+          type: boolean
+
     # ── Notifications ─────────────────────────────────────────────────────────────
     Notification:
       type: object
@@ -2271,6 +2404,8 @@ components:
         title:
           type: string
         message:
+          type: string
+        segment:
           type: string
 
     # ── Admin ─────────────────────────────────────────────────────────────────────

@@ -758,6 +758,48 @@ export const AdminGetUserActivityResponse = zod.object({
 
 
 /**
+ * @summary Get global app configuration
+ */
+export const AdminGetAppConfigResponse = zod.object({
+  "id": zod.number(),
+  "maintenanceMode": zod.boolean(),
+  "maintenanceBanner": zod.string().nullish(),
+  "announcementBanner": zod.string().nullish(),
+  "announcementActive": zod.boolean(),
+  "minAppVersion": zod.string(),
+  "citizenVoteEnabled": zod.boolean(),
+  "discussionsEnabled": zod.boolean(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update global app configuration
+ */
+export const AdminUpdateAppConfigBody = zod.object({
+  "maintenanceMode": zod.boolean().optional(),
+  "maintenanceBanner": zod.string().optional(),
+  "announcementBanner": zod.string().optional(),
+  "announcementActive": zod.boolean().optional(),
+  "minAppVersion": zod.string().optional(),
+  "citizenVoteEnabled": zod.boolean().optional(),
+  "discussionsEnabled": zod.boolean().optional()
+})
+
+export const AdminUpdateAppConfigResponse = zod.object({
+  "id": zod.number(),
+  "maintenanceMode": zod.boolean(),
+  "maintenanceBanner": zod.string().nullish(),
+  "announcementBanner": zod.string().nullish(),
+  "announcementActive": zod.boolean(),
+  "minAppVersion": zod.string(),
+  "citizenVoteEnabled": zod.boolean(),
+  "discussionsEnabled": zod.boolean(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get Stripe configuration (sensitive fields masked)
  */
 export const AdminGetStripeSettingsResponse = zod.object({
@@ -1006,12 +1048,38 @@ export const AdminListAuditLogsResponse = zod.object({
 
 
 /**
+ * @summary List sent notification campaigns with recipient counts
+ */
+export const adminListNotificationCampaignsQueryPageDefault = 1;
+export const adminListNotificationCampaignsQueryLimitDefault = 25;
+
+export const AdminListNotificationCampaignsQueryParams = zod.object({
+  "page": zod.coerce.number().default(adminListNotificationCampaignsQueryPageDefault),
+  "limit": zod.coerce.number().default(adminListNotificationCampaignsQueryLimitDefault)
+})
+
+export const AdminListNotificationCampaignsResponse = zod.object({
+  "campaigns": zod.array(zod.object({
+  "id": zod.number(),
+  "adminId": zod.string(),
+  "title": zod.string(),
+  "message": zod.string(),
+  "segment": zod.string(),
+  "recipientCount": zod.number(),
+  "sentAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
  * @summary Send notification to user(s)
  */
 export const AdminSendNotificationBody = zod.object({
   "userId": zod.string().nullish(),
   "title": zod.string(),
-  "message": zod.string()
+  "message": zod.string(),
+  "segment": zod.string().optional()
 })
 
 
