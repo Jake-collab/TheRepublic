@@ -151,7 +151,9 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, isVisible }: Pro
 const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isVisible: boolean }) {
   const colors = useColors();
   const [loading, setLoading] = useState(true);
+  const [blocked, setBlocked] = useState(false);
   const [hasEverBeenVisible, setHasEverBeenVisible] = useState(isVisible);
+  const blockTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isVisible && !hasEverBeenVisible) {
@@ -159,9 +161,30 @@ const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isV
     }
   }, [isVisible, hasEverBeenVisible]);
 
+  // After load fires, wait 2s — if the iframe shows a blank/error page (X-Frame-Options),
+  // we can't detect it directly, so we always show the open-in-browser hint.
+  useEffect(() => {
+    if (!hasEverBeenVisible) return;
+    blockTimerRef.current = setTimeout(() => setBlocked(true), 4000);
+    return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current); };
+  }, [hasEverBeenVisible, url]);
+
+  // Reset state when URL changes (tab switch)
+  useEffect(() => {
+    setLoading(true);
+    setBlocked(false);
+    if (blockTimerRef.current) clearTimeout(blockTimerRef.current);
+    blockTimerRef.current = setTimeout(() => setBlocked(true), 4000);
+    return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current); };
+  }, [url]);
+
   if (!hasEverBeenVisible) {
     return <View style={styles.hiddenView} />;
   }
+
+  const displayHost = (() => {
+    try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
+  })();
 
   return (
     <View style={isVisible ? styles.webviewContainer : styles.hiddenView}>
@@ -172,11 +195,27 @@ const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isV
       )}
       <iframe
         src={url}
-        style={{ flex: 1, border: "none", width: "100%", height: "100%", display: isVisible ? "block" : "none" }}
+        style={{ border: "none", width: "100%", height: "100%", display: isVisible ? "block" : "none" } as React.CSSProperties}
         onLoad={() => setLoading(false)}
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
         title="Republic Browser"
+        referrerPolicy="no-referrer-when-downgrade"
       />
+      {/* Most major sites block iframe embedding — show a direct link after load */}
+      {blocked && isVisible && (
+        <View style={[styles.openBarContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+          <Text style={[styles.openBarText, { color: colors.mutedForeground }]}>
+            {displayHost} may block preview
+          </Text>
+          <Pressable
+            style={[styles.openBarBtn, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
+            }}
+          >
+            <Text style={[styles.openBarBtnText, { color: colors.primaryForeground }]}>Open site ↗</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 });
@@ -229,6 +268,33 @@ const styles = StyleSheet.create({
   },
   retryText: {
     fontSize: 15,
+    fontWeight: "600",
+  },
+  openBarContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    zIndex: 20,
+  },
+  openBarText: {
+    fontSize: 12,
+    flex: 1,
+    marginRight: 10,
+  },
+  openBarBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  openBarBtnText: {
+    fontSize: 12,
     fontWeight: "600",
   },
 });

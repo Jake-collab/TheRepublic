@@ -26,6 +26,21 @@ import {
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BrowserProvider } from "@/contexts/BrowserContext";
 
+// react-native-keyboard-controller requires a native dev build — not available in Expo Go.
+// This boundary catches the render-time crash and silently falls back to just rendering children.
+class KeyboardProviderBoundary extends React.Component<
+  { children: React.ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(e: Error) { console.warn("[KeyboardProvider] not available in this env, skipping:", e.message); }
+  render() {
+    if (this.state.failed) return this.props.children as React.ReactElement;
+    return <KeyboardProvider>{this.props.children}</KeyboardProvider>;
+  }
+}
+
 SplashScreen.preventAutoHideAsync();
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
@@ -156,9 +171,9 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <BrowserProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
-                  <KeyboardProvider>
+                  <KeyboardProviderBoundary>
                     <RootLayoutNav />
-                  </KeyboardProvider>
+                  </KeyboardProviderBoundary>
                 </GestureHandlerRootView>
               </BrowserProvider>
             </QueryClientProvider>

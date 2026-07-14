@@ -1,8 +1,1 @@
-- [Moderation schema](moderation-schema.md) — contentFlagsTable + blockedWordsTable live in lib/db/src/schema/moderation.ts; blocklist cache TTL 60s in api-server/src/utils/blockedWords.ts
-- [Mobile TS quirks](mobile-ts-quirks.md) — 4 pre-existing TS errors in mobile app fixed: useColors unknown-cast, markAll undefined, ClerkError.message→longMessage, SupportTicketInputType enum
-- [Analytics time-series pattern](analytics-pattern.md) — date-gap-filling pattern for daily aggregates, Recharts dark-theme config
-- [Website/category management patterns](website-management.md) — bulk ops with inArray, CSV export via res.setHeader, HTML5 DnD for category reorder
-- [App config singleton pattern](app-config-singleton.md) — upsert pattern for singleton DB rows (app_settings, stripe_settings)
-- [Quick-fix tool patterns](quick-fix-tools.md) — Stripe resync, session clear, force-refresh patterns for per-user repair actions
-- [BottomNav full-width docked design](bottomnav-fullwidth.md) — collapse/expand via Animated.spring with direct value (not interpolate) so insets.bottom can be baked in at toggle time
-- [Comment upvoting pattern](comment-upvoting.md) — DB upvotes column + votes table + toggle route mirrors post voting; useEffect seeds from server (not onSuccess, removed in RQ v5)
+- [Expo Go incompatible modules](expo-go-compat.md) — react-native-keyboard-controller has no Expo Go interop; use KeyboardProviderBoundary to avoid crash.
