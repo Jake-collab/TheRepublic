@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, memo, useCallback, useState } from "react";
+import React, { useEffect, useMemo, memo, useCallback, useState, startTransition } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -75,7 +75,14 @@ const BrowserHeader = memo(function BrowserHeader({
 export default function BrowserScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { visibleTabs, setTabs, activeTabId, isFullscreen, setIsFullscreen } = useBrowser();
+  const {
+    visibleTabs,
+    setTabs,
+    activeTabId,
+    isFullscreen,
+    setIsFullscreen,
+    getInitialUrlForTab,
+  } = useBrowser();
 
   const [activeSection, setActiveSection] = useState<Section>("web");
   const [showTalks, setShowTalks] = useState(false);
@@ -103,7 +110,6 @@ export default function BrowserScreen() {
     if (membership) AsyncStorage.setItem("rq:membership", JSON.stringify(membership));
   }, [membership]);
 
-  // Apply username set during sign-up
   useEffect(() => {
     AsyncStorage.getItem("pending_username").then((username) => {
       if (!username) return;
@@ -124,6 +130,7 @@ export default function BrowserScreen() {
     [webviewTabs, activeTabId],
   );
 
+  // Preload the next tab 2.5s after switching so it warms up invisibly
   useEffect(() => {
     const nextTab = webviewTabs[activeIndex + 1];
     if (!nextTab) return;
@@ -137,8 +144,10 @@ export default function BrowserScreen() {
   }, [setIsFullscreen]);
 
   const handleSectionChange = useCallback((section: Section) => {
-    setActiveSection(section);
-    if (section === "talks") setShowTalks(true);
+    startTransition(() => {
+      setActiveSection(section);
+      if (section === "talks") setShowTalks(true);
+    });
   }, []);
 
   const webHidden = activeSection !== "web";
@@ -161,12 +170,14 @@ export default function BrowserScreen() {
             <Feather name="minimize-2" size={18} color={colors.foreground} />
           </Pressable>
         )}
+        {/* content is the stacking context — all WebViewPanes are position:absolute inside */}
         <View style={styles.content}>
           {webviewTabs.map((tab) => (
             <WebViewPane
               key={tab.id}
               tabId={tab.id}
               url={tab.url}
+              initialUrl={getInitialUrlForTab(tab.id, tab.url)}
               isVisible={activeTabId === tab.id && !webHidden}
             />
           ))}
@@ -184,7 +195,6 @@ export default function BrowserScreen() {
         </View>
       )}
 
-      {/* Floating pill nav */}
       {!isFullscreen && (
         <BottomNav activeSection={activeSection} onChange={handleSectionChange} />
       )}
@@ -225,7 +235,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
   },
-  content: { flex: 1 },
+  // flex:1 so absolute-fill children naturally cover it
+  content: { flex: 1, overflow: "hidden" },
   minimizeBtn: {
     position: "absolute",
     right: 16,

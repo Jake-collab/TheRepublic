@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useRef, useCallback, memo } from "react";
+import React, { useRef, useCallback, memo, startTransition } from "react";
 import {
   FlatList,
   Platform,
@@ -82,39 +82,58 @@ export default function WebsiteTabBar({ isPro }: Props) {
   } = useBrowser();
   const flatListRef = useRef<FlatList>(null);
 
+  // Keep a mutable ref so renderItem can read the latest value without being
+  // recreated on every tab switch. This is the key to preventing full FlatList re-renders.
+  const activeTabIdRef = useRef(activeTabId);
+  activeTabIdRef.current = activeTabId;
+
+  const isPropRef = useRef(isPro);
+  isPropRef.current = isPro;
+
+  const tabColorsRef = useRef(tabColors);
+  tabColorsRef.current = tabColors;
+
   const handleTabPress = useCallback((tab: WebsiteTab) => {
     Haptics.selectionAsync();
-    const isLocked = !tab.isFree && !isPro && !tab.isCitizenVote;
+    const isLocked = !tab.isFree && !isPropRef.current && !tab.isCitizenVote;
     if (isLocked) {
       setPendingProTabId(tab.id);
       setUpgradeModalVisible(true);
       return;
     }
-    setActiveTabId(tab.id);
-    flatListRef.current?.scrollToIndex({
-      index: visibleTabs.findIndex((t) => t.id === tab.id),
-      animated: true,
-      viewPosition: 0.3,
+    // startTransition: the active-tab visual update is non-urgent —
+    // React can let the press animation complete first, then apply the layout change.
+    startTransition(() => {
+      setActiveTabId(tab.id);
+      flatListRef.current?.scrollToIndex({
+        index: visibleTabs.findIndex((t) => t.id === tab.id),
+        animated: true,
+        viewPosition: 0.3,
+      });
     });
-  }, [isPro, setPendingProTabId, setUpgradeModalVisible, setActiveTabId, visibleTabs]);
+  }, [setPendingProTabId, setUpgradeModalVisible, setActiveTabId, visibleTabs]);
 
   const handleTabPressIn = useCallback((tab: WebsiteTab) => {
-    // Fire the WebView load immediately on finger-down — 100–200 ms before onPress
+    // Fire WebView load on finger-down — 100–200 ms before onPress resolves
     if (!tab.isCitizenVote) {
       triggerTabPreload(tab.id);
     }
   }, []);
 
+  // Stable renderItem — does NOT capture activeTabId in its closure.
+  // Reads from activeTabIdRef instead. extraData on FlatList triggers a
+  // re-render pass; TabPill.memo then only re-renders the two pills whose
+  // isActive prop actually changed. All other pills are skipped.
   const renderItem = useCallback(({ item }: { item: WebsiteTab }) => (
     <TabPill
       tab={item}
-      isActive={activeTabId === item.id}
-      isPro={isPro}
-      customColor={tabColors[item.id]}
+      isActive={item.id === activeTabIdRef.current}
+      isPro={isPropRef.current}
+      customColor={tabColorsRef.current[item.id]}
       onPress={() => handleTabPress(item)}
       onPressIn={() => handleTabPressIn(item)}
     />
-  ), [activeTabId, isPro, tabColors, handleTabPress, handleTabPressIn]);
+  ), [handleTabPress, handleTabPressIn]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -127,6 +146,9 @@ export default function WebsiteTabBar({ isPro }: Props) {
         contentContainerStyle={styles.listContent}
         onScrollToIndexFailed={noop}
         renderItem={renderItem}
+        // extraData signals FlatList to re-evaluate renderItem when activeTabId changes,
+        // while keeping the renderItem function itself stable (no recreation on every press).
+        extraData={activeTabId}
       />
     </View>
   );

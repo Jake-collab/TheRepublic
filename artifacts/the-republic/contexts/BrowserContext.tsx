@@ -27,6 +27,7 @@ interface BrowserContextType {
   isFullscreen: boolean;
   setIsFullscreen: (v: boolean) => void;
   setUrlForTab: (tabId: string, url: string) => void;
+  getInitialUrlForTab: (tabId: string, fallback: string) => string;
   upgradeModalVisible: boolean;
   setUpgradeModalVisible: (v: boolean) => void;
   pendingProTabId: string | null;
@@ -44,7 +45,11 @@ const STORAGE_KEYS = {
   hiddenTabs: "republic_hidden_tabs",
   tabColors: "republic_tab_colors",
   tabOrder: "republic_tab_order",
+  tabUrls: "republic_tab_urls",
 };
+
+// How long to wait after the last navigation before writing to AsyncStorage.
+const URL_PERSIST_DEBOUNCE_MS = 1500;
 
 const BrowserContext = createContext<BrowserContextType>({
   tabs: [],
@@ -55,6 +60,7 @@ const BrowserContext = createContext<BrowserContextType>({
   isFullscreen: false,
   setIsFullscreen: () => {},
   setUrlForTab: () => {},
+  getInitialUrlForTab: (_id, fallback) => fallback,
   upgradeModalVisible: false,
   setUpgradeModalVisible: () => {},
   pendingProTabId: null,
@@ -77,8 +83,15 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
   const [tabColors, setTabColorsState] = useState<Record<string, string>>({});
   const [tabOrder, setTabOrderState] = useState<string[]>([]);
   const initialized = useRef(false);
-  // urlState is write-only tracking for navigation history — never triggers re-renders
+
+  // urlStateRef: tracks the current navigated URL per tab.
+  // Write-only from React's perspective — zero re-renders on navigation.
   const urlStateRef = useRef<Record<string, string>>({});
+  // savedUrlsRef: populated once from AsyncStorage on startup.
+  // Used to restore each WebView to where the user last was.
+  const savedUrlsRef = useRef<Record<string, string>>({});
+  // Timer ref for debounced persistence
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -88,11 +101,13 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.getItem(STORAGE_KEYS.hiddenTabs),
       AsyncStorage.getItem(STORAGE_KEYS.tabColors),
       AsyncStorage.getItem(STORAGE_KEYS.tabOrder),
-    ]).then(([activeTab, hidden, colors, order]) => {
+      AsyncStorage.getItem(STORAGE_KEYS.tabUrls),
+    ]).then(([activeTab, hidden, colors, order, tabUrls]) => {
       if (activeTab) setActiveTabIdState(activeTab);
       if (hidden) { try { setHiddenTabIds(JSON.parse(hidden)); } catch {} }
       if (colors) { try { setTabColorsState(JSON.parse(colors)); } catch {} }
       if (order) { try { setTabOrderState(JSON.parse(order)); } catch {} }
+      if (tabUrls) { try { savedUrlsRef.current = JSON.parse(tabUrls); } catch {} }
     });
   }, []);
 
@@ -135,9 +150,27 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEYS.activeTab, id);
   }, []);
 
-  // Writes to a ref — zero re-renders on every WebView page navigation
+  // Writes to ref (zero re-renders) and debounces persistence to AsyncStorage.
+  // This keeps the user's navigated URL across app restarts without
+  // causing any re-renders during normal navigation.
   const setUrlForTab = useCallback((tabId: string, url: string) => {
     urlStateRef.current[tabId] = url;
+    // Also update savedUrls so getInitialUrlForTab returns the latest URL
+    // within the same session (handles tab dealloc/realloc)
+    savedUrlsRef.current[tabId] = url;
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(() => {
+      AsyncStorage.setItem(
+        STORAGE_KEYS.tabUrls,
+        JSON.stringify(urlStateRef.current),
+      );
+    }, URL_PERSIST_DEBOUNCE_MS);
+  }, []);
+
+  // Stable getter — reads from a mutable ref, never causes re-renders.
+  // Call this once per WebViewPane on mount to get the initial URL.
+  const getInitialUrlForTab = useCallback((tabId: string, fallback: string) => {
+    return savedUrlsRef.current[tabId] ?? fallback;
   }, []);
 
   const toggleTabVisibility = useCallback((id: string) => {
@@ -175,11 +208,12 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
     tabs,
     setTabs,
     visibleTabs,
-    activeTabId: activeTabId,
+    activeTabId,
     setActiveTabId: handleSetActiveTabId,
     isFullscreen,
     setIsFullscreen,
     setUrlForTab,
+    getInitialUrlForTab,
     upgradeModalVisible,
     setUpgradeModalVisible,
     pendingProTabId,
@@ -193,7 +227,7 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
   }), [
     tabs, setTabs, visibleTabs,
     activeTabId, handleSetActiveTabId,
-    isFullscreen, setUrlForTab,
+    isFullscreen, setUrlForTab, getInitialUrlForTab,
     upgradeModalVisible,
     pendingProTabId,
     hiddenTabIds, toggleTabVisibility,

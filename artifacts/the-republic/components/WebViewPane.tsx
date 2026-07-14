@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, useRef, memo } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -16,6 +16,7 @@ import { registerTabPreload, unregisterTabPreload } from "@/utils/preloadRegistr
 interface Props {
   tabId: string;
   url: string;
+  initialUrl?: string;
   isVisible: boolean;
 }
 
@@ -57,7 +58,7 @@ function shouldAllowNavigation(url: string): boolean {
   return false;
 }
 
-const NativeWebView = memo(function NativeWebView({ tabId, url, isVisible }: Props) {
+const NativeWebView = memo(function NativeWebView({ tabId, url, initialUrl, isVisible }: Props) {
   const colors = useColors();
   const { setUrlForTab } = useBrowser();
   const [loading, setLoading] = useState(true);
@@ -65,7 +66,12 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, isVisible }: Pro
   const [key, setKey] = useState(0);
   const [hasEverBeenVisible, setHasEverBeenVisible] = useState(isVisible);
 
-  // Register with the preload registry so onPressIn in TabBar can fire us early
+  // Capture the starting URL once at mount time.
+  // Using a ref means it never triggers a WebView reload when the canonical
+  // `url` prop changes (e.g., after an API refresh). Subsequent navigation
+  // is the WebView's own business.
+  const initialSource = useRef({ uri: initialUrl ?? url }).current;
+
   useEffect(() => {
     registerTabPreload(tabId, () => setHasEverBeenVisible(true));
     return () => unregisterTabPreload(tabId);
@@ -86,7 +92,7 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, isVisible }: Pro
 
     return (
       <View
-        style={isVisible ? styles.webviewContainer : styles.hiddenView}
+        style={isVisible ? styles.webviewVisible : styles.hiddenView}
         pointerEvents={isVisible ? "auto" : "none"}
       >
         {loading && isVisible && (
@@ -110,7 +116,7 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, isVisible }: Pro
         ) : (
           <WebView
             key={key}
-            source={{ uri: url }}
+            source={initialSource}
             style={styles.webview}
             onLoadStart={() => { setLoading(true); setError(false); }}
             onLoadEnd={() => setLoading(false)}
@@ -153,7 +159,7 @@ const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isV
   const [loading, setLoading] = useState(true);
   const [blocked, setBlocked] = useState(false);
   const [hasEverBeenVisible, setHasEverBeenVisible] = useState(isVisible);
-  const blockTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isVisible && !hasEverBeenVisible) {
@@ -161,15 +167,13 @@ const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isV
     }
   }, [isVisible, hasEverBeenVisible]);
 
-  // After load fires, wait 2s — if the iframe shows a blank/error page (X-Frame-Options),
-  // we can't detect it directly, so we always show the open-in-browser hint.
+  // Show "open in browser" bar after 4s — can't reliably detect X-Frame-Options blocking
   useEffect(() => {
     if (!hasEverBeenVisible) return;
     blockTimerRef.current = setTimeout(() => setBlocked(true), 4000);
     return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current); };
   }, [hasEverBeenVisible, url]);
 
-  // Reset state when URL changes (tab switch)
   useEffect(() => {
     setLoading(true);
     setBlocked(false);
@@ -187,7 +191,7 @@ const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isV
   })();
 
   return (
-    <View style={isVisible ? styles.webviewContainer : styles.hiddenView}>
+    <View style={isVisible ? styles.webviewVisible : styles.hiddenView}>
       {loading && isVisible && (
         <View style={[StyleSheet.absoluteFill, styles.loadingOverlay, { backgroundColor: colors.background }]}>
           <ActivityIndicator color={colors.primary} size="large" />
@@ -200,7 +204,6 @@ const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isV
         title="Republic Browser"
         referrerPolicy="no-referrer-when-downgrade"
       />
-      {/* Most major sites block iframe embedding — show a direct link after load */}
       {blocked && isVisible && (
         <View style={[styles.openBarContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
           <Text style={[styles.openBarText, { color: colors.mutedForeground }]}>
@@ -220,20 +223,24 @@ const WebIframe = memo(function WebIframe({ url, isVisible }: { url: string; isV
   );
 });
 
-const WebViewPane = memo(function WebViewPane({ tabId, url, isVisible }: Props) {
+const WebViewPane = memo(function WebViewPane({ tabId, url, initialUrl, isVisible }: Props) {
   if (Platform.OS === "web") {
     return <WebIframe url={url} isVisible={isVisible} />;
   }
-  return <NativeWebView tabId={tabId} url={url} isVisible={isVisible} />;
+  return <NativeWebView tabId={tabId} url={url} initialUrl={initialUrl} isVisible={isVisible} />;
 });
 
 export default WebViewPane;
 
 const styles = StyleSheet.create({
-  webviewContainer: { flex: 1 },
+  // All panes use absolute fill — switching between them is a compositor-level
+  // opacity change only, with zero layout recalculation.
+  webviewVisible: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 1,
+  },
   hiddenView: {
-    position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     opacity: 0,
     pointerEvents: "none",
   } as any,
