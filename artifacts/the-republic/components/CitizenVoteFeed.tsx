@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo, useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,8 +25,8 @@ import {
   useUpvoteCitizenVotePost,
 } from "@workspace/api-client-react";
 
-const GEO_OPTIONS = ["City", "State", "National", "Global"];
-const CAT_OPTIONS = ["Economy", "Healthcare", "Education", "Immigration", "Environment", "Civil Rights", "Housing", "Elections", "Foreign Policy", "Taxes", "Other"];
+export const GEO_OPTIONS = ["City", "State", "National", "Global"];
+export const CAT_OPTIONS = ["Economy", "Healthcare", "Education", "Immigration", "Environment", "Civil Rights", "Housing", "Elections", "Foreign Policy", "Taxes", "Other"];
 const FLAG_REASONS = [
   { label: "Spam", value: "spam" },
   { label: "Harassment", value: "harassment" },
@@ -207,7 +208,7 @@ function CreatePostModal({
           ]}
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.muted }]} />
-          <Text style={[styles.modalTitle, { color: colors.foreground }]}>New Vote</Text>
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>New Citizen Vote</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
             placeholder="What should citizens vote on?"
@@ -225,20 +226,7 @@ function CreatePostModal({
             multiline
             numberOfLines={3}
           />
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Category</Text>
-          <View style={styles.chipRow}>
-            {CAT_OPTIONS.map((c) => (
-              <Pressable
-                key={c}
-                style={[styles.chip, { backgroundColor: category === c ? colors.primary : colors.secondary, borderColor: category === c ? colors.primary : colors.border }]}
-                onPress={() => setCategory(c)}
-              >
-                <Text style={[styles.chipText, { color: category === c ? colors.primaryForeground : colors.foreground }]}>
-                  {c}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+
           <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Geo Scope</Text>
           <View style={styles.chipRow}>
             {GEO_OPTIONS.map((g) => (
@@ -253,6 +241,22 @@ function CreatePostModal({
               </Pressable>
             ))}
           </View>
+
+          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Category</Text>
+          <ScrollView style={{ maxHeight: 100 }} contentContainerStyle={styles.chipRow} showsVerticalScrollIndicator={false}>
+            {CAT_OPTIONS.map((c) => (
+              <Pressable
+                key={c}
+                style={[styles.chip, { backgroundColor: category === c ? colors.primary : colors.secondary, borderColor: category === c ? colors.primary : colors.border }]}
+                onPress={() => setCategory(c)}
+              >
+                <Text style={[styles.chipText, { color: category === c ? colors.primaryForeground : colors.foreground }]}>
+                  {c}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
           <Pressable
             style={[styles.submitBtn, { backgroundColor: title.trim() ? colors.primary : colors.muted }]}
             onPress={handleSubmit}
@@ -270,7 +274,12 @@ function CreatePostModal({
   );
 }
 
-export default function CitizenVoteFeed() {
+interface CitizenVoteFeedProps {
+  filterGeo?: string | null;
+  filterCategory?: string | null;
+}
+
+export default function CitizenVoteFeed({ filterGeo, filterCategory }: CitizenVoteFeedProps = {}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [sort, setSort] = useState<"newest" | "top">("newest");
@@ -280,7 +289,16 @@ export default function CitizenVoteFeed() {
   const upvoteMutation = useUpvoteCitizenVotePost();
   const createMutation = useCreateCitizenVotePost();
 
-  const posts = (data as any)?.items ?? (Array.isArray(data) ? data : []);
+  const rawPosts = (data as any)?.items ?? (Array.isArray(data) ? data : []) as Post[];
+
+  const posts = useMemo(() => {
+    if (!rawPosts.length) return rawPosts;
+    return rawPosts.filter((p: Post) => {
+      if (filterGeo && p.geo !== filterGeo) return false;
+      if (filterCategory && p.category !== filterCategory) return false;
+      return true;
+    });
+  }, [rawPosts, filterGeo, filterCategory]);
 
   const handleUpvote = useCallback((id: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -316,6 +334,13 @@ export default function CitizenVoteFeed() {
             </Text>
           </Pressable>
         ))}
+        {(filterGeo || filterCategory) && (
+          <View style={[styles.activeFilterBadge, { backgroundColor: colors.primary + "18" }]}>
+            <Text style={[styles.activeFilterText, { color: colors.primary }]}>
+              {[filterGeo, filterCategory].filter(Boolean).join(" · ")}
+            </Text>
+          </View>
+        )}
       </View>
       {isLoading ? (
         <View style={styles.center}>
@@ -343,10 +368,10 @@ export default function CitizenVoteFeed() {
             <View style={styles.empty}>
               <Feather name="flag" size={36} color={colors.mutedForeground} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No votes yet
+                {filterGeo || filterCategory ? "No votes match this filter" : "No votes yet"}
               </Text>
               <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                Be the first to post a citizen vote
+                {filterGeo || filterCategory ? "Try a different filter" : "Be the first to post a citizen vote"}
               </Text>
             </View>
           }
@@ -371,6 +396,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   sortRow: {
     flexDirection: "row",
+    alignItems: "center",
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sortBtn: {
@@ -378,6 +404,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   sortText: { fontSize: 14, fontWeight: "600" },
+  activeFilterBadge: {
+    marginLeft: "auto" as any,
+    marginRight: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  activeFilterText: { fontSize: 11, fontWeight: "600" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   listContent: { padding: 12, gap: 10 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 8 },
@@ -409,7 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   badgeText: { fontSize: 11, fontWeight: "500" },
-  timeText: { fontSize: 11, marginLeft: "auto" },
+  timeText: { fontSize: 11, marginLeft: "auto" as any },
   cardTitle: { fontSize: 15, fontWeight: "600", lineHeight: 22 },
   cardBody: { fontSize: 13, lineHeight: 19 },
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 },

@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState, useCallback, useRef, useEffect, memo } from "react";
+import React, { useState, useCallback, useRef, useEffect, memo, useMemo, startTransition } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import TalksPostCard, { type TalkPost } from "@/components/TalksPostCard";
+import CitizenVoteFeed, { GEO_OPTIONS as CV_GEO, CAT_OPTIONS as CV_CATS } from "@/components/CitizenVoteFeed";
 import {
   useListTalkCategories,
   useListTalkPosts,
@@ -29,8 +30,13 @@ import {
 
 type TalkCategory = { id: number; name: string; emoji: string; sortOrder: number; isActive: boolean };
 
+const CITIZEN_VOTE_ID = -1;
+const ALL_PILL: TalkCategory = { id: 0, name: "All", emoji: "✨", sortOrder: 0, isActive: true };
+const CV_PILL: TalkCategory = { id: CITIZEN_VOTE_ID, name: "Citizen Vote", emoji: "🗳", sortOrder: -1, isActive: true };
+
 const postKeyExtractor = (item: TalkPost) => String(item.id);
 
+// ─── Category Pill ────────────────────────────────────────────────────────────
 const CategoryPill = memo(function CategoryPill({
   cat,
   isActive,
@@ -67,31 +73,47 @@ const CategoryPill = memo(function CategoryPill({
   );
 });
 
+// ─── Create Post Modal ────────────────────────────────────────────────────────
 function CreatePostModal({
   visible,
   categoryId,
   categoryName,
+  categories,
   onClose,
 }: {
   visible: boolean;
   categoryId: number | null;
   categoryName: string;
+  categories?: TalkCategory[];
   onClose: () => void;
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [localCatId, setLocalCatId] = useState<number | null>(categoryId);
   const createMutation = useCreateTalkPost();
 
+  useEffect(() => {
+    setLocalCatId(categoryId);
+  }, [categoryId, visible]);
+
+  const resolvedCatId = categories ? localCatId : categoryId;
+  const resolvedCatName = categories
+    ? (categories.find((c) => c.id === localCatId)?.name ?? "")
+    : categoryName;
+
+  const canSubmit = !!(title.trim() && body.trim() && resolvedCatId !== null);
+
   const handleSubmit = () => {
-    if (!title.trim() || !body.trim() || categoryId === null) return;
+    if (!canSubmit || resolvedCatId === null) return;
     createMutation.mutate(
-      { data: { categoryId, title: title.trim(), body: body.trim() } },
+      { data: { categoryId: resolvedCatId, title: title.trim(), body: body.trim() } },
       {
         onSuccess: () => {
           setTitle("");
           setBody("");
+          setLocalCatId(categoryId);
           onClose();
         },
       },
@@ -111,8 +133,8 @@ function CreatePostModal({
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>New Post</Text>
           <Pressable
             onPress={handleSubmit}
-            style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: createMutation.isPending ? 0.6 : 1 }]}
-            disabled={createMutation.isPending || !title.trim() || !body.trim()}
+            style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: (createMutation.isPending || !canSubmit) ? 0.5 : 1 }]}
+            disabled={createMutation.isPending || !canSubmit}
           >
             {createMutation.isPending ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -122,14 +144,51 @@ function CreatePostModal({
           </Pressable>
         </View>
 
-        <View style={[styles.modalCatTag, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.modalCatText, { color: colors.primary }]}>{categoryName}</Text>
-        </View>
-
         <ScrollView
           contentContainerStyle={[styles.modalBody, { paddingBottom: insets.bottom + 20 }]}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Category picker — shown only in "All" mode */}
+          {categories && categories.length > 0 && (
+            <View style={styles.catPickerSection}>
+              <Text style={[styles.catPickerLabel, { color: colors.mutedForeground }]}>
+                Post to section:
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catPickerRow}>
+                {categories.map((c) => (
+                  <Pressable
+                    key={c.id}
+                    onPress={() => setLocalCatId(c.id)}
+                    style={[
+                      styles.catPickerChip,
+                      {
+                        backgroundColor: localCatId === c.id ? colors.primary : colors.secondary,
+                        borderColor: localCatId === c.id ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.catPickerEmoji}>{c.emoji}</Text>
+                    <Text style={[styles.catPickerChipText, { color: localCatId === c.id ? "#fff" : colors.foreground }]}>
+                      {c.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              {!localCatId && (
+                <Text style={[styles.catPickerHint, { color: colors.mutedForeground }]}>
+                  Select a section to continue
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Category tag */}
+          {resolvedCatName ? (
+            <View style={[styles.modalCatTag, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.modalCatText, { color: colors.primary }]}>{resolvedCatName}</Text>
+            </View>
+          ) : null}
+
           <TextInput
             style={[styles.titleInput, { color: colors.foreground, borderBottomColor: colors.border }]}
             placeholder="Title"
@@ -147,7 +206,7 @@ function CreatePostModal({
             onChangeText={setBody}
             multiline
             textAlignVertical="top"
-            autoFocus
+            autoFocus={!categories}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -155,10 +214,96 @@ function CreatePostModal({
   );
 }
 
+// ─── Filter Panel ─────────────────────────────────────────────────────────────
+function FilterPanel({
+  visible,
+  activeGeo,
+  activeCat,
+  onGeo,
+  onCat,
+  onClose,
+  onReset,
+}: {
+  visible: boolean;
+  activeGeo: string | null;
+  activeCat: string | null;
+  onGeo: (g: string | null) => void;
+  onCat: (c: string | null) => void;
+  onClose: () => void;
+  onReset: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.filterOverlay}>
+        <Pressable style={styles.filterBackdrop} onPress={onClose} />
+        <View style={[styles.filterPanel, { backgroundColor: colors.card, paddingBottom: insets.bottom + 16 }]}>
+          <View style={[styles.filterHandle, { backgroundColor: colors.border }]} />
+
+          <View style={styles.filterPanelHeader}>
+            <Text style={[styles.filterPanelTitle, { color: colors.foreground }]}>Filter Citizen Vote</Text>
+            <Pressable onPress={onReset} hitSlop={8}>
+              <Text style={[styles.filterResetText, { color: colors.primary }]}>Reset</Text>
+            </Pressable>
+          </View>
+
+          <Text style={[styles.filterSectionLabel, { color: colors.mutedForeground }]}>Geo Scope</Text>
+          <View style={styles.filterChipRow}>
+            {CV_GEO.map((g) => (
+              <Pressable
+                key={g}
+                onPress={() => onGeo(activeGeo === g ? null : g)}
+                style={[
+                  styles.filterChip,
+                  { backgroundColor: activeGeo === g ? colors.primary : colors.secondary, borderColor: activeGeo === g ? colors.primary : colors.border },
+                ]}
+              >
+                <Feather name="map-pin" size={10} color={activeGeo === g ? colors.primaryForeground : colors.mutedForeground} />
+                <Text style={[styles.filterChipText, { color: activeGeo === g ? colors.primaryForeground : colors.foreground }]}>
+                  {g}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={[styles.filterSectionLabel, { color: colors.mutedForeground }]}>Category</Text>
+          <View style={styles.filterChipRow}>
+            {CV_CATS.map((c) => (
+              <Pressable
+                key={c}
+                onPress={() => onCat(activeCat === c ? null : c)}
+                style={[
+                  styles.filterChip,
+                  { backgroundColor: activeCat === c ? colors.primary : colors.secondary, borderColor: activeCat === c ? colors.primary : colors.border },
+                ]}
+              >
+                <Text style={[styles.filterChipText, { color: activeCat === c ? colors.primaryForeground : colors.foreground }]}>
+                  {c}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Pressable
+            style={[styles.filterApplyBtn, { backgroundColor: colors.primary }]}
+            onPress={onClose}
+          >
+            <Text style={[styles.filterApplyText, { color: colors.primaryForeground }]}>Apply Filter</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function TalksScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
   const [sort, setSort] = useState<"new" | "top">("new");
   const [search, setSearch] = useState("");
@@ -170,9 +315,21 @@ export default function TalksScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const catListRef = useRef<ScrollView>(null);
 
+  // Citizen Vote filter state
+  const [filterGeo, setFilterGeo] = useState<string | null>(null);
+  const [filterCat, setFilterCat] = useState<string | null>(null);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+  const isCVMode = selectedCatId === CITIZEN_VOTE_ID;
+  const isAllMode = selectedCatId === null;
+  const hasActiveFilter = !!(filterGeo || filterCat);
+
   const { data: categories } = useListTalkCategories();
   const cats = (categories as TalkCategory[]) ?? [];
   const selectedCat = cats.find((c) => c.id === selectedCatId);
+
+  // All pills for display
+  const allPills = useMemo(() => [ALL_PILL, CV_PILL, ...cats], [cats]);
 
   // Debounce search
   useEffect(() => {
@@ -180,32 +337,38 @@ export default function TalksScreen() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Reset on filter/category change
+  // Reset posts on filter/category change (skip if CV mode)
   useEffect(() => {
-    setAllPosts([]);
-    setCursor(undefined);
-  }, [selectedCatId, sort, debouncedSearch]);
+    if (!isCVMode) {
+      setAllPosts([]);
+      setCursor(undefined);
+    }
+  }, [selectedCatId, sort, debouncedSearch, isCVMode]);
+
+  // API call — coerce to valid categoryId (skip CV sentinel)
+  const talksCatId = selectedCatId !== null && selectedCatId > 0 ? selectedCatId : undefined;
 
   const { data, isLoading, refetch, isRefetching } = useListTalkPosts({
-    categoryId: selectedCatId ?? undefined,
+    categoryId: talksCatId,
     sort,
     search: debouncedSearch || undefined,
     limit: 25,
   });
 
   useEffect(() => {
+    if (isCVMode) return;
     if (data?.items) {
       setAllPosts(data.items as TalkPost[]);
       setCursor(data.nextCursor ?? null);
     }
-  }, [data]);
+  }, [data, isCVMode]);
 
   const handleLoadMore = useCallback(async () => {
     if (!cursor || loadingMore) return;
     setLoadingMore(true);
     try {
       const res = await listTalkPosts({
-        categoryId: selectedCatId ?? undefined,
+        categoryId: talksCatId,
         sort,
         search: debouncedSearch || undefined,
         cursor,
@@ -218,14 +381,13 @@ export default function TalksScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, loadingMore, selectedCatId, sort, debouncedSearch]);
+  }, [cursor, loadingMore, talksCatId, sort, debouncedSearch]);
 
   const voteMutation = useVoteTalkPost();
 
   const handleVote = useCallback(
     (id: number) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      // Optimistic update
       setAllPosts((prev) =>
         prev.map((p) =>
           p.id === id
@@ -244,7 +406,6 @@ export default function TalksScreen() {
             );
           },
           onError: () => {
-            // Revert optimistic update
             setAllPosts((prev) =>
               prev.map((p) =>
                 p.id === id
@@ -285,6 +446,19 @@ export default function TalksScreen() {
     refetch();
   }, [refetch]);
 
+  const handleCatSelect = useCallback((catId: number | null) => {
+    Haptics.selectionAsync();
+    startTransition(() => {
+      setSelectedCatId(catId);
+      if (catId !== CITIZEN_VOTE_ID) {
+        setFilterGeo(null);
+        setFilterCat(null);
+      }
+      setSearchVisible(false);
+      setSearch("");
+    });
+  }, []);
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const renderPost = useCallback(
@@ -294,31 +468,29 @@ export default function TalksScreen() {
     [handleVote, handlePostPress],
   );
 
-  const ListHeader = (
-    <View>
-      {/* Category tabs */}
-      <View style={[styles.catBar, { borderBottomColor: colors.border }]}>
-        <ScrollView
-          ref={catListRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.catList}
-        >
-          <CategoryPill
-            cat={{ id: 0, name: "All", emoji: "✨", sortOrder: 0, isActive: true }}
-            isActive={selectedCatId === null}
-            onPress={() => { Haptics.selectionAsync(); setSelectedCatId(null); }}
-          />
-          {cats.map((c) => (
+  // ── Category pills bar (shared) ────────────────────────────────────────────
+  const CategoryBar = (
+    <View style={[styles.catBar, { borderBottomColor: colors.border }]}>
+      <ScrollView
+        ref={catListRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.catList}
+      >
+        {allPills.map((c) => {
+          const isActive =
+            c.id === 0 ? isAllMode : c.id === CITIZEN_VOTE_ID ? isCVMode : selectedCatId === c.id;
+          const catId = c.id === 0 ? null : c.id;
+          return (
             <CategoryPill
               key={c.id}
               cat={c}
-              isActive={selectedCatId === c.id}
-              onPress={() => { Haptics.selectionAsync(); setSelectedCatId(c.id); }}
+              isActive={isActive}
+              onPress={() => handleCatSelect(catId)}
             />
-          ))}
-        </ScrollView>
-      </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 
@@ -335,14 +507,14 @@ export default function TalksScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* ── Header ── */}
       <View
         style={[
           styles.header,
           { backgroundColor: colors.background, borderBottomColor: colors.border, paddingTop: topPad + 2 },
         ]}
       >
-        {searchVisible ? (
+        {searchVisible && !isCVMode ? (
           <View style={[styles.searchBar, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <Feather name="search" size={15} color={colors.mutedForeground} />
             <TextInput
@@ -360,34 +532,62 @@ export default function TalksScreen() {
           </View>
         ) : (
           <>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Talks</Text>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+              {isCVMode ? "Citizen Vote" : "Talks"}
+            </Text>
             <View style={styles.headerActions}>
-              <Pressable
-                onPress={() => setSearchVisible(true)}
-                style={[styles.headerIconBtn, { backgroundColor: colors.secondary }]}
-              >
-                <Feather name="search" size={17} color={colors.mutedForeground} />
-              </Pressable>
-              <Pressable
-                onPress={() => { setSort((s) => (s === "new" ? "top" : "new")); }}
-                style={[
-                  styles.filterBtn,
-                  { backgroundColor: colors.secondary, borderColor: colors.border },
-                ]}
-              >
-                <Feather name={sort === "top" ? "trending-up" : "clock"} size={13} color={colors.primary} />
-                <Text style={[styles.filterText, { color: colors.primary }]}>
-                  {sort === "top" ? "Top" : "New"}
-                </Text>
-              </Pressable>
+              {/* Search — only in regular mode */}
+              {!isCVMode && (
+                <Pressable
+                  onPress={() => setSearchVisible(true)}
+                  style={[styles.headerIconBtn, { backgroundColor: colors.secondary }]}
+                >
+                  <Feather name="search" size={17} color={colors.mutedForeground} />
+                </Pressable>
+              )}
+
+              {/* CV mode: filter button | Regular mode: sort button */}
+              {isCVMode ? (
+                <Pressable
+                  onPress={() => setShowFilterPanel(true)}
+                  style={[
+                    styles.filterBtn,
+                    {
+                      backgroundColor: hasActiveFilter ? colors.primary + "18" : colors.secondary,
+                      borderColor: hasActiveFilter ? colors.primary : colors.border,
+                    },
+                  ]}
+                >
+                  <Feather name="sliders" size={13} color={hasActiveFilter ? colors.primary : colors.mutedForeground} />
+                  <Text style={[styles.filterText, { color: hasActiveFilter ? colors.primary : colors.mutedForeground }]}>
+                    Filter{hasActiveFilter ? " •" : ""}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={() => setSort((s) => (s === "new" ? "top" : "new"))}
+                  style={[styles.filterBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                >
+                  <Feather name={sort === "top" ? "trending-up" : "clock"} size={13} color={colors.primary} />
+                  <Text style={[styles.filterText, { color: colors.primary }]}>
+                    {sort === "top" ? "Top" : "New"}
+                  </Text>
+                </Pressable>
+              )}
             </View>
           </>
         )}
       </View>
 
-      {isLoading && allPosts.length === 0 ? (
+      {/* ── Citizen Vote Mode ── */}
+      {isCVMode ? (
+        <View style={styles.cvContainer}>
+          {CategoryBar}
+          <CitizenVoteFeed filterGeo={filterGeo} filterCategory={filterCat} />
+        </View>
+      ) : isLoading && allPosts.length === 0 ? (
         <>
-          {ListHeader}
+          {CategoryBar}
           <View style={styles.loadingCenter}>
             <ActivityIndicator color={colors.primary} size="large" />
           </View>
@@ -397,7 +597,7 @@ export default function TalksScreen() {
           data={allPosts}
           keyExtractor={postKeyExtractor}
           renderItem={renderPost}
-          ListHeaderComponent={ListHeader}
+          ListHeaderComponent={CategoryBar}
           ListFooterComponent={ListFooter}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -424,21 +624,22 @@ export default function TalksScreen() {
         />
       )}
 
-      {/* FAB */}
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => {
-          if (!selectedCatId && cats.length > 0) setSelectedCatId(cats[0].id);
-          setShowCreate(true);
-        }}
-      >
-        <Feather name="plus" size={22} color="#ffffff" />
-      </Pressable>
+      {/* ── FAB — hidden in CV mode (CitizenVoteFeed has its own) ── */}
+      {!isCVMode && (
+        <Pressable
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          onPress={() => setShowCreate(true)}
+        >
+          <Feather name="plus" size={22} color="#ffffff" />
+        </Pressable>
+      )}
 
+      {/* ── Create Post Modal ── */}
       <CreatePostModal
         visible={showCreate}
-        categoryId={selectedCatId ?? (cats[0]?.id ?? null)}
-        categoryName={selectedCat?.name ?? cats[0]?.name ?? "General"}
+        categoryId={isAllMode ? null : (selectedCatId ?? null)}
+        categoryName={isAllMode ? "" : (selectedCat?.name ?? "")}
+        categories={isAllMode ? cats : undefined}
         onClose={() => {
           setShowCreate(false);
           setAllPosts([]);
@@ -446,12 +647,24 @@ export default function TalksScreen() {
           refetch();
         }}
       />
+
+      {/* ── CV Filter Panel ── */}
+      <FilterPanel
+        visible={showFilterPanel}
+        activeGeo={filterGeo}
+        activeCat={filterCat}
+        onGeo={setFilterGeo}
+        onCat={setFilterCat}
+        onClose={() => setShowFilterPanel(false)}
+        onReset={() => { setFilterGeo(null); setFilterCat(null); }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  cvContainer: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -531,7 +744,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 6,
   },
-  // Modal
+  // ── Create Post Modal ──────────────────────────────────────────────────────
   modalContainer: { flex: 1 },
   modalHeader: {
     flexDirection: "row",
@@ -556,14 +769,27 @@ const styles = StyleSheet.create({
   submitBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
   modalCatTag: {
     alignSelf: "flex-start",
-    marginHorizontal: 16,
-    marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 12,
   },
   modalCatText: { fontSize: 13, fontWeight: "600" },
   modalBody: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
+  catPickerSection: { gap: 8 },
+  catPickerLabel: { fontSize: 12, fontWeight: "500" },
+  catPickerRow: { gap: 8, paddingVertical: 2 },
+  catPickerChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  catPickerEmoji: { fontSize: 13 },
+  catPickerChipText: { fontSize: 13, fontWeight: "500" },
+  catPickerHint: { fontSize: 12, fontStyle: "italic" },
   titleInput: {
     fontSize: 20,
     fontWeight: "700",
@@ -575,4 +801,53 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     minHeight: 140,
   },
+  // ── Filter Panel ───────────────────────────────────────────────────────────
+  filterOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  filterBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  filterPanel: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    gap: 12,
+    maxHeight: "80%",
+  },
+  filterHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 4,
+  },
+  filterPanelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  filterPanelTitle: { fontSize: 18, fontWeight: "700" },
+  filterResetText: { fontSize: 14, fontWeight: "600" },
+  filterSectionLabel: { fontSize: 12, fontWeight: "500", marginTop: 4 },
+  filterChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterChipText: { fontSize: 13, fontWeight: "500" },
+  filterApplyBtn: {
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  filterApplyText: { fontSize: 15, fontWeight: "700" },
 });

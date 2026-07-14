@@ -3,9 +3,11 @@ const path = require("path");
 
 const config = getDefaultConfig(__dirname);
 
-// Exclude temporary clerk directories that Metro may try to watch
-const clerkTmpPattern = /@clerk[^/]*\/[^/]*_tmp_\d+/;
-config.resolver.blockList = [clerkTmpPattern];
+// Exclude temporary directories Metro may try to watch during installs
+config.resolver.blockList = [
+  /@clerk[^/]*\/[^/]*_tmp_\d+/,
+  /@supabase[^/]*\/[^/]*_tmp_\d+/,
+];
 
 // Support monorepo workspace symlinks
 config.watchFolders = [path.resolve(__dirname, "../..")];

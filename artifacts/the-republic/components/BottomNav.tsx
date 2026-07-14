@@ -19,7 +19,7 @@ interface Props {
   onChange: (s: Section) => void;
 }
 
-const HANDLE_H = 16;
+const HANDLE_H = 28;
 const TABS_H = 36;
 
 export default function BottomNav({ activeSection, onChange }: Props) {
@@ -46,8 +46,8 @@ export default function BottomNav({ activeSection, onChange }: Props) {
 
   const barContent = (
     <View style={styles.barInner}>
-      {/* Collapse / expand handle zone at top */}
-      <Pressable onPress={toggleCollapse} style={styles.handleZone} hitSlop={6}>
+      {/* Collapse / expand handle zone at top — taller for easier tapping */}
+      <Pressable onPress={toggleCollapse} style={styles.handleZone} hitSlop={16}>
         <View style={styles.handlePill} />
         <Feather
           name={collapsed ? "chevron-up" : "chevron-down"}
@@ -147,13 +147,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   handlePill: {
-    width: 30,
-    height: 3,
+    width: 32,
+    height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(255,255,255,0.28)",
   },
   handleChevron: {
-    marginTop: 1,
+    marginTop: 2,
   },
   tabRow: {
     height: TABS_H,

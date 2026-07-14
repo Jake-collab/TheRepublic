@@ -1,9 +1,9 @@
 import { useSignIn } from "@clerk/expo";
-import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -59,8 +59,12 @@ export default function SignInScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.logoArea}>
-          <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
-            <Feather name="shield" size={28} color="#ffffff" />
+          <View style={[styles.logoMark, { backgroundColor: "#ffffff" }]}>
+            <Image
+              source={require("../assets/images/republic-logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={[styles.appName, { color: colors.foreground }]}>Republic</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
@@ -147,12 +151,18 @@ const styles = StyleSheet.create({
   inner: { flexGrow: 1, paddingHorizontal: 24, gap: 28 },
   logoArea: { alignItems: "center", gap: 10, paddingVertical: 16 },
   logoMark: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
+  logoImage: { width: 52, height: 52 },
   appName: { fontSize: 26, fontWeight: "700", letterSpacing: 1 },
   tagline: { fontSize: 14, textAlign: "center", lineHeight: 20 },
   card: { borderRadius: 16, padding: 24, borderWidth: 1, gap: 14 },

@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, memo, useCallback, useState, startTransition } from "react";
 import {
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -46,8 +47,12 @@ const BrowserHeader = memo(function BrowserHeader({
       ]}
     >
       <View style={styles.logoArea}>
-        <View style={[styles.logoMark, { backgroundColor: colors.primary }]}>
-          <Feather name="shield" size={14} color="#ffffff" />
+        <View style={[styles.logoMark, { backgroundColor: "#ffffff" }]}>
+          <Image
+            source={require("../../assets/images/republic-logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
         <Text style={[styles.logoText, { color: colors.foreground }]}>Republic</Text>
       </View>
@@ -223,7 +228,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   logoArea: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logoMark: { width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center" },
+  logoMark: { width: 28, height: 28, borderRadius: 7, justifyContent: "center", alignItems: "center", overflow: "hidden" },
+  logoImage: { width: 22, height: 22 },
   logoText: { fontSize: 15, fontWeight: "700", letterSpacing: 0.5 },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
   iconBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
