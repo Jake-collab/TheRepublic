@@ -24,8 +24,8 @@ import {
   useUpvoteCitizenVotePost,
 } from "@workspace/api-client-react";
 
-const GEO_OPTIONS = ["National", "Local", "State", "Global"];
-const CAT_OPTIONS = ["Economy", "Health", "Education", "Environment", "Safety", "Housing", "Other"];
+const GEO_OPTIONS = ["City", "State", "National", "Global"];
+const CAT_OPTIONS = ["Economy", "Healthcare", "Education", "Immigration", "Environment", "Civil Rights", "Housing", "Elections", "Foreign Policy", "Taxes", "Other"];
 const FLAG_REASONS = [
   { label: "Spam", value: "spam" },
   { label: "Harassment", value: "harassment" },
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   flagBtn: { padding: 4 },
   fab: {
     position: "absolute",
-    bottom: 24,
+    bottom: 70,
     right: 20,
     width: 52,
     height: 52,

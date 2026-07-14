@@ -21,6 +21,7 @@ import {
   useListTalkComments,
   useCreateTalkComment,
   useVoteTalkPost,
+  useVoteTalkComment,
 } from "@workspace/api-client-react";
 
 type Comment = {
@@ -30,6 +31,8 @@ type Comment = {
   displayName: string;
   avatarUrl?: string | null;
   body: string;
+  upvotes: number;
+  hasVoted: boolean;
   createdAt: string;
 };
 
@@ -50,7 +53,17 @@ export default function TalkPostScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string; title?: string; body?: string; displayName?: string; avatarUrl?: string; upvotes?: string; commentCount?: string; hasVoted?: string; createdAt?: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    title?: string;
+    body?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    upvotes?: string;
+    commentCount?: string;
+    hasVoted?: string;
+    createdAt?: string;
+  }>();
   const postId = Number(params.id);
 
   const [commentText, setCommentText] = useState("");
@@ -65,20 +78,27 @@ export default function TalkPostScreen() {
   const [upvotes, setUpvotes] = useState(Number(params.upvotes ?? 0));
   const [hasVoted, setHasVoted] = useState(params.hasVoted === "true");
   const [comments, setComments] = useState<Comment[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
   const { data: commentsData, isLoading: commentsLoading } = useListTalkComments(postId);
 
-  const allComments = comments.length > 0 ? comments : ((commentsData as Comment[]) ?? []);
+  // Seed comments from server on first load only (preserve optimistic new comments after)
+  React.useEffect(() => {
+    if (!initialized && commentsData) {
+      setComments(commentsData as unknown as Comment[]);
+      setInitialized(true);
+    }
+  }, [commentsData, initialized]);
 
   const voteMutation = useVoteTalkPost();
   const commentMutation = useCreateTalkComment();
+  const commentVoteMutation = useVoteTalkComment();
 
   const handleVote = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newVoted = !hasVoted;
-    const newCount = newVoted ? upvotes + 1 : upvotes - 1;
     setHasVoted(newVoted);
-    setUpvotes(newCount);
+    setUpvotes((v) => newVoted ? v + 1 : v - 1);
     voteMutation.mutate({ id: postId }, {
       onSuccess: (res) => {
         setUpvotes((res as any).upvotes);
@@ -86,10 +106,43 @@ export default function TalkPostScreen() {
       },
       onError: () => {
         setHasVoted(!newVoted);
-        setUpvotes(upvotes);
+        setUpvotes((v) => newVoted ? v - 1 : v + 1);
       },
     });
-  }, [hasVoted, upvotes, postId, voteMutation]);
+  }, [hasVoted, postId, voteMutation]);
+
+  const handleCommentVote = useCallback((commentId: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Optimistic update
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId
+          ? { ...c, upvotes: c.hasVoted ? c.upvotes - 1 : c.upvotes + 1, hasVoted: !c.hasVoted }
+          : c,
+      ),
+    );
+    commentVoteMutation.mutate({ id: commentId }, {
+      onSuccess: (res) => {
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === commentId
+              ? { ...c, upvotes: (res as any).upvotes, hasVoted: (res as any).hasVoted }
+              : c,
+          ),
+        );
+      },
+      onError: () => {
+        // Revert
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === commentId
+              ? { ...c, upvotes: c.hasVoted ? c.upvotes + 1 : c.upvotes - 1, hasVoted: !c.hasVoted }
+              : c,
+          ),
+        );
+      },
+    });
+  }, [commentVoteMutation]);
 
   const handleAddComment = useCallback(() => {
     const text = commentText.trim();
@@ -100,7 +153,13 @@ export default function TalkPostScreen() {
       { id: postId, data: { body: text } },
       {
         onSuccess: (res) => {
-          setComments((prev) => [...prev, res as Comment]);
+          const newComment: Comment = {
+            ...(res as any),
+            upvotes: (res as any).upvotes ?? 0,
+            hasVoted: false,
+          };
+          // Prepend (newest first)
+          setComments((prev) => [newComment, ...prev]);
         },
       },
     );
@@ -115,9 +174,27 @@ export default function TalkPostScreen() {
           <Text style={[styles.commentTime, { color: colors.mutedForeground }]}>{timeAgo(item.createdAt)}</Text>
         </View>
         <Text style={[styles.commentBody, { color: colors.foreground }]}>{item.body}</Text>
+        {/* Comment upvote */}
+        <Pressable
+          style={[
+            styles.commentUpvoteBtn,
+            { backgroundColor: item.hasVoted ? colors.primary + "22" : colors.secondary },
+          ]}
+          onPress={() => handleCommentVote(item.id)}
+          hitSlop={6}
+        >
+          <Feather
+            name="arrow-up"
+            size={12}
+            color={item.hasVoted ? colors.primary : colors.mutedForeground}
+          />
+          <Text style={[styles.commentUpvoteCount, { color: item.hasVoted ? colors.primary : colors.mutedForeground }]}>
+            {item.upvotes}
+          </Text>
+        </Pressable>
       </View>
     </View>
-  ), [colors]);
+  ), [colors, handleCommentVote]);
 
   const ListHeader = (
     <View>
@@ -144,12 +221,12 @@ export default function TalkPostScreen() {
           </Pressable>
           <View style={[styles.voteBtn, { backgroundColor: colors.secondary }]}>
             <Feather name="message-circle" size={15} color={colors.mutedForeground} />
-            <Text style={[styles.voteBtnText, { color: colors.mutedForeground }]}>{allComments.length}</Text>
+            <Text style={[styles.voteBtnText, { color: colors.mutedForeground }]}>{comments.length}</Text>
           </View>
         </View>
       </View>
       <Text style={[styles.commentsLabel, { color: colors.mutedForeground }]}>
-        {allComments.length} Comment{allComments.length !== 1 ? "s" : ""}
+        {comments.length} Comment{comments.length !== 1 ? "s" : ""}
       </Text>
     </View>
   );
@@ -171,14 +248,14 @@ export default function TalkPostScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
-        {commentsLoading ? (
+        {commentsLoading && !initialized ? (
           <>
             {ListHeader}
             <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
           </>
         ) : (
           <FlatList
-            data={allComments}
+            data={comments}
             keyExtractor={commentKeyExtractor}
             renderItem={renderComment}
             ListHeaderComponent={ListHeader}
@@ -275,11 +352,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  commentContent: { flex: 1, gap: 3 },
+  commentContent: { flex: 1, gap: 4 },
   commentMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
   commentAuthor: { fontSize: 13, fontWeight: "600" },
   commentTime: { fontSize: 11 },
   commentBody: { fontSize: 14, lineHeight: 20 },
+  commentUpvoteBtn: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 2,
+  },
+  commentUpvoteCount: { fontSize: 12, fontWeight: "600" },
   emptyComments: { padding: 32, alignItems: "center" },
   emptyCommentsText: { fontSize: 14, textAlign: "center" },
   inputBar: {

@@ -5,11 +5,12 @@ import {
   talkPostsTable,
   talkVotesTable,
   talkCommentsTable,
+  talkCommentVotesTable,
   usersTable,
   contentFlagsTable,
 } from "@workspace/db";
 import { containsBlockedWord } from "../utils/blockedWords";
-import { eq, desc, asc, sql, and, lt, ilike, or } from "drizzle-orm";
+import { eq, desc, asc, sql, and, lt, ilike, or, inArray } from "drizzle-orm";
 import { requireAuth, optionalAuth, ensureUser } from "../middlewares/requireAuth";
 
 const router = Router();
@@ -139,7 +140,8 @@ router.post("/posts/:id/vote", requireAuth, ensureUser, async (req, res) => {
   res.json({ upvotes: updated?.upvotes ?? 0, hasVoted });
 });
 
-router.get("/posts/:id/comments", async (req, res) => {
+router.get("/posts/:id/comments", optionalAuth, async (req, res) => {
+  const userId = (req as any).userId as string | undefined;
   const postId = Number(req.params.id);
   if (isNaN(postId)) { res.status(400).json({ error: "Invalid post id" }); return; }
 
@@ -147,9 +149,26 @@ router.get("/posts/:id/comments", async (req, res) => {
     .select()
     .from(talkCommentsTable)
     .where(eq(talkCommentsTable.postId, postId))
-    .orderBy(asc(talkCommentsTable.createdAt));
+    .orderBy(desc(talkCommentsTable.createdAt));
 
-  res.json(comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })));
+  let votedCommentIds = new Set<number>();
+  if (userId && comments.length > 0) {
+    const commentIds = comments.map((c) => c.id);
+    const votes = await db
+      .select({ commentId: talkCommentVotesTable.commentId })
+      .from(talkCommentVotesTable)
+      .where(and(
+        eq(talkCommentVotesTable.userId, userId),
+        inArray(talkCommentVotesTable.commentId, commentIds),
+      ));
+    votedCommentIds = new Set(votes.map((v) => v.commentId));
+  }
+
+  res.json(comments.map((c) => ({
+    ...c,
+    createdAt: c.createdAt.toISOString(),
+    hasVoted: votedCommentIds.has(c.id),
+  })));
 });
 
 router.post("/posts/:id/comments", requireAuth, ensureUser, async (req, res) => {
@@ -180,6 +199,42 @@ router.post("/posts/:id/comments", requireAuth, ensureUser, async (req, res) => 
     .where(eq(talkPostsTable.id, postId));
 
   res.status(201).json({ ...comment, createdAt: comment.createdAt.toISOString() });
+});
+
+// ── Vote comment ──────────────────────────────────────────────────────────────
+router.post("/comments/:id/vote", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const commentId = Number(req.params.id);
+  if (isNaN(commentId)) { res.status(400).json({ error: "Invalid comment id" }); return; }
+
+  const existing = await db
+    .select()
+    .from(talkCommentVotesTable)
+    .where(and(eq(talkCommentVotesTable.commentId, commentId), eq(talkCommentVotesTable.userId, userId)))
+    .limit(1);
+
+  let hasVoted: boolean;
+  if (existing.length > 0) {
+    await db.delete(talkCommentVotesTable)
+      .where(and(eq(talkCommentVotesTable.commentId, commentId), eq(talkCommentVotesTable.userId, userId)));
+    await db.update(talkCommentsTable)
+      .set({ upvotes: sql`GREATEST(${talkCommentsTable.upvotes} - 1, 0)` })
+      .where(eq(talkCommentsTable.id, commentId));
+    hasVoted = false;
+  } else {
+    await db.insert(talkCommentVotesTable).values({ commentId, userId });
+    await db.update(talkCommentsTable)
+      .set({ upvotes: sql`${talkCommentsTable.upvotes} + 1` })
+      .where(eq(talkCommentsTable.id, commentId));
+    hasVoted = true;
+  }
+
+  const [updated] = await db
+    .select({ upvotes: talkCommentsTable.upvotes })
+    .from(talkCommentsTable)
+    .where(eq(talkCommentsTable.id, commentId));
+
+  res.json({ upvotes: updated?.upvotes ?? 0, hasVoted });
 });
 
 // ── Flag post ─────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { BlurView } from "expo-blur";
-import React, { useRef, useEffect } from "react";
+import * as Haptics from "expo-haptics";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   Animated,
   Platform,
@@ -9,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type Section = "web" | "talks";
 
@@ -17,139 +19,166 @@ interface Props {
   onChange: (s: Section) => void;
 }
 
-const PILL_WIDTH = 200;
-const BUTTON_WIDTH = 92;
+const HANDLE_H = 16;
+const TABS_H = 36;
 
 export default function BottomNav({ activeSection, onChange }: Props) {
-  const slideAnim = useRef(new Animated.Value(activeSection === "web" ? 0 : 1)).current;
+  const insets = useSafeAreaInsets();
+  const insetsRef = useRef(insets);
+  useEffect(() => { insetsRef.current = insets; }, [insets]);
 
-  useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: activeSection === "web" ? 0 : 1,
+  const collapseAnim = useRef(new Animated.Value(0)).current;
+  const [collapsed, setCollapsed] = useState(false);
+  const collapsedRef = useRef(false);
+
+  const toggleCollapse = useCallback(() => {
+    Haptics.selectionAsync();
+    const next = !collapsedRef.current;
+    collapsedRef.current = next;
+    setCollapsed(next);
+    Animated.spring(collapseAnim, {
+      toValue: next ? TABS_H + insetsRef.current.bottom : 0,
       useNativeDriver: true,
-      tension: 180,
-      friction: 18,
+      tension: 200,
+      friction: 22,
     }).start();
-  }, [activeSection, slideAnim]);
+  }, [collapseAnim]);
 
-  const translateX = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [4, PILL_WIDTH / 2 - 4],
-  });
+  const barContent = (
+    <View style={styles.barInner}>
+      {/* Collapse / expand handle zone at top */}
+      <Pressable onPress={toggleCollapse} style={styles.handleZone} hitSlop={6}>
+        <View style={styles.handlePill} />
+        <Feather
+          name={collapsed ? "chevron-up" : "chevron-down"}
+          size={9}
+          color="rgba(255,255,255,0.3)"
+          style={styles.handleChevron}
+        />
+      </Pressable>
 
-  const content = (
-    <View style={styles.pill} pointerEvents="box-none">
-      {/* Sliding highlight */}
-      <Animated.View
-        style={[
-          styles.slider,
-          { transform: [{ translateX }] },
-        ]}
-      />
-      <Pressable
-        style={styles.button}
-        onPress={() => onChange("web")}
-      >
-        <Feather
-          name="globe"
-          size={18}
-          color={activeSection === "web" ? "#ffffff" : "rgba(255,255,255,0.5)"}
-        />
-        <Text style={[styles.label, activeSection === "web" && styles.labelActive]}>
-          Web
-        </Text>
-      </Pressable>
-      <Pressable
-        style={styles.button}
-        onPress={() => onChange("talks")}
-      >
-        <Feather
-          name="message-circle"
-          size={18}
-          color={activeSection === "talks" ? "#ffffff" : "rgba(255,255,255,0.5)"}
-        />
-        <Text style={[styles.label, activeSection === "talks" && styles.labelActive]}>
-          Talks
-        </Text>
-      </Pressable>
+      {/* Tab row */}
+      <View style={[styles.tabRow, { paddingBottom: insets.bottom }]}>
+        <Pressable
+          style={styles.tabBtn}
+          onPress={() => { if (!collapsed) onChange("web"); else { toggleCollapse(); onChange("web"); } }}
+        >
+          <Feather
+            name="globe"
+            size={16}
+            color={activeSection === "web" ? "#ffffff" : "rgba(255,255,255,0.42)"}
+          />
+          <Text style={[
+            styles.tabLabel,
+            { color: activeSection === "web" ? "#ffffff" : "rgba(255,255,255,0.42)" },
+            activeSection === "web" && styles.tabLabelActive,
+          ]}>
+            Web
+          </Text>
+        </Pressable>
+
+        <View style={styles.divider} />
+
+        <Pressable
+          style={styles.tabBtn}
+          onPress={() => { if (!collapsed) onChange("talks"); else { toggleCollapse(); onChange("talks"); } }}
+        >
+          <Feather
+            name="message-circle"
+            size={16}
+            color={activeSection === "talks" ? "#ffffff" : "rgba(255,255,255,0.42)"}
+          />
+          <Text style={[
+            styles.tabLabel,
+            { color: activeSection === "talks" ? "#ffffff" : "rgba(255,255,255,0.42)" },
+            activeSection === "talks" && styles.tabLabelActive,
+          ]}>
+            Talks
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 
-  if (Platform.OS === "ios") {
-    return (
-      <View style={styles.wrapper} pointerEvents="box-none">
-        <View style={styles.blurWrapper}>
-          <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-          {content}
-        </View>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
-      <View style={styles.androidPill}>{content}</View>
-    </View>
+    <Animated.View
+      style={[styles.wrapper, { transform: [{ translateY: collapseAnim }] }]}
+      pointerEvents="box-none"
+    >
+      {Platform.OS === "ios" ? (
+        <View style={styles.barIos} pointerEvents="auto">
+          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+          {barContent}
+        </View>
+      ) : (
+        <View style={styles.barAndroid} pointerEvents="auto">
+          {barContent}
+        </View>
+      )}
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    bottom: 22,
+    bottom: 0,
     left: 0,
     right: 0,
-    alignItems: "center",
     zIndex: 200,
-    pointerEvents: "box-none",
   } as any,
-  blurWrapper: {
-    width: PILL_WIDTH,
-    height: 52,
-    borderRadius: 26,
+  barIos: {
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.10)",
   },
-  androidPill: {
-    width: PILL_WIDTH,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "rgba(20,20,20,0.88)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    overflow: "hidden",
+  barAndroid: {
+    backgroundColor: "rgba(8,8,8,0.86)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.10)",
   },
-  pill: {
+  barInner: {
+    flexDirection: "column",
+  },
+  handleZone: {
+    height: HANDLE_H,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "column",
+    gap: 1,
+  },
+  handlePill: {
+    width: 30,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  handleChevron: {
+    marginTop: 1,
+  },
+  tabRow: {
+    height: TABS_H,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  tabBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  slider: {
-    position: "absolute",
-    left: 0,
-    width: BUTTON_WIDTH,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.18)",
-  },
-  button: {
-    width: BUTTON_WIDTH,
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    borderRadius: 22,
+    gap: 7,
+    height: TABS_H,
   },
-  label: {
+  divider: {
+    width: StyleSheet.hairlineWidth,
+    height: 18,
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  tabLabel: {
     fontSize: 13,
     fontWeight: "500",
-    color: "rgba(255,255,255,0.5)",
   },
-  labelActive: {
-    color: "#ffffff",
+  tabLabelActive: {
     fontWeight: "700",
   },
 });

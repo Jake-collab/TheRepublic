@@ -41,8 +41,16 @@ export const talkCommentsTable = pgTable("talk_comments", {
   displayName: text("display_name").notNull().default("Anonymous"),
   avatarUrl: text("avatar_url"),
   body: text("body").notNull(),
+  upvotes: integer("upvotes").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const talkCommentVotesTable = pgTable("talk_comment_votes", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").notNull().references(() => talkCommentsTable.id),
+  userId: text("user_id").notNull().references(() => usersTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [unique().on(t.commentId, t.userId)]);
 
 export const insertTalkPostSchema = createInsertSchema(talkPostsTable).omit({ id: true, upvotes: true, commentCount: true, createdAt: true });
 export type InsertTalkPost = z.infer<typeof insertTalkPostSchema>;

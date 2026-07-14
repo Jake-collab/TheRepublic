@@ -104,6 +104,7 @@ export * from './userActivitySubscription';
 export * from './userActivityTicketsItem';
 export * from './userProfile';
 export * from './userProfileUpdate';
+export * from './voteCommentResult';
 export * from './voteMetadata';
 export * from './website';
 export * from './websiteInput';

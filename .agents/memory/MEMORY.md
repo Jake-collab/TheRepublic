@@ -4,3 +4,5 @@
 - [Website/category management patterns](website-management.md) — bulk ops with inArray, CSV export via res.setHeader, HTML5 DnD for category reorder
 - [App config singleton pattern](app-config-singleton.md) — upsert pattern for singleton DB rows (app_settings, stripe_settings)
 - [Quick-fix tool patterns](quick-fix-tools.md) — Stripe resync, session clear, force-refresh patterns for per-user repair actions
+- [BottomNav full-width docked design](bottomnav-fullwidth.md) — collapse/expand via Animated.spring with direct value (not interpolate) so insets.bottom can be baked in at toggle time
+- [Comment upvoting pattern](comment-upvoting.md) — DB upvotes column + votes table + toggle route mirrors post voting; useEffect seeds from server (not onSuccess, removed in RQ v5)

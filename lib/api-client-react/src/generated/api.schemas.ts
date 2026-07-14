@@ -667,7 +667,14 @@ export interface TalkComment {
   /** @nullable */
   avatarUrl?: string | null;
   body: string;
+  upvotes: number;
+  hasVoted: boolean;
   createdAt: string;
+}
+
+export interface VoteCommentResult {
+  upvotes: number;
+  hasVoted: boolean;
 }
 
 export interface TalkCommentInput {

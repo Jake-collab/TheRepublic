@@ -95,6 +95,7 @@ import type {
   UserActivity,
   UserProfile,
   UserProfileUpdate,
+  VoteCommentResult,
   VoteMetadata,
   Website,
   WebsiteInput,
@@ -6818,6 +6819,76 @@ export const useFlagTalkPost = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getFlagTalkPostMutationOptions(options));
+    }
+
+export const getVoteTalkCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/talks/comments/${id}/vote`
+}
+
+/**
+ * @summary Toggle upvote on a talk comment
+ */
+export const voteTalkComment = async (id: number, options?: RequestInit): Promise<VoteCommentResult> => {
+
+  return customFetch<VoteCommentResult>(getVoteTalkCommentUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getVoteTalkCommentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteTalkComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voteTalkComment>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['voteTalkComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voteTalkComment>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  voteTalkComment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoteTalkCommentMutationResult = NonNullable<Awaited<ReturnType<typeof voteTalkComment>>>
+
+    export type VoteTalkCommentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle upvote on a talk comment
+ */
+export const useVoteTalkComment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteTalkComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voteTalkComment>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getVoteTalkCommentMutationOptions(options));
     }
 
 export const getFlagTalkCommentUrl = (id: number,) => {

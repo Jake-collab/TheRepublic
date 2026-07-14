@@ -1710,6 +1710,25 @@ paths:
         "201":
           description: Flagged
 
+  /talks/comments/{id}/vote:
+    post:
+      operationId: voteTalkComment
+      tags: [talks]
+      summary: Toggle upvote on a talk comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vote toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteCommentResult"
+
   /talks/comments/{id}/flag:
     post:
       operationId: flagTalkComment
@@ -2749,7 +2768,7 @@ components:
 
     TalkComment:
       type: object
-      required: [id, postId, displayName, body, createdAt]
+      required: [id, postId, displayName, body, upvotes, hasVoted, createdAt]
       properties:
         id:
           type: integer
@@ -2763,8 +2782,21 @@ components:
           type: ["string", "null"]
         body:
           type: string
+        upvotes:
+          type: integer
+        hasVoted:
+          type: boolean
         createdAt:
           type: string
+
+    VoteCommentResult:
+      type: object
+      required: [upvotes, hasVoted]
+      properties:
+        upvotes:
+          type: integer
+        hasVoted:
+          type: boolean
 
     TalkCommentInput:
       type: object

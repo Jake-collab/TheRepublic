@@ -407,7 +407,7 @@ export default function TalksScreen() {
               </Text>
             </View>
           }
-          contentContainerStyle={{ paddingBottom: 90 }}
+          contentContainerStyle={{ paddingBottom: 104 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   loadMoreText: { fontSize: 14, fontWeight: "500" },
   fab: {
     position: "absolute",
-    bottom: 82,
+    bottom: 96,
     right: 20,
     width: 52,
     height: 52,

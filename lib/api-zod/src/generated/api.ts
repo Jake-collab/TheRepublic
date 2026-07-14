@@ -1247,6 +1247,8 @@ export const AdminListTalkPostCommentsResponseItem = zod.object({
   "displayName": zod.string(),
   "avatarUrl": zod.string().nullish(),
   "body": zod.string(),
+  "upvotes": zod.number(),
+  "hasVoted": zod.boolean(),
   "createdAt": zod.string()
 })
 export const AdminListTalkPostCommentsResponse = zod.array(AdminListTalkPostCommentsResponseItem)
@@ -1496,6 +1498,19 @@ export const FlagTalkPostBody = zod.object({
 
 
 /**
+ * @summary Toggle upvote on a talk comment
+ */
+export const VoteTalkCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const VoteTalkCommentResponse = zod.object({
+  "upvotes": zod.number(),
+  "hasVoted": zod.boolean()
+})
+
+
+/**
  * @summary Report/flag a talk comment
  */
 export const FlagTalkCommentParams = zod.object({
@@ -1522,6 +1537,8 @@ export const ListTalkCommentsResponseItem = zod.object({
   "displayName": zod.string(),
   "avatarUrl": zod.string().nullish(),
   "body": zod.string(),
+  "upvotes": zod.number(),
+  "hasVoted": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListTalkCommentsResponse = zod.array(ListTalkCommentsResponseItem)
