@@ -141,7 +141,8 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
+    <ErrorBoundary>
+    <ClerkProvider publishableKey={publishableKey || "pk_test_placeholder"} tokenCache={tokenCache} proxyUrl={proxyUrl}>
       <ClerkLoading>
         <SafeAreaProvider>
           <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
@@ -154,7 +155,7 @@ export default function RootLayout() {
           <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
               <BrowserProvider>
-                <GestureHandlerRootView>
+                <GestureHandlerRootView style={{ flex: 1 }}>
                   <KeyboardProvider>
                     <RootLayoutNav />
                   </KeyboardProvider>
@@ -165,5 +166,6 @@ export default function RootLayout() {
         </SafeAreaProvider>
       </ClerkLoaded>
     </ClerkProvider>
+    </ErrorBoundary>
   );
 }

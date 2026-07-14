@@ -101,21 +101,20 @@ export default function BottomNav({ activeSection, onChange }: Props) {
   );
 
   return (
-    <Animated.View
-      style={[styles.wrapper, { transform: [{ translateY: collapseAnim }] }]}
-      pointerEvents="box-none"
-    >
-      {Platform.OS === "ios" ? (
-        <View style={styles.barIos} pointerEvents="auto">
-          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-          {barContent}
-        </View>
-      ) : (
-        <View style={styles.barAndroid} pointerEvents="auto">
-          {barContent}
-        </View>
-      )}
-    </Animated.View>
+    <View style={styles.wrapper} pointerEvents="box-none">
+      <Animated.View style={{ transform: [{ translateY: collapseAnim }] }}>
+        {Platform.OS === "ios" ? (
+          <View style={styles.barIos} pointerEvents="auto">
+            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+            {barContent}
+          </View>
+        ) : (
+          <View style={styles.barAndroid} pointerEvents="auto">
+            {barContent}
+          </View>
+        )}
+      </Animated.View>
+    </View>
   );
 }
 
