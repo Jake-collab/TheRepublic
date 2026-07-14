@@ -1,2 +1,3 @@
 - [Expo Go incompatible modules](expo-go-compat.md) — react-native-keyboard-controller has no Expo Go interop; use KeyboardProviderBoundary to avoid crash.
 - [WebView tab switching perf](webview-tab-perf.md) — all-absolute positioning + startTransition + stable renderItem pattern for zero-layout-thrash switching.
+- [Expo Go on Replit — tunnel required](expo-go-replit-tunnel.md) — Replit only exposes HTTPS:443; Expo Go needs HTTP:80 for exp:// connections; --tunnel (ngrok) is the only fix.
