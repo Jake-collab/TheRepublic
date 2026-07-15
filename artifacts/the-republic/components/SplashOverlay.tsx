@@ -1,51 +1,42 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Image, StyleSheet, View } from "react-native";
+import { Animated, Image, StyleSheet, Text, View } from "react-native";
 
 interface Props {
   onDone: () => void;
-  /** Milliseconds to show the splash before fading out. Default 1800. */
   duration?: number;
 }
 
 /**
- * Branded loading overlay shown when the app first opens.
- * During its lifetime the app is quietly prewarming DNS + loading website data
- * in the background — by the time it fades, most of the network work is done.
+ * Branded boot overlay. Appears immediately (no fade-in delay) while WebViews
+ * preload silently in the background. Fades out after `duration` ms.
  */
-export default function SplashOverlay({ onDone, duration = 1800 }: Props) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.88)).current;
+export default function SplashOverlay({ onDone, duration = 2200 }: Props) {
+  const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Fade + scale in quickly
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, tension: 180, friction: 14, useNativeDriver: true }),
-    ]).start();
-
-    // Hold, then fade out
-    const holdTimer = setTimeout(() => {
+    const t = setTimeout(() => {
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 350,
+        duration: 400,
         useNativeDriver: true,
       }).start(() => onDone());
     }, duration);
-
-    return () => clearTimeout(holdTimer);
-  }, [opacity, scale, duration, onDone]);
+    return () => clearTimeout(t);
+  }, [opacity, duration, onDone]);
 
   return (
     <Animated.View style={[styles.container, { opacity }]} pointerEvents="none">
-      <Animated.View style={[styles.logoWrap, { transform: [{ scale }] }]}>
-        <View style={styles.logoCircle}>
+      <View style={styles.logoWrap}>
+        <View style={styles.logoMark}>
           <Image
             source={require("../assets/images/republic-logo.png")}
             style={styles.logoImg}
             resizeMode="contain"
           />
         </View>
-      </Animated.View>
+        <Text style={styles.wordmark}>THE REPUBLIC</Text>
+        <Text style={styles.tagline}>Loading your sites…</Text>
+      </View>
     </Animated.View>
   );
 }
@@ -53,30 +44,39 @@ export default function SplashOverlay({ onDone, duration = 1800 }: Props) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#000000",
+    backgroundColor: "#0a0a0a",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 9999,
   },
   logoWrap: {
     alignItems: "center",
-    gap: 18,
+    gap: 14,
   },
-  logoCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    backgroundColor: "#ffffff",
+  logoMark: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#ffffff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 32,
-    elevation: 12,
+    marginBottom: 4,
   },
   logoImg: {
-    width: 72,
-    height: 72,
+    width: 64,
+    height: 64,
+  },
+  wordmark: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 4,
+  },
+  tagline: {
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 13,
+    letterSpacing: 0.3,
   },
 });

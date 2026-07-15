@@ -88,7 +88,6 @@ export default function BrowserScreen() {
     isFullscreen,
     setIsFullscreen,
     getInitialUrlForTab,
-    recentTabIds,
   } = useBrowser();
 
   const [activeSection, setActiveSection] = useState<Section>("web");
@@ -113,18 +112,32 @@ export default function BrowserScreen() {
     setTabs(siteTabs);
     AsyncStorage.setItem("rq:websites", JSON.stringify(websites));
 
-    // Boot-time DNS prewarm — fire HEAD requests for every tab domain as soon
-    // as the website list arrives. By the time the user taps a tab, the DNS
-    // and TCP handshake are already resolved, cutting first-load latency.
-    const prewarmed = new Set<string>();
-    (websites as any[]).forEach((w: any) => {
-      try {
-        const { origin } = new URL(w.url as string);
-        if (prewarmed.has(origin)) return;
-        prewarmed.add(origin);
-        fetch(origin, { method: "HEAD", cache: "no-store" }).catch(() => {});
-      } catch {}
+    // ─── Aggressive preloading ──────────────────────────────────────────────
+    // Step 1: DNS + TCP prewarm (native only — web/Expo-Go is CORS-blocked).
+    // Step 2: Stagger-trigger actual WebView preloads so pages start loading
+    //   in the background while the splash overlay is still showing.
+    //   WebViewPanes are always mounted (no LRU mount filter), so every tab
+    //   has a registered preload callback by the time we call it.
+    //   First 8 tabs fire every 250 ms (well within the 2.2 s splash window).
+    //   Remaining tabs fire every 600 ms so the device isn't overwhelmed.
+    if (Platform.OS !== "web") {
+      const prewarmed = new Set<string>();
+      (websites as any[]).forEach((w: any) => {
+        try {
+          const { origin } = new URL(w.url as string);
+          if (prewarmed.has(origin)) return;
+          prewarmed.add(origin);
+          fetch(origin, { method: "HEAD", cache: "no-store" }).catch(() => {});
+        } catch {}
+      });
+    }
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    siteTabs.forEach((tab, i) => {
+      const delay = i < 8 ? 120 + i * 250 : 2200 + (i - 8) * 600;
+      timers.push(setTimeout(() => triggerTabPreload(tab.id), delay));
     });
+    return () => timers.forEach(clearTimeout);
   }, [websites, setTabs]);
 
   useEffect(() => {
@@ -189,10 +202,10 @@ export default function BrowserScreen() {
         {/* content is the stacking context — all WebViewPanes are position:absolute inside */}
         <View style={styles.content}>
           {webviewTabs
-            // LRU pool: only keep the last MAX_LIVE_WEBVIEWS WebViews mounted.
-            // Unmounted tabs reload from their saved URL when revisited.
-            // This caps background memory + JS execution from idle WebViews.
-            .filter((tab) => recentTabIds.includes(tab.id) || tab.id === activeTabId)
+            // All tabs are always mounted — mounting a WebViewPane is cheap
+            // (just a hidden <View> until preloaded). Real WebView content only
+            // renders once triggerTabPreload fires or the tab becomes visible.
+            // This means staggered boot preloads actually reach every tab.
             .map((tab) => (
               <WebViewPane
                 key={tab.id}
