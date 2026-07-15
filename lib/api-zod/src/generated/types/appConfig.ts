@@ -17,5 +17,9 @@ export interface AppConfig {
   minAppVersion: string;
   citizenVoteEnabled: boolean;
   discussionsEnabled: boolean;
+  /** @nullable */
+  supabaseUrl?: string | null;
+  /** @nullable */
+  supabaseServiceRoleKey?: string | null;
   updatedAt: Date;
 }

@@ -471,6 +471,10 @@ export interface AppConfig {
   minAppVersion: string;
   citizenVoteEnabled: boolean;
   discussionsEnabled: boolean;
+  /** @nullable */
+  supabaseUrl?: string | null;
+  /** @nullable */
+  supabaseServiceRoleKey?: string | null;
   updatedAt: string;
 }
 
@@ -482,6 +486,8 @@ export interface AppConfigInput {
   minAppVersion?: string;
   citizenVoteEnabled?: boolean;
   discussionsEnabled?: boolean;
+  supabaseUrl?: string;
+  supabaseServiceRoleKey?: string;
 }
 
 export interface Notification {

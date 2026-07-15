@@ -1121,6 +1121,7 @@ router.put("/app-config", async (req, res) => {
   const {
     maintenanceMode, maintenanceBanner, announcementBanner,
     announcementActive, minAppVersion, citizenVoteEnabled, discussionsEnabled,
+    supabaseUrl, supabaseServiceRoleKey,
   } = req.body;
 
   const rows = await db.select().from(appSettingsTable).limit(1);
@@ -1133,6 +1134,8 @@ router.put("/app-config", async (req, res) => {
   if (minAppVersion !== undefined) updates.minAppVersion = minAppVersion;
   if (citizenVoteEnabled !== undefined) updates.citizenVoteEnabled = citizenVoteEnabled;
   if (discussionsEnabled !== undefined) updates.discussionsEnabled = discussionsEnabled;
+  if (supabaseUrl !== undefined) updates.supabaseUrl = supabaseUrl || null;
+  if (supabaseServiceRoleKey !== undefined) updates.supabaseServiceRoleKey = supabaseServiceRoleKey || null;
 
   let result;
   if (rows.length === 0) {

@@ -2,5 +2,5 @@
 - [WebView tab switching perf](webview-tab-perf.md) — all-absolute positioning + startTransition + stable renderItem pattern for zero-layout-thrash switching.
 - [Expo Go on Replit — tunnel required](expo-go-replit-tunnel.md) — Replit only exposes HTTPS:443; Expo Go needs HTTP:80 for exp:// connections; --tunnel (ngrok) is the only fix.
 - [Metro temp-dir crash on pnpm install](metro-tmp-crash.md) — pnpm installs create _tmp_ dirs Metro tries to watch before they're cleaned up; add blockList regex patterns to metro.config.js for each new package family (@clerk, @supabase, etc).
-- [Supabase in lib/db](supabase-setup.md) — @supabase/supabase-js installed in @workspace/db only; lazy singleton in lib/db/src/supabase.ts; Drizzle keeps DATABASE_URL unchanged; needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY env vars to activate.
+- [Supabase in lib/db](supabase-setup.md) — creds stored in app_settings table (supabase_url, supabase_service_role_key); admin panel saves them; server calls setSupabaseCredentials() on startup; env vars are fallback.
 - [TalksScreen CV sentinel](talks-cv-sentinel.md) — selectedCatId===-1 = Citizen Vote mode; renders CitizenVoteFeed not FlatList; useListTalkPosts always called with coerced id (>0 only); own FAB hidden (CitizenVoteFeed has one).

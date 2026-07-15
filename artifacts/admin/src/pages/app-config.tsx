@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { AlertTriangle, Megaphone, Sliders, Smartphone } from "lucide-react";
+import { AlertTriangle, Megaphone, Sliders, Smartphone, Database, Eye, EyeOff } from "lucide-react";
 
 type AppConfigForm = {
   maintenanceMode: boolean;
@@ -24,6 +24,8 @@ type AppConfigForm = {
   minAppVersion: string;
   citizenVoteEnabled: boolean;
   discussionsEnabled: boolean;
+  supabaseUrl: string;
+  supabaseServiceRoleKey: string;
 };
 
 const defaults: AppConfigForm = {
@@ -34,6 +36,8 @@ const defaults: AppConfigForm = {
   minAppVersion: "1.0.0",
   citizenVoteEnabled: true,
   discussionsEnabled: true,
+  supabaseUrl: "",
+  supabaseServiceRoleKey: "",
 };
 
 export default function AppConfig() {
@@ -44,6 +48,7 @@ export default function AppConfig() {
   const { mutateAsync: updateConfig, isPending } = useAdminUpdateAppConfig();
   const initialized = useRef(false);
   const [form, setForm] = useState<AppConfigForm>(defaults);
+  const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     if (config && !initialized.current) {
@@ -56,6 +61,8 @@ export default function AppConfig() {
         minAppVersion: config.minAppVersion,
         citizenVoteEnabled: config.citizenVoteEnabled,
         discussionsEnabled: config.discussionsEnabled,
+        supabaseUrl: config.supabaseUrl ?? "",
+        supabaseServiceRoleKey: config.supabaseServiceRoleKey ?? "",
       });
     }
   }, [config]);
@@ -74,6 +81,8 @@ export default function AppConfig() {
           minAppVersion: form.minAppVersion.trim() || "1.0.0",
           citizenVoteEnabled: form.citizenVoteEnabled,
           discussionsEnabled: form.discussionsEnabled,
+          supabaseUrl: form.supabaseUrl.trim() || undefined,
+          supabaseServiceRoleKey: form.supabaseServiceRoleKey.trim() || undefined,
         },
       });
       await queryClient.invalidateQueries({ queryKey: getAdminGetAppConfigQueryKey() });
@@ -228,6 +237,63 @@ export default function AppConfig() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Semantic version (e.g. <code className="text-primary">1.2.0</code>). Users below this version are blocked.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Supabase Integration */}
+          <Card className={form.supabaseUrl ? "border-green-500/30" : ""}>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Database className={`w-4 h-4 ${form.supabaseUrl ? "text-green-500" : "text-muted-foreground"}`} />
+                <CardTitle>Supabase Integration</CardTitle>
+                {form.supabaseUrl && (
+                  <Badge className="ml-auto bg-green-500/20 text-green-400 border-green-500/30">CONFIGURED</Badge>
+                )}
+              </div>
+              <CardDescription>
+                Connect your Supabase project. Find these values in your Supabase dashboard under
+                Project Settings → API. Changes take effect after saving — the server picks them up automatically.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label>Project URL</Label>
+                <Input
+                  placeholder="https://your-project-id.supabase.co"
+                  value={form.supabaseUrl}
+                  onChange={e => set("supabaseUrl", e.target.value)}
+                  autoComplete="off"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Found in Supabase → Project Settings → API → <strong>Project URL</strong>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Service Role Key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type={showKey ? "text" : "password"}
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    value={form.supabaseServiceRoleKey}
+                    onChange={e => set("supabaseServiceRoleKey", e.target.value)}
+                    autoComplete="new-password"
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowKey(v => !v)}
+                    title={showKey ? "Hide key" : "Show key"}
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Found in Supabase → Project Settings → API → <strong>service_role</strong> key.
+                  Keep this private — it has full database access.
                 </p>
               </div>
             </CardContent>

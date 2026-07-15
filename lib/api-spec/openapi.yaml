@@ -2435,6 +2435,10 @@ components:
           type: boolean
         discussionsEnabled:
           type: boolean
+        supabaseUrl:
+          type: ["string", "null"]
+        supabaseServiceRoleKey:
+          type: ["string", "null"]
         updatedAt:
           type: string
           format: date-time
@@ -2456,6 +2460,10 @@ components:
           type: boolean
         discussionsEnabled:
           type: boolean
+        supabaseUrl:
+          type: string
+        supabaseServiceRoleKey:
+          type: string
 
     # ── Notifications ─────────────────────────────────────────────────────────────
     Notification:

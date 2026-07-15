@@ -135,12 +135,15 @@ export default function BrowserScreen() {
     [webviewTabs, activeTabId],
   );
 
-  // Preload the next tab 2.5s after switching so it warms up invisibly
+  // Preload both adjacent tabs after switching so they warm up invisibly.
+  // Next tab at 1.5s (most likely next press), previous at 3s.
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
     const nextTab = webviewTabs[activeIndex + 1];
-    if (!nextTab) return;
-    const timer = setTimeout(() => triggerTabPreload(nextTab.id), 2500);
-    return () => clearTimeout(timer);
+    const prevTab = webviewTabs[activeIndex - 1];
+    if (nextTab) timers.push(setTimeout(() => triggerTabPreload(nextTab.id), 1500));
+    if (prevTab) timers.push(setTimeout(() => triggerTabPreload(prevTab.id), 3000));
+    return () => timers.forEach(clearTimeout);
   }, [activeIndex, webviewTabs]);
 
   const handleMinimize = useCallback(() => {

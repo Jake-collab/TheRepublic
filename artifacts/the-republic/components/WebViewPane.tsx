@@ -135,6 +135,12 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, initialUrl, isVi
             setSupportMultipleWindows={false}
             allowsLinkPreview={false}
             startInLoadingState={false}
+            decelerationRate="normal"
+            dataDetectorTypes="none"
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
+            renderToHardwareTextureAndroid={true}
+            overScrollMode="never"
           />
         )}
       </View>

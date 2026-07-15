@@ -14,4 +14,6 @@ export interface AppConfigInput {
   minAppVersion?: string;
   citizenVoteEnabled?: boolean;
   discussionsEnabled?: boolean;
+  supabaseUrl?: string;
+  supabaseServiceRoleKey?: string;
 }

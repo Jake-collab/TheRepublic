@@ -807,6 +807,8 @@ export const AdminGetAppConfigResponse = zod.object({
   "minAppVersion": zod.string(),
   "citizenVoteEnabled": zod.boolean(),
   "discussionsEnabled": zod.boolean(),
+  "supabaseUrl": zod.string().nullish(),
+  "supabaseServiceRoleKey": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -821,7 +823,9 @@ export const AdminUpdateAppConfigBody = zod.object({
   "announcementActive": zod.boolean().optional(),
   "minAppVersion": zod.string().optional(),
   "citizenVoteEnabled": zod.boolean().optional(),
-  "discussionsEnabled": zod.boolean().optional()
+  "discussionsEnabled": zod.boolean().optional(),
+  "supabaseUrl": zod.string().optional(),
+  "supabaseServiceRoleKey": zod.string().optional()
 })
 
 export const AdminUpdateAppConfigResponse = zod.object({
@@ -833,6 +837,8 @@ export const AdminUpdateAppConfigResponse = zod.object({
   "minAppVersion": zod.string(),
   "citizenVoteEnabled": zod.boolean(),
   "discussionsEnabled": zod.boolean(),
+  "supabaseUrl": zod.string().nullish(),
+  "supabaseServiceRoleKey": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
 

@@ -9,6 +9,8 @@ export const appSettingsTable = pgTable("app_settings", {
   minAppVersion: text("min_app_version").notNull().default("1.0.0"),
   citizenVoteEnabled: boolean("citizen_vote_enabled").notNull().default(true),
   discussionsEnabled: boolean("discussions_enabled").notNull().default(true),
+  supabaseUrl: text("supabase_url"),
+  supabaseServiceRoleKey: text("supabase_service_role_key"),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
