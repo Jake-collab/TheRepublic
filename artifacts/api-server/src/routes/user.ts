@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, membershipsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { requireAuth, ensureUser } from "../middlewares/requireAuth";
 import { getStripeConfig, getAppBaseUrl } from "../utils/stripeHelpers";
 
@@ -33,8 +33,22 @@ router.get("/profile", async (req, res) => {
 router.patch("/profile", async (req, res) => {
   const userId = (req as any).userId as string;
   const { displayName, avatarUrl, theme, acceptedTermsAt, acceptedPrivacyAt } = req.body;
+
+  // Username uniqueness check — case-insensitive, skip for empty/clearing
+  if (displayName !== undefined && displayName.trim() !== "") {
+    const existing = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(and(eq(usersTable.displayName, displayName.trim()), ne(usersTable.id, userId)))
+      .limit(1);
+    if (existing.length > 0) {
+      res.status(409).json({ error: "Username already taken. Please choose another." });
+      return;
+    }
+  }
+
   const updates: Partial<typeof usersTable.$inferInsert> = {};
-  if (displayName !== undefined) updates.displayName = displayName;
+  if (displayName !== undefined) updates.displayName = displayName.trim();
   if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
   if (theme !== undefined) updates.theme = theme;
   if (acceptedTermsAt !== undefined) updates.acceptedTermsAt = acceptedTermsAt ? new Date(acceptedTermsAt) : null;

@@ -72,6 +72,14 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, initialUrl, isVi
   // is the WebView's own business.
   const initialSource = useRef({ uri: initialUrl ?? url }).current;
 
+  // A mobile-style user-agent nudges sites to serve lighter, mobile-optimised
+  // pages. Appended to the system UA so Expo/React-Native fingerprinting is
+  // preserved; we do NOT spoof desktop UAs because many sites detect that.
+  const mobileUA =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) " +
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) " +
+    "Version/17.0 Mobile/15E148 Safari/604.1 RepublicApp/1.0";
+
   useEffect(() => {
     registerTabPreload(tabId, () => setHasEverBeenVisible(true));
     registerTabUrl(tabId, initialUrl ?? url);
@@ -119,6 +127,7 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, initialUrl, isVi
             key={key}
             source={initialSource}
             style={styles.webview}
+            userAgent={mobileUA}
             onLoadStart={() => { setLoading(true); setError(false); }}
             onLoadEnd={() => setLoading(false)}
             onError={() => { setLoading(false); setError(true); }}

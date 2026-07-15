@@ -1,25 +1,33 @@
 import { useAuth, useUser } from "@clerk/expo";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
-  Platform,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import * as WebBrowser from "expo-web-browser";
 import { useColors } from "@/hooks/useColors";
-import { useCreatePortalSession, useGetMembershipPricing, useGetUserMembership, useListNotifications, useUpdateUserProfile } from "@workspace/api-client-react";
+import {
+  useCreatePortalSession,
+  useGetMembershipPricing,
+  useGetUserMembership,
+  useGetUserProfile,
+  useListNotifications,
+  useUpdateUserProfile,
+} from "@workspace/api-client-react";
 
 function SettingRow({
   icon,
@@ -75,17 +83,26 @@ export default function ProfileScreen() {
   const { signOut } = useAuth();
   const { user } = useUser();
   const { data: membership, isLoading: membershipLoading } = useGetUserMembership();
+  const { data: profile } = useGetUserProfile();
   const { data: notifications } = useListNotifications();
   const { data: pricing } = useGetMembershipPricing();
   const updateProfile = useUpdateUserProfile();
   const { mutateAsync: createPortal } = useCreatePortalSession();
 
   const membershipPlan = membership?.plan ?? "free";
-  const isPro = membershipPlan !== "free" && membership?.status === "active";
+  const isPro = membershipPlan !== "free" && (membership as any)?.status === "active";
   const [portalLoading, setPortalLoading] = useState(false);
 
-  const storedDisplayName = (membership as any)?.displayName ?? "";
-  const storedAvatarUrl = (membership as any)?.avatarUrl ?? "";
+  const storedDisplayName = (profile as any)?.displayName ?? (membership as any)?.displayName ?? "";
+  const storedAvatarUrl = (profile as any)?.avatarUrl ?? (membership as any)?.avatarUrl ?? "";
+
+  const [editDisplayName, setEditDisplayName] = useState(
+    storedDisplayName || user?.firstName || "",
+  );
+  const [editAvatarUrl, setEditAvatarUrl] = useState(storedAvatarUrl);
+  const [saving, setSaving] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
+  const [pickingPhoto, setPickingPhoto] = useState(false);
 
   const handleManageSubscription = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -100,31 +117,72 @@ export default function ProfileScreen() {
     }
   };
 
-  const [editDisplayName, setEditDisplayName] = useState(
-    storedDisplayName || user?.firstName || "",
-  );
-  const [editAvatarUrl, setEditAvatarUrl] = useState(storedAvatarUrl);
-  const [saving, setSaving] = useState(false);
+  const handlePickPhoto = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPickingPhoto(true);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Allow photo library access to set a profile picture.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          const dataUri = `data:image/jpeg;base64,${asset.base64}`;
+          setEditAvatarUrl(dataUri);
+        } else if (asset.uri) {
+          setEditAvatarUrl(asset.uri);
+        }
+      }
+    } finally {
+      setPickingPhoto(false);
+    }
+  };
 
   const handleSaveProfile = () => {
+    if (!editDisplayName.trim()) {
+      setUsernameError("Username cannot be empty.");
+      return;
+    }
+    setUsernameError("");
     setSaving(true);
     updateProfile.mutate(
-      { data: { displayName: editDisplayName.trim() || undefined, avatarUrl: editAvatarUrl.trim() || null } },
+      {
+        data: {
+          displayName: editDisplayName.trim(),
+          avatarUrl: editAvatarUrl || null,
+        },
+      },
       {
         onSuccess: () => {
           setSaving(false);
           Alert.alert("Saved", "Profile updated successfully.");
         },
-        onError: () => {
+        onError: (err: any) => {
           setSaving(false);
-          Alert.alert("Error", "Could not save profile. Please try again.");
+          const msg =
+            err?.response?.data?.error ??
+            err?.message ??
+            "Could not save profile. Please try again.";
+          if (msg.toLowerCase().includes("taken")) {
+            setUsernameError("Username already taken. Choose a different one.");
+          } else {
+            Alert.alert("Error", msg);
+          }
         },
       },
     );
   };
 
   const unreadCount = ((notifications as any[]) ?? []).filter((n: any) => !n.isRead).length;
-
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   return (
@@ -145,23 +203,36 @@ export default function ProfileScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
-      >
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
+        {/* Avatar — tap to change photo */}
         <View style={styles.avatarArea}>
-          {editAvatarUrl ? (
-            <Image
-              source={{ uri: editAvatarUrl }}
-              style={[styles.avatar, { borderColor: colors.primary }]}
-              onError={() => setEditAvatarUrl("")}
-            />
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: colors.secondary, borderColor: colors.primary }]}>
-              <Text style={[styles.avatarInitial, { color: colors.primary }]}>
-                {(editDisplayName || user?.firstName || "C")[0]?.toUpperCase()}
-              </Text>
+          <Pressable
+            onPress={handlePickPhoto}
+            disabled={pickingPhoto}
+            style={styles.avatarWrapper}
+          >
+            {editAvatarUrl ? (
+              <Image
+                source={{ uri: editAvatarUrl }}
+                style={[styles.avatar, { borderColor: colors.primary }]}
+                onError={() => setEditAvatarUrl("")}
+              />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.secondary, borderColor: colors.primary }]}>
+                <Text style={[styles.avatarInitial, { color: colors.primary }]}>
+                  {(editDisplayName || user?.firstName || "C")[0]?.toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <View style={[styles.cameraOverlay, { backgroundColor: colors.primary }]}>
+              {pickingPhoto ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Feather name="camera" size={14} color="#fff" />
+              )}
             </View>
-          )}
+          </Pressable>
+
           <Text style={[styles.name, { color: colors.foreground }]}>
             {editDisplayName || user?.firstName || "Citizen"}
           </Text>
@@ -203,28 +274,22 @@ export default function ProfileScreen() {
           <View style={styles.editRow}>
             <Text style={[styles.editLabel, { color: colors.mutedForeground }]}>Username</Text>
             <TextInput
-              style={[styles.editInput, { color: colors.foreground, borderColor: colors.border }]}
+              style={[
+                styles.editInput,
+                { color: colors.foreground, borderColor: usernameError ? colors.destructive : colors.border },
+              ]}
               value={editDisplayName}
-              onChangeText={setEditDisplayName}
-              placeholder="Your display name"
+              onChangeText={(t) => { setEditDisplayName(t); setUsernameError(""); }}
+              placeholder="Choose a unique username"
               placeholderTextColor={colors.mutedForeground}
               maxLength={40}
-              returnKeyType="next"
-            />
-          </View>
-          <View style={[styles.editDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.editRow}>
-            <Text style={[styles.editLabel, { color: colors.mutedForeground }]}>Avatar URL</Text>
-            <TextInput
-              style={[styles.editInput, { color: colors.foreground, borderColor: colors.border }]}
-              value={editAvatarUrl}
-              onChangeText={setEditAvatarUrl}
-              placeholder="https://..."
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="url"
               autoCapitalize="none"
+              autoCorrect={false}
               returnKeyType="done"
             />
+            {!!usernameError && (
+              <Text style={[styles.errorHint, { color: colors.destructive }]}>{usernameError}</Text>
+            )}
           </View>
           <Pressable
             style={({ pressed }) => [
@@ -253,7 +318,7 @@ export default function ProfileScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.upgradeTitle, { color: colors.foreground }]}>Upgrade to Pro</Text>
               <Text style={[styles.upgradeSub, { color: colors.mutedForeground }]}>
-                Unlock all 50+ websites & tab customization
+                Unlock all 26+ Pro sites & tab customization
               </Text>
             </View>
             <Feather name="chevron-right" size={18} color={colors.primary} />
@@ -342,15 +407,28 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: "600" },
   scrollContent: { padding: 20, gap: 8 },
   avatarArea: { alignItems: "center", gap: 8, paddingVertical: 16 },
+  avatarWrapper: { position: "relative" },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
   },
-  avatarInitial: { fontSize: 32, fontWeight: "700" },
+  avatarInitial: { fontSize: 34, fontWeight: "700" },
+  cameraOverlay: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
   name: { fontSize: 20, fontWeight: "700" },
   email: { fontSize: 14 },
   tierBadge: {
@@ -446,7 +524,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  editDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
+  errorHint: { fontSize: 12, marginTop: 2 },
   saveBtn: {
     margin: 12,
     borderRadius: 10,

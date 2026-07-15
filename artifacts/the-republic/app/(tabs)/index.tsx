@@ -110,6 +110,19 @@ export default function BrowserScreen() {
     }));
     setTabs(siteTabs);
     AsyncStorage.setItem("rq:websites", JSON.stringify(websites));
+
+    // Boot-time DNS prewarm — fire HEAD requests for every tab domain as soon
+    // as the website list arrives. By the time the user taps a tab, the DNS
+    // and TCP handshake are already resolved, cutting first-load latency.
+    const prewarmed = new Set<string>();
+    (websites as any[]).forEach((w: any) => {
+      try {
+        const { origin } = new URL(w.url as string);
+        if (prewarmed.has(origin)) return;
+        prewarmed.add(origin);
+        fetch(origin, { method: "HEAD", cache: "no-store" }).catch(() => {});
+      } catch {}
+    });
   }, [websites, setTabs]);
 
   useEffect(() => {
