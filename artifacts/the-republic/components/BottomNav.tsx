@@ -36,8 +36,11 @@ export default function BottomNav({ activeSection, onChange }: Props) {
     const next = !collapsedRef.current;
     collapsedRef.current = next;
     setCollapsed(next);
+    // Collapse by TABS_H only — NOT adding insets.bottom. Adding insets.bottom
+    // would push the handle pill into the iOS system gesture zone (bottom ~34 px)
+    // where swipe-home intercepts taps before our Pressable ever sees them.
     Animated.spring(collapseAnim, {
-      toValue: next ? TABS_H + insetsRef.current.bottom : 0,
+      toValue: next ? TABS_H : 0,
       useNativeDriver: true,
       tension: 200,
       friction: 22,

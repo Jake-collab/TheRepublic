@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 
 import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
@@ -156,15 +157,30 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, initialUrl, isVi
       </View>
     );
   } catch {
+    // react-native-webview is unavailable (Expo Go). Show a functional
+    // per-tab launcher — users can open the site in the system browser.
+    const safeHost = (() => {
+      try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
+    })();
     return (
-      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
-        <Feather name="smartphone" size={40} color={colors.mutedForeground} />
+      <View style={[isVisible ? styles.webviewVisible : styles.hiddenView, styles.errorContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.expoGoIconWrap, { backgroundColor: colors.card }]}>
+          <Feather name="globe" size={28} color={colors.primary} />
+        </View>
         <Text style={[styles.errorText, { color: colors.foreground }]}>
-          WebView requires a development build
+          {safeHost}
         </Text>
         <Text style={[styles.errorSub, { color: colors.mutedForeground }]}>
-          Use the web preview or scan the QR from a dev build
+          WebView isn't available in Expo Go. Open the site in your browser instead.
         </Text>
+        <Pressable
+          style={[styles.retryBtn, { backgroundColor: colors.primary }]}
+          onPress={() => { WebBrowser.openBrowserAsync(url).catch(() => {}); }}
+        >
+          <Text style={[styles.retryText, { color: colors.primaryForeground }]}>
+            Open {safeHost} ↗
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -282,6 +298,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
+  },
+  expoGoIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
   },
   retryBtn: {
     paddingHorizontal: 24,

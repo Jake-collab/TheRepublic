@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import BottomNav, { type Section } from "@/components/BottomNav";
+import SplashOverlay from "@/components/SplashOverlay";
 import TalksScreen from "@/components/TalksScreen";
 import UpgradeModal from "@/components/UpgradeModal";
 import WebViewPane from "@/components/WebViewPane";
@@ -92,6 +93,7 @@ export default function BrowserScreen() {
 
   const [activeSection, setActiveSection] = useState<Section>("web");
   const [showTalks, setShowTalks] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   const { data: websites } = useListWebsites({});
   const { data: membership } = useGetUserMembership();
@@ -184,14 +186,6 @@ export default function BrowserScreen() {
       >
         <BrowserHeader topPad={topPad} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} />
         {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
-        {isFullscreen && (
-          <Pressable
-            style={[styles.minimizeBtn, { backgroundColor: colors.card, top: insets.top + 8 }]}
-            onPress={handleMinimize}
-          >
-            <Feather name="minimize-2" size={18} color={colors.foreground} />
-          </Pressable>
-        )}
         {/* content is the stacking context — all WebViewPanes are position:absolute inside */}
         <View style={styles.content}>
           {webviewTabs
@@ -208,6 +202,16 @@ export default function BrowserScreen() {
                 isVisible={activeTabId === tab.id && !webHidden}
               />
             ))}
+          {/* Minimize button rendered INSIDE content, AFTER WebViews so it
+              paints on top of them and captures touches correctly. */}
+          {isFullscreen && (
+            <Pressable
+              style={[styles.minimizeBtn, { backgroundColor: colors.card, top: insets.top + 8 }]}
+              onPress={handleMinimize}
+            >
+              <Feather name="minimize-2" size={18} color={colors.foreground} />
+            </Pressable>
+          )}
         </View>
         <UpgradeModal />
       </View>
@@ -225,6 +229,10 @@ export default function BrowserScreen() {
       {!isFullscreen && (
         <BottomNav activeSection={activeSection} onChange={handleSectionChange} />
       )}
+
+      {/* Branded boot splash — sits above everything for ~2 s while DNS
+          prewarming and data loading happen silently in the background. */}
+      {showSplash && <SplashOverlay onDone={() => setShowSplash(false)} />}
     </View>
   );
 }
