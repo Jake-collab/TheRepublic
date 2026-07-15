@@ -18,10 +18,10 @@ import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
 
 const PRO_FEATURES = [
-  { icon: "globe" as const, text: "Unlimited website tabs" },
-  { icon: "star" as const, text: "Access all 50+ curated sites" },
+  { icon: "star" as const, text: "Access all 26+ Pro curated sites" },
   { icon: "sliders" as const, text: "Custom tab colors & reorder" },
   { icon: "flag" as const, text: "Citizen Vote — create posts" },
+  { icon: "shield" as const, text: "Full community features" },
   { icon: "zap" as const, text: "Priority support" },
 ];
 

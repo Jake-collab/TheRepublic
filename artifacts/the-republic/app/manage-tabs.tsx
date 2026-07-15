@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -48,6 +49,8 @@ export default function ManageTabsScreen() {
     moveTab,
   } = useBrowser();
 
+  const MAX_VISIBLE_TABS = 10;
+
   const siteTabs = tabs.filter((t) => !t.isCitizenVote);
   const orderedTabs =
     tabOrder.length > 0
@@ -59,7 +62,19 @@ export default function ManageTabsScreen() {
         ]
       : siteTabs;
 
+  const visibleCount = orderedTabs.filter((t) => !hiddenTabIds.includes(t.id)).length;
+
   const handleToggle = (id: string) => {
+    const isCurrentlyHidden = hiddenTabIds.includes(id);
+    if (isCurrentlyHidden && visibleCount >= MAX_VISIBLE_TABS) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert(
+        "Tab Limit Reached",
+        `You can show up to ${MAX_VISIBLE_TABS} tabs at a time. Hide another tab first.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     toggleTabVisibility(id);
   };
@@ -163,14 +178,19 @@ export default function ManageTabsScreen() {
         >
           <Feather name="x" size={18} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Manage Tabs</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+          Manage Tabs{" "}
+          <Text style={{ color: visibleCount >= MAX_VISIBLE_TABS ? colors.green : colors.mutedForeground, fontSize: 13 }}>
+            ({visibleCount}/{MAX_VISIBLE_TABS})
+          </Text>
+        </Text>
         <View style={{ width: 36 }} />
       </View>
 
       <View style={[styles.info, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
         <Feather name="info" size={14} color={colors.mutedForeground} />
         <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-          Use ↑↓ to reorder • eye to show/hide
+          Use ↑↓ to reorder • eye to show/hide • max {MAX_VISIBLE_TABS} visible
           {isPro ? " • tap color dot to change tab color" : ""}
         </Text>
       </View>

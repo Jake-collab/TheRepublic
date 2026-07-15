@@ -329,7 +329,13 @@ export default function TalksScreen() {
   const selectedCat = cats.find((c) => c.id === selectedCatId);
 
   // All pills for display
-  const allPills = useMemo(() => [ALL_PILL, CV_PILL, ...cats], [cats]);
+  // Filter out any "Citizen Vote" category that may exist in the DB — it's
+  // represented exclusively by the hardcoded CV_PILL sentinel (id = -1).
+  const filteredCats = useMemo(
+    () => cats.filter((c) => c.name !== "Citizen Vote"),
+    [cats],
+  );
+  const allPills = useMemo(() => [ALL_PILL, CV_PILL, ...filteredCats], [filteredCats]);
 
   // Debounce search
   useEffect(() => {

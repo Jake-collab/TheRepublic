@@ -11,7 +11,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
-import { registerTabPreload, unregisterTabPreload } from "@/utils/preloadRegistry";
+import { registerTabPreload, unregisterTabPreload, registerTabUrl } from "@/utils/preloadRegistry";
 
 interface Props {
   tabId: string;
@@ -74,8 +74,9 @@ const NativeWebView = memo(function NativeWebView({ tabId, url, initialUrl, isVi
 
   useEffect(() => {
     registerTabPreload(tabId, () => setHasEverBeenVisible(true));
+    registerTabUrl(tabId, initialUrl ?? url);
     return () => unregisterTabPreload(tabId);
-  }, [tabId]);
+  }, [tabId, url, initialUrl]);
 
   useEffect(() => {
     if (isVisible && !hasEverBeenVisible) {

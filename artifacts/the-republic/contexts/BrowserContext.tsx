@@ -38,6 +38,7 @@ interface BrowserContextType {
   setTabColor: (id: string, color: string) => void;
   tabOrder: string[];
   moveTab: (id: string, direction: "up" | "down") => void;
+  recentTabIds: string[];
 }
 
 const STORAGE_KEYS = {
@@ -50,6 +51,11 @@ const STORAGE_KEYS = {
 
 // How long to wait after the last navigation before writing to AsyncStorage.
 const URL_PERSIST_DEBOUNCE_MS = 1500;
+
+// Max number of WebView instances kept alive. Tabs beyond this are unmounted
+// and reload from their saved URL when revisited. Dramatically cuts memory
+// usage and background JS execution on devices with many Pro tabs.
+const MAX_LIVE_WEBVIEWS = 6;
 
 const BrowserContext = createContext<BrowserContextType>({
   tabs: [],
@@ -71,11 +77,13 @@ const BrowserContext = createContext<BrowserContextType>({
   setTabColor: () => {},
   tabOrder: [],
   moveTab: () => {},
+  recentTabIds: [],
 });
 
 export function BrowserProvider({ children }: { children: React.ReactNode }) {
   const [tabs, setTabsState] = useState<WebsiteTab[]>([]);
   const [activeTabId, setActiveTabIdState] = useState("");
+  const [recentTabIds, setRecentTabIds] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [pendingProTabId, setPendingProTabId] = useState<string | null>(null);
@@ -103,7 +111,10 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.getItem(STORAGE_KEYS.tabOrder),
       AsyncStorage.getItem(STORAGE_KEYS.tabUrls),
     ]).then(([activeTab, hidden, colors, order, tabUrls]) => {
-      if (activeTab) setActiveTabIdState(activeTab);
+      if (activeTab) {
+        setActiveTabIdState(activeTab);
+        setRecentTabIds([activeTab]);
+      }
       if (hidden) { try { setHiddenTabIds(JSON.parse(hidden)); } catch {} }
       if (colors) { try { setTabColorsState(JSON.parse(colors)); } catch {} }
       if (order) { try { setTabOrderState(JSON.parse(order)); } catch {} }
@@ -148,6 +159,12 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
   const handleSetActiveTabId = useCallback((id: string) => {
     setActiveTabIdState(id);
     AsyncStorage.setItem(STORAGE_KEYS.activeTab, id);
+    // LRU: keep the last MAX_LIVE_WEBVIEWS tabs mounted. Evicted tabs unmount
+    // and reload from saved URL when revisited — saves memory + background JS.
+    setRecentTabIds(prev => {
+      const filtered = prev.filter(x => x !== id);
+      return [id, ...filtered].slice(0, MAX_LIVE_WEBVIEWS);
+    });
   }, []);
 
   // Writes to ref (zero re-renders) and debounces persistence to AsyncStorage.
@@ -224,6 +241,7 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
     setTabColor,
     tabOrder,
     moveTab,
+    recentTabIds,
   }), [
     tabs, setTabs, visibleTabs,
     activeTabId, handleSetActiveTabId,
@@ -233,6 +251,7 @@ export function BrowserProvider({ children }: { children: React.ReactNode }) {
     hiddenTabIds, toggleTabVisibility,
     tabColors, setTabColor,
     tabOrder, moveTab,
+    recentTabIds,
   ]);
 
   return (

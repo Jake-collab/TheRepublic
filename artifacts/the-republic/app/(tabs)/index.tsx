@@ -87,6 +87,7 @@ export default function BrowserScreen() {
     isFullscreen,
     setIsFullscreen,
     getInitialUrlForTab,
+    recentTabIds,
   } = useBrowser();
 
   const [activeSection, setActiveSection] = useState<Section>("web");
@@ -180,15 +181,20 @@ export default function BrowserScreen() {
         )}
         {/* content is the stacking context — all WebViewPanes are position:absolute inside */}
         <View style={styles.content}>
-          {webviewTabs.map((tab) => (
-            <WebViewPane
-              key={tab.id}
-              tabId={tab.id}
-              url={tab.url}
-              initialUrl={getInitialUrlForTab(tab.id, tab.url)}
-              isVisible={activeTabId === tab.id && !webHidden}
-            />
-          ))}
+          {webviewTabs
+            // LRU pool: only keep the last MAX_LIVE_WEBVIEWS WebViews mounted.
+            // Unmounted tabs reload from their saved URL when revisited.
+            // This caps background memory + JS execution from idle WebViews.
+            .filter((tab) => recentTabIds.includes(tab.id) || tab.id === activeTabId)
+            .map((tab) => (
+              <WebViewPane
+                key={tab.id}
+                tabId={tab.id}
+                url={tab.url}
+                initialUrl={getInitialUrlForTab(tab.id, tab.url)}
+                isVisible={activeTabId === tab.id && !webHidden}
+              />
+            ))}
         </View>
         <UpgradeModal />
       </View>

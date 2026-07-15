@@ -12,7 +12,7 @@ import {
 
 import { useBrowser, type WebsiteTab } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
-import { triggerTabPreload } from "@/utils/preloadRegistry";
+import { triggerTabPreload, prewarmConnection } from "@/utils/preloadRegistry";
 
 interface Props {
   isPro: boolean;
@@ -114,8 +114,10 @@ export default function WebsiteTabBar({ isPro }: Props) {
   }, [setPendingProTabId, setUpgradeModalVisible, setActiveTabId, visibleTabs]);
 
   const handleTabPressIn = useCallback((tab: WebsiteTab) => {
-    // Fire WebView load on finger-down — 100–200 ms before onPress resolves
     if (!tab.isCitizenVote) {
+      // Prime DNS + TCP connection before WebView opens (saves 100-500ms)
+      prewarmConnection(tab.id);
+      // Fire WebView load on finger-down — 100–200ms before onPress resolves
       triggerTabPreload(tab.id);
     }
   }, []);
