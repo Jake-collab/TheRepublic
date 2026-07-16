@@ -32,7 +32,9 @@ import {
 type TalkCategory = { id: number; name: string; emoji: string; sortOrder: number; isActive: boolean };
 
 const CITIZEN_VOTE_ID = -1;
-// ALL_PILL removed — the default (null selectedCatId) is now called "Chat"
+const CHAT_ALL_ID = -2;
+// CHAT_PILL is the first pill — selects all-posts mode (selectedCatId = null).
+const CHAT_PILL: TalkCategory = { id: CHAT_ALL_ID, name: "Chat", emoji: "💬", sortOrder: -2, isActive: true };
 const CV_PILL: TalkCategory = { id: CITIZEN_VOTE_ID, name: "Citizen Vote", emoji: "🗳", sortOrder: -1, isActive: true };
 
 const postKeyExtractor = (item: TalkPost) => String(item.id);
@@ -352,11 +354,9 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
     return sorted.filter((c) => !hiddenCatIds.includes(c.id));
   }, [filteredCats, catOrder, hiddenCatIds]);
 
-  // Pills: Citizen Vote (pinned) + user-ordered, user-filtered discussion categories.
-  // "Chat" (null selectedCatId) is the default — no dedicated pill; tapping
-  // an active pill deselects it and returns to Chat.
+  // Pills: Chat (default all-posts mode) + Citizen Vote + user-ordered discussion categories.
   const allPills = useMemo(
-    () => [CV_PILL, ...orderedVisibleCats],
+    () => [CHAT_PILL, CV_PILL, ...orderedVisibleCats],
     [orderedVisibleCats],
   );
 
@@ -478,8 +478,10 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
   const handleCatSelect = useCallback((catId: number) => {
     Haptics.selectionAsync();
     startTransition(() => {
-      // Tapping the already-active pill deselects it and returns to Chat (null).
-      const nextId = catId === CITIZEN_VOTE_ID
+      // Chat pill always returns to all-posts mode; CV pill toggles; others toggle.
+      const nextId = catId === CHAT_ALL_ID
+        ? null
+        : catId === CITIZEN_VOTE_ID
         ? (selectedCatId === CITIZEN_VOTE_ID ? null : CITIZEN_VOTE_ID)
         : (selectedCatId === catId ? null : catId);
       setSelectedCatId(nextId);
@@ -509,7 +511,7 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
         contentContainerStyle={styles.catList}
       >
         {allPills.map((c) => {
-          const isActive = c.id === CITIZEN_VOTE_ID ? isCVMode : selectedCatId === c.id;
+          const isActive = c.id === CHAT_ALL_ID ? isAllMode : c.id === CITIZEN_VOTE_ID ? isCVMode : selectedCatId === c.id;
           return (
             <CategoryPill
               key={c.id}
@@ -580,13 +582,13 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
                 </Pressable>
               )}
 
-              {/* Manage categories button */}
+              {/* Account / profile button */}
               <Pressable
-                onPress={() => router.push("/manage-talks-categories")}
+                onPress={() => router.push("/profile")}
                 style={[styles.headerIconBtn, { backgroundColor: colors.secondary }]}
                 hitSlop={8}
               >
-                <Feather name="settings" size={17} color={colors.mutedForeground} />
+                <Feather name="user" size={17} color={colors.mutedForeground} />
               </Pressable>
 
               {/* CV mode: filter button | Regular mode: sort button */}

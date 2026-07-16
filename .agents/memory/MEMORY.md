@@ -1,1 +1,3 @@
-- [Section 6 fee model](section6-fees.md) — 2-tier (web $2.99, pro $4.99); worker fee 5% waived for pro; consumer fee 1% capped $20; Connect Express for payouts
+- [Admin direct-fetch pattern](admin-direct-fetch.md) — new admin-only routes use useAuth().getToken() + direct fetch instead of OpenAPI codegen
+- [DrawerNav z-index](drawer-zindex.md) — DrawerNav root View needs explicit zIndex:100; sections need pointerEvents="none" when hidden
+- [TalksScreen pill IDs](talks-pill-ids.md) — CHAT_ALL_ID=-2 (all posts), CITIZEN_VOTE_ID=-1 (CV feed), positive IDs = categories

@@ -25,6 +25,12 @@ import Moderation from "@/pages/moderation";
 import Analytics from "@/pages/analytics";
 import AppConfig from "@/pages/app-config";
 import IdentityVerifications from "@/pages/identity-verifications";
+import GigsManagement from "@/pages/gigs-management";
+import FreelanceManagement from "@/pages/freelance-management";
+import MarketplaceModeration from "@/pages/marketplace-moderation";
+import Memberships from "@/pages/memberships";
+import Transactions from "@/pages/transactions";
+import Diagnostics from "@/pages/diagnostics";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -182,6 +188,12 @@ function ClerkProviderWithRoutes() {
           <Route path="/analytics" component={() => <ProtectedRoute component={Analytics} />} />
           <Route path="/app-config" component={() => <ProtectedRoute component={AppConfig} />} />
           <Route path="/identity-verifications" component={() => <ProtectedRoute component={IdentityVerifications} />} />
+          <Route path="/gigs-management" component={() => <ProtectedRoute component={GigsManagement} />} />
+          <Route path="/freelance-management" component={() => <ProtectedRoute component={FreelanceManagement} />} />
+          <Route path="/marketplace-moderation" component={() => <ProtectedRoute component={MarketplaceModeration} />} />
+          <Route path="/memberships" component={() => <ProtectedRoute component={Memberships} />} />
+          <Route path="/transactions" component={() => <ProtectedRoute component={Transactions} />} />
+          <Route path="/diagnostics" component={() => <ProtectedRoute component={Diagnostics} />} />
 
           <Route component={NotFound} />
         </Switch>

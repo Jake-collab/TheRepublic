@@ -315,28 +315,40 @@ export default function BrowserScreen() {
 
       {/* ── Talks ─────────────────────────────────────────────────────── */}
       {mountedSections.has("talks") && (
-        <View style={[styles.section, activeSection !== "talks" && styles.sectionHidden]}>
+        <View
+          style={[styles.section, activeSection !== "talks" && styles.sectionHidden]}
+          pointerEvents={activeSection !== "talks" ? "none" : "auto"}
+        >
           <TalksScreen onOpenDrawer={openDrawer} />
         </View>
       )}
 
       {/* ── Buy / Sell ────────────────────────────────────────────────── */}
       {mountedSections.has("buysell") && (
-        <View style={[styles.section, activeSection !== "buysell" && styles.sectionHidden]}>
+        <View
+          style={[styles.section, activeSection !== "buysell" && styles.sectionHidden]}
+          pointerEvents={activeSection !== "buysell" ? "none" : "auto"}
+        >
           <BuySellScreen onOpenDrawer={openDrawer} />
         </View>
       )}
 
       {/* ── Gigs / Work ───────────────────────────────────────────────── */}
       {mountedSections.has("gigs") && (
-        <View style={[styles.section, activeSection !== "gigs" && styles.sectionHidden]}>
+        <View
+          style={[styles.section, activeSection !== "gigs" && styles.sectionHidden]}
+          pointerEvents={activeSection !== "gigs" ? "none" : "auto"}
+        >
           <GigsScreen onOpenDrawer={openDrawer} />
         </View>
       )}
 
       {/* ── Freelance / Hire ──────────────────────────────────────────── */}
       {mountedSections.has("freelance") && (
-        <View style={[styles.section, activeSection !== "freelance" && styles.sectionHidden]}>
+        <View
+          style={[styles.section, activeSection !== "freelance" && styles.sectionHidden]}
+          pointerEvents={activeSection !== "freelance" ? "none" : "auto"}
+        >
           <FreelanceScreen onOpenDrawer={openDrawer} />
         </View>
       )}

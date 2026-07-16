@@ -8,6 +8,7 @@ import {
   contentFlagsTable, blockedWordsTable,
   notificationCampaignsTable, appSettingsTable,
   identityVerificationsTable,
+  gigJobsTable, freelanceProjectsTable, marketplaceListingsTable,
 } from "@workspace/db";
 import { invalidateBlockedWordsCache } from "../utils/blockedWords";
 import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
@@ -1281,6 +1282,236 @@ router.patch("/identity-verifications/:id", async (req, res) => {
 
   await logAction(adminId, `identity_${action}`, `id=${id},userId=${rows[0].userId}`);
   res.json({ ok: true, status: newStatus });
+});
+
+// ── Gig Management ────────────────────────────────────────────────────────────
+router.get("/gigs", async (req, res) => {
+  const { status, q, limit = "50", offset = "0" } = req.query as Record<string, string>;
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (status) conditions.push(eq(gigJobsTable.status, status));
+  if (q) conditions.push(ilike(gigJobsTable.title, `%${q}%`));
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(gigJobsTable)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(gigJobsTable.createdAt))
+      .limit(Number(limit)).offset(Number(offset)),
+    db.select({ count: sql<number>`count(*)::int` }).from(gigJobsTable)
+      .where(conditions.length ? and(...conditions) : undefined),
+  ]);
+  res.json({ items: rows, total: Number(count) });
+});
+
+router.patch("/gigs/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body as { status: string };
+  const adminId = (req as any).auth?.userId ?? "system";
+  const [updated] = await db.update(gigJobsTable).set({ status }).where(eq(gigJobsTable.id, id)).returning();
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  await logAction(adminId, "update_gig", `id=${id},status=${status}`);
+  res.json(updated);
+});
+
+router.delete("/gigs/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const adminId = (req as any).auth?.userId ?? "system";
+  await db.delete(gigJobsTable).where(eq(gigJobsTable.id, id));
+  await logAction(adminId, "delete_gig", `id=${id}`);
+  res.json({ ok: true });
+});
+
+// ── Freelance Management ───────────────────────────────────────────────────────
+router.get("/freelance", async (req, res) => {
+  const { status, q, limit = "50", offset = "0" } = req.query as Record<string, string>;
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (status) conditions.push(eq(freelanceProjectsTable.status, status));
+  if (q) conditions.push(ilike(freelanceProjectsTable.title, `%${q}%`));
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(freelanceProjectsTable)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(freelanceProjectsTable.createdAt))
+      .limit(Number(limit)).offset(Number(offset)),
+    db.select({ count: sql<number>`count(*)::int` }).from(freelanceProjectsTable)
+      .where(conditions.length ? and(...conditions) : undefined),
+  ]);
+  res.json({ items: rows, total: Number(count) });
+});
+
+router.patch("/freelance/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body as { status: string };
+  const adminId = (req as any).auth?.userId ?? "system";
+  const [updated] = await db.update(freelanceProjectsTable).set({ status }).where(eq(freelanceProjectsTable.id, id)).returning();
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  await logAction(adminId, "update_freelance_project", `id=${id},status=${status}`);
+  res.json(updated);
+});
+
+router.delete("/freelance/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const adminId = (req as any).auth?.userId ?? "system";
+  await db.delete(freelanceProjectsTable).where(eq(freelanceProjectsTable.id, id));
+  await logAction(adminId, "delete_freelance_project", `id=${id}`);
+  res.json({ ok: true });
+});
+
+// ── Marketplace Moderation ─────────────────────────────────────────────────────
+router.get("/marketplace", async (req, res) => {
+  const { status, q, limit = "50", offset = "0" } = req.query as Record<string, string>;
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (status) conditions.push(eq(marketplaceListingsTable.status, status));
+  if (q) conditions.push(ilike(marketplaceListingsTable.title, `%${q}%`));
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(marketplaceListingsTable)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(marketplaceListingsTable.createdAt))
+      .limit(Number(limit)).offset(Number(offset)),
+    db.select({ count: sql<number>`count(*)::int` }).from(marketplaceListingsTable)
+      .where(conditions.length ? and(...conditions) : undefined),
+  ]);
+  res.json({ items: rows, total: Number(count) });
+});
+
+router.patch("/marketplace/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body as { status: string };
+  const adminId = (req as any).auth?.userId ?? "system";
+  const [updated] = await db.update(marketplaceListingsTable).set({ status }).where(eq(marketplaceListingsTable.id, id)).returning();
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  await logAction(adminId, "update_marketplace_listing", `id=${id},status=${status}`);
+  res.json(updated);
+});
+
+router.delete("/marketplace/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const adminId = (req as any).auth?.userId ?? "system";
+  await db.delete(marketplaceListingsTable).where(eq(marketplaceListingsTable.id, id));
+  await logAction(adminId, "delete_marketplace_listing", `id=${id}`);
+  res.json({ ok: true });
+});
+
+// ── Memberships (full list) ────────────────────────────────────────────────────
+router.get("/memberships/list", async (req, res) => {
+  const { tier, status, limit = "50", offset = "0" } = req.query as Record<string, string>;
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (tier && tier !== "all") conditions.push(eq(membershipsTable.tier, tier));
+  if (status && status !== "all") conditions.push(eq(membershipsTable.status, status));
+  const [rows, [{ count }]] = await Promise.all([
+    db.select({
+      userId: membershipsTable.userId,
+      plan: membershipsTable.plan,
+      tier: membershipsTable.tier,
+      status: membershipsTable.status,
+      stripeCustomerId: membershipsTable.stripeCustomerId,
+      stripeSubscriptionId: membershipsTable.stripeSubscriptionId,
+      createdAt: membershipsTable.createdAt,
+      updatedAt: membershipsTable.updatedAt,
+      userEmail: usersTable.email,
+      userDisplayName: usersTable.displayName,
+    }).from(membershipsTable)
+      .leftJoin(usersTable, eq(membershipsTable.userId, usersTable.id))
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(membershipsTable.updatedAt))
+      .limit(Number(limit)).offset(Number(offset)),
+    db.select({ count: sql<number>`count(*)::int` }).from(membershipsTable)
+      .where(conditions.length ? and(...conditions) : undefined),
+  ]);
+  res.json({ items: rows, total: Number(count) });
+});
+
+// ── Transaction & Fee Audit ────────────────────────────────────────────────────
+router.get("/transactions", async (req, res) => {
+  const { limit = "30", offset = "0" } = req.query as Record<string, string>;
+  const [gigStats, freelanceStats, marketplaceStats, recentActivity] = await Promise.all([
+    db.select({
+      count: sql<number>`count(*)::int`,
+      totalVolumeCents: sql<number>`coalesce(sum(pay_amount_cents),0)::int`,
+    }).from(gigJobsTable).where(eq(gigJobsTable.status, "completed")),
+    db.select({
+      count: sql<number>`count(*)::int`,
+      totalVolumeCents: sql<number>`coalesce(sum(budget_max_cents),0)::int`,
+    }).from(freelanceProjectsTable).where(eq(freelanceProjectsTable.status, "completed")),
+    db.select({
+      count: sql<number>`count(*)::int`,
+      totalVolumeCents: sql<number>`coalesce(sum(price_cents),0)::int`,
+    }).from(marketplaceListingsTable).where(eq(marketplaceListingsTable.status, "sold")),
+    db.select().from(auditLogsTable)
+      .orderBy(desc(auditLogsTable.createdAt))
+      .limit(Number(limit)).offset(Number(offset)),
+  ]);
+  const GIG_FEE = 0.10;
+  const FL_FEE = 0.08;
+  const MKT_FEE = 0.01;
+  const gigVol = Number(gigStats[0].totalVolumeCents);
+  const flVol = Number(freelanceStats[0].totalVolumeCents);
+  const mktVol = Number(marketplaceStats[0].totalVolumeCents);
+  const mktCount = Number(marketplaceStats[0].count);
+  res.json({
+    summary: {
+      gigs: {
+        completedCount: Number(gigStats[0].count),
+        totalVolumeCents: gigVol,
+        platformFeeCents: Math.round(gigVol * GIG_FEE),
+      },
+      freelance: {
+        completedCount: Number(freelanceStats[0].count),
+        totalVolumeCents: flVol,
+        platformFeeCents: Math.round(flVol * FL_FEE),
+      },
+      marketplace: {
+        completedCount: mktCount,
+        totalVolumeCents: mktVol,
+        platformFeeCents: Math.min(Math.round(mktVol * MKT_FEE), 2000 * mktCount),
+      },
+    },
+    recentActivity,
+  });
+});
+
+// ── Platform Diagnostics ──────────────────────────────────────────────────────
+router.get("/diagnostics", async (req, res) => {
+  const start = Date.now();
+  try {
+    const dbStart = Date.now();
+    const [dbCheck] = await db.select({ count: sql<number>`count(*)::int` }).from(usersTable);
+    const dbLatencyMs = Date.now() - dbStart;
+    const [acts24h, acts7d, gigStats, flStats, mktStats, memberStats] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(auditLogsTable).where(sql`created_at > now() - interval '24 hours'`),
+      db.select({ count: sql<number>`count(*)::int` }).from(auditLogsTable).where(sql`created_at > now() - interval '7 days'`),
+      db.select({
+        open: sql<number>`coalesce(sum(case when status='open' then 1 else 0 end),0)::int`,
+        inProgress: sql<number>`coalesce(sum(case when status='in_progress' then 1 else 0 end),0)::int`,
+        completed: sql<number>`coalesce(sum(case when status='completed' then 1 else 0 end),0)::int`,
+      }).from(gigJobsTable),
+      db.select({
+        open: sql<number>`coalesce(sum(case when status='open' then 1 else 0 end),0)::int`,
+        completed: sql<number>`coalesce(sum(case when status='completed' then 1 else 0 end),0)::int`,
+      }).from(freelanceProjectsTable),
+      db.select({
+        active: sql<number>`coalesce(sum(case when status='active' then 1 else 0 end),0)::int`,
+        sold: sql<number>`coalesce(sum(case when status='sold' then 1 else 0 end),0)::int`,
+      }).from(marketplaceListingsTable),
+      db.select({
+        free: sql<number>`coalesce(sum(case when tier='free' then 1 else 0 end),0)::int`,
+        pro: sql<number>`coalesce(sum(case when tier='pro' then 1 else 0 end),0)::int`,
+        web: sql<number>`coalesce(sum(case when tier='web' then 1 else 0 end),0)::int`,
+      }).from(membershipsTable),
+    ]);
+    res.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      latency: { dbMs: dbLatencyMs, totalMs: Date.now() - start },
+      database: { status: "connected", userCount: Number(dbCheck?.count ?? 0) },
+      activity: { actionsLast24h: Number(acts24h[0].count), actionsLast7d: Number(acts7d[0].count) },
+      gigs: gigStats[0],
+      freelance: flStats[0],
+      marketplace: mktStats[0],
+      memberships: memberStats[0],
+      webviewPool: { poolSize: 3, note: "LRU pool — max 3 simultaneous WebView instances per session" },
+    });
+  } catch (err) {
+    req.log.error({ err }, "Diagnostics check failed");
+    res.status(503).json({ status: "unhealthy", error: "DB unreachable" });
+  }
 });
 
 export default router;

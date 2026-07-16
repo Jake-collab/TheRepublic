@@ -332,6 +332,11 @@ export default function ProfileScreen() {
             label="Manage Tabs"
             onPress={() => router.push("/manage-tabs")}
           />
+          <SettingRow
+            icon="message-circle"
+            label="Discussion Settings"
+            onPress={() => router.push("/manage-talks-categories")}
+          />
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Account</Text>

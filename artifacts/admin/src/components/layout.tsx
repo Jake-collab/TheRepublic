@@ -19,6 +19,12 @@ import {
   X,
   SlidersHorizontal,
   ShieldCheck,
+  Briefcase,
+  Code2,
+  ShoppingBag,
+  Crown,
+  Receipt,
+  Activity,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -37,6 +43,12 @@ const navItems = [
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/stripe-settings", label: "Stripe & Billing", icon: CreditCard },
   { href: "/identity-verifications", label: "Identity Verification", icon: ShieldCheck },
+  { href: "/gigs-management", label: "Gig Management", icon: Briefcase },
+  { href: "/freelance-management", label: "Freelance Jobs", icon: Code2 },
+  { href: "/marketplace-moderation", label: "Marketplace", icon: ShoppingBag },
+  { href: "/memberships", label: "Memberships", icon: Crown },
+  { href: "/transactions", label: "Transactions", icon: Receipt },
+  { href: "/diagnostics", label: "Diagnostics", icon: Activity },
   { href: "/app-config", label: "App Configuration", icon: SlidersHorizontal },
 ];
 

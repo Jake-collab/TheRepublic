@@ -202,7 +202,7 @@ export default function DrawerNav({
 
   return (
     // Always in tree so the spring animation plays in and out smoothly.
-    <View style={StyleSheet.absoluteFill} pointerEvents={isOpen ? "auto" : "none"}>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]} pointerEvents={isOpen ? "auto" : "none"}>
       {/* Semi-transparent backdrop */}
       <Animated.View
         style={[styles.backdrop, { opacity: backdropOpacity }]}
