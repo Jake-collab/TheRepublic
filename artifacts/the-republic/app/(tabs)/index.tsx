@@ -1,17 +1,17 @@
 /**
- * BrowserScreen — main tab browser with a 3-slot LRU WebView pool.
+ * Root app screen.
  *
- * Pool architecture (POOL_SIZE = 3):
- *   Slot 0 — active tab      (always rendered, full priority)
- *   Slot 1 — most-recently-used tab (preserved, hidden)
- *   Slot 2 — predicted next tab (loaded after active is visually ready)
+ * Navigation is handled by a slide-out left drawer (DrawerNav). The bottom
+ * nav has been removed. Five sections are available:
  *
- * WebViewPanes outside the pool are NOT mounted. Evicted tabs save their
- * navigated URL; re-entry loads from that URL — WKWebView's HTTP cache
- * makes repeat visits nearly instant without keeping idle WebViews alive.
+ *   Talks      — default section on launch (Chat feed)
+ *   Buy/Sell   — marketplace
+ *   Gigs/Work  — local in-person gig board
+ *   Freelance  — online remote freelance
+ *   Web        — curated WebView browser (requires $2.99+ membership)
  *
- * No background tabs compete with the active tab for bandwidth or CPU.
- * The single predicted tab only starts after onLoadEnd fires on the active.
+ * Each section mounts lazily on first visit and stays alive thereafter.
+ * The WebView LRU pool (POOL_SIZE = 3) lives here and feeds the Web section.
  */
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -36,9 +36,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import BottomNav, { type Section } from "@/components/BottomNav";
+import DrawerNav, { type AppSection } from "@/components/DrawerNav";
 import SplashOverlay from "@/components/SplashOverlay";
 import TalksScreen from "@/components/TalksScreen";
+import BuySellScreen from "@/components/BuySellScreen";
+import GigsScreen from "@/components/GigsScreen";
+import FreelanceScreen from "@/components/FreelanceScreen";
 import UpgradeModal from "@/components/UpgradeModal";
 import WebViewPane from "@/components/WebViewPane";
 import WebsiteTabBar from "@/components/WebsiteTabBar";
@@ -51,20 +54,21 @@ import {
 } from "@workspace/api-client-react";
 
 // ─── Pool size ────────────────────────────────────────────────────────────────
-// 3 live WebViews: active + MRU + one predicted neighbor.
-// Increase to 4 on high-memory devices if needed in the future.
 const POOL_SIZE = 3;
 
-// ─── Header ──────────────────────────────────────────────────────────────────
+// ─── Web section sub-components ───────────────────────────────────────────────
 
-const BrowserHeader = memo(function BrowserHeader({
+/** Header shown inside the Web browser section. */
+const WebHeader = memo(function WebHeader({
   topPad,
   isFullscreen,
-  setIsFullscreen,
+  onOpenDrawer,
+  onMinimize,
 }: {
   topPad: number;
   isFullscreen: boolean;
-  setIsFullscreen: (v: boolean) => void;
+  onOpenDrawer: () => void;
+  onMinimize: () => void;
 }) {
   const colors = useColors();
   const router = useRouter();
@@ -72,7 +76,7 @@ const BrowserHeader = memo(function BrowserHeader({
   return (
     <View
       style={[
-        styles.header,
+        styles.webHeader,
         {
           backgroundColor: colors.background,
           borderBottomColor: colors.border,
@@ -80,31 +84,31 @@ const BrowserHeader = memo(function BrowserHeader({
         },
       ]}
     >
-      <View style={styles.logoArea}>
-        <View style={[styles.logoMark, { backgroundColor: "#ffffff" }]}>
+      <Pressable onPress={onOpenDrawer} style={styles.hamburger} hitSlop={10}>
+        <Feather name="menu" size={22} color={colors.foreground} />
+      </Pressable>
+      <View style={styles.webLogoRow}>
+        <View style={[styles.webLogoMark, { backgroundColor: "#ffffff" }]}>
           <Image
             source={require("../../assets/images/republic-logo.png")}
-            style={styles.logoImage}
+            style={styles.webLogoImg}
             resizeMode="contain"
           />
         </View>
-        <Text style={[styles.logoText, { color: colors.foreground }]}>Republic</Text>
+        <Text style={[styles.webLogoText, { color: colors.foreground }]}>Web</Text>
       </View>
-      <View style={styles.headerActions}>
+      <View style={styles.webHeaderRight}>
         <Pressable
           style={styles.iconBtn}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setIsFullscreen(true);
+            onMinimize();
           }}
         >
           <Feather name="maximize-2" size={18} color={colors.mutedForeground} />
         </Pressable>
         <Pressable
-          style={[
-            styles.profileBtn,
-            { backgroundColor: colors.secondary, borderColor: colors.border },
-          ]}
+          style={[styles.profileBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
           onPress={() => router.push("/profile")}
         >
           <Feather name="user" size={16} color={colors.primary} />
@@ -114,11 +118,72 @@ const BrowserHeader = memo(function BrowserHeader({
   );
 });
 
-// ─── Main screen ─────────────────────────────────────────────────────────────
+/** Shown to non-members who open the Web section. */
+const WebMembershipGate = memo(function WebMembershipGate({
+  topPad,
+  onOpenDrawer,
+}: {
+  topPad: number;
+  onOpenDrawer: () => void;
+}) {
+  const colors = useColors();
+  const router = useRouter();
+  const UNLOCKS = [
+    "Stock & crypto investing exchanges",
+    "Rental platforms (Airbnb, Vrbo, Expedia)",
+    "Ticket services (SeatGeek, StubHub, Ticketmaster)",
+    "Retail stores (Walmart, Amazon, Target)",
+    "Streaming (Netflix, YouTube)",
+    "And 20+ more curated sites",
+  ];
+  return (
+    <View style={[styles.gateContainer, { backgroundColor: colors.background }]}>
+      {/* Mini header */}
+      <View style={[styles.gateHeader, { paddingTop: topPad }]}>
+        <Pressable onPress={onOpenDrawer} style={styles.hamburger} hitSlop={10}>
+          <Feather name="menu" size={22} color={colors.foreground} />
+        </Pressable>
+      </View>
+
+      <View style={styles.gateContent}>
+        <View style={[styles.gateLockIcon, { backgroundColor: colors.secondary }]}>
+          <Feather name="globe" size={40} color={colors.primary} />
+        </View>
+        <Text style={[styles.gateTitle, { color: colors.foreground }]}>Republic Web</Text>
+        <Text style={[styles.gateSub, { color: colors.mutedForeground }]}>
+          Curated access to the best sites on the internet — all in one place.
+        </Text>
+
+        <View style={[styles.gateUnlockList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {UNLOCKS.map((item, i) => (
+            <View key={i} style={styles.gateUnlockRow}>
+              <Feather name="check-circle" size={14} color={colors.primary} />
+              <Text style={[styles.gateUnlockText, { color: colors.foreground }]}>{item}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Pressable
+          style={[styles.gateCtaBtn, { backgroundColor: colors.primary }]}
+          onPress={() => router.push("/profile")}
+        >
+          <Feather name="unlock" size={16} color="#ffffff" />
+          <Text style={styles.gateCtaText}>Unlock for $2.99/mo</Text>
+        </Pressable>
+        <Text style={[styles.gateFineprint, { color: colors.mutedForeground }]}>
+          Includes $4.99 worker plan · cancel any time
+        </Text>
+      </View>
+    </View>
+  );
+});
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function BrowserScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const {
     visibleTabs,
     setTabs,
@@ -128,27 +193,43 @@ export default function BrowserScreen() {
     getInitialUrlForTab,
   } = useBrowser();
 
-  const [activeSection, setActiveSection] = useState<Section>("web");
-  const [showTalks, setShowTalks] = useState(false);
+  // ── Navigation state ────────────────────────────────────────────────────
+  const [activeSection, setActiveSection] = useState<AppSection>("talks");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Lazy-mount: each section stays in the React tree after first visit
+  // so its state (scroll position, data cache) is preserved on return.
+  const [mountedSections, setMountedSections] = useState<Set<AppSection>>(
+    () => new Set<AppSection>(["talks"]),
+  );
+
+  useEffect(() => {
+    setMountedSections((prev) => {
+      if (prev.has(activeSection)) return prev;
+      return new Set([...prev, activeSection]);
+    });
+  }, [activeSection]);
+
+  const openDrawer = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDrawerOpen(true);
+  }, []);
+
+  const handleSectionSelect = useCallback((section: AppSection) => {
+    startTransition(() => setActiveSection(section));
+  }, []);
+
+  // ── Boot splash ──────────────────────────────────────────────────────────
   const [showSplash, setShowSplash] = useState(true);
 
-  // ── LRU pool ────────────────────────────────────────────────────────────
-  // Only tabs in this array have a WebViewPane mounted.
-  const [pool, setPool] = useState<string[]>([]);
-
-  // Tracks whether the current active tab has finished its initial load.
-  // Reset on every tab switch so the prediction only fires once per visit.
-  const activeReadyRef = useRef(false);
-
-  // Stable refs so WebView callbacks (which are captured closures) can
-  // read the latest values without being listed as effect deps.
-  const activeTabIdRef = useRef(activeTabId);
-  useEffect(() => { activeTabIdRef.current = activeTabId; }, [activeTabId]);
-
-  const webviewTabsRef = useRef<typeof webviewTabs>([]);
+  // Fallback: always dismiss after 1.5s (Web WebView fires onLoadEnd
+  // separately; for Talks / other sections this timer is the trigger)
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   // ── Data loading ─────────────────────────────────────────────────────────
-
   const { data: websites } = useListWebsites({});
   const { data: membership } = useGetUserMembership();
   const updateProfile = useUpdateUserProfile();
@@ -166,7 +247,6 @@ export default function BrowserScreen() {
     }));
     setTabs(siteTabs);
     AsyncStorage.setItem("rq:websites", JSON.stringify(websites));
-    // No boot-time preloads — active tab gets exclusive bandwidth.
   }, [websites, setTabs]);
 
   useEffect(() => {
@@ -184,20 +264,20 @@ export default function BrowserScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Tab list ─────────────────────────────────────────────────────────────
+  // ── WebView pool (feeds Web section) ────────────────────────────────────
+  const [pool, setPool] = useState<string[]>([]);
+  const activeReadyRef = useRef(false);
+  const activeTabIdRef = useRef(activeTabId);
+  useEffect(() => { activeTabIdRef.current = activeTabId; }, [activeTabId]);
 
   const webviewTabs = useMemo(
     () => visibleTabs.filter((t) => !t.isCitizenVote),
     [visibleTabs],
   );
-
-  // Keep ref in sync for stable callbacks
+  const webviewTabsRef = useRef(webviewTabs);
   useEffect(() => { webviewTabsRef.current = webviewTabs; }, [webviewTabs]);
 
-  // ── Pool management ──────────────────────────────────────────────────────
-
-  // Promote active tab to pool head on every tab switch.
-  // Evicts the oldest non-active entry if pool is full.
+  // Promote active tab to pool head on every tab switch
   useEffect(() => {
     if (!activeTabId) return;
     activeReadyRef.current = false;
@@ -207,37 +287,20 @@ export default function BrowserScreen() {
     });
   }, [activeTabId]);
 
-  // Called by active WebViewPane's onPageReady (onLoadEnd).
-  // Adds the right neighbor as a predicted tab — one background load at a time.
+  // Fired by active WebViewPane onLoadEnd: add right-neighbor, dismiss splash
   const handleActivePageReady = useCallback(() => {
     if (activeReadyRef.current) return;
     activeReadyRef.current = true;
-
-    // Dismiss splash as soon as real content is ready
     setShowSplash(false);
-
-    // Predict: prefer right neighbor, fall back to left
     const tabs = webviewTabsRef.current;
     const idx = tabs.findIndex((t) => t.id === activeTabIdRef.current);
     const neighbor = tabs[idx + 1] ?? tabs[idx - 1];
     if (!neighbor) return;
-
     setPool((prev) => {
-      if (prev.includes(neighbor.id)) return prev; // already pooled
-      // Add neighbor at the end (lowest LRU priority).
-      // Slice to POOL_SIZE, but active tab is always at index 0 so it's safe.
+      if (prev.includes(neighbor.id)) return prev;
       return [...prev, neighbor.id].slice(0, POOL_SIZE);
     });
   }, []);
-
-  // Fallback: dismiss splash after 1.5 s even if onLoadEnd never fires
-  // (e.g. web/Expo Go where iframe onLoad timing is unreliable).
-  useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), 1500);
-    return () => clearTimeout(t);
-  }, []);
-
-  // ── UI helpers ───────────────────────────────────────────────────────────
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -246,122 +309,148 @@ export default function BrowserScreen() {
     setIsFullscreen(false);
   }, [setIsFullscreen]);
 
-  const handleSectionChange = useCallback((section: Section) => {
-    startTransition(() => {
-      setActiveSection(section);
-      if (section === "talks") setShowTalks(true);
-    });
-  }, []);
-
-  const webHidden = activeSection !== "web";
-  const talksHidden = activeSection !== "talks";
-
   // ── Render ───────────────────────────────────────────────────────────────
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Web section — always mounted so pool WebViews stay alive */}
-      <View
-        style={[styles.section, webHidden && styles.sectionInvisible]}
-        pointerEvents={webHidden ? "none" : "auto"}
-      >
-        <BrowserHeader
-          topPad={topPad}
-          isFullscreen={isFullscreen}
-          setIsFullscreen={setIsFullscreen}
-        />
-        {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
 
-        {/* WebView pool — only pool members are mounted */}
-        <View style={styles.content}>
-          {webviewTabs
-            .filter((tab) => pool.includes(tab.id))
-            .map((tab) => {
-              const isActive = tab.id === activeTabId;
-              return (
-                <WebViewPane
-                  key={tab.id}
-                  tabId={tab.id}
-                  url={tab.url}
-                  initialUrl={getInitialUrlForTab(tab.id, tab.url)}
-                  isVisible={isActive && !webHidden}
-                  // Only wire onPageReady for the active tab so background
-                  // loads don't accidentally trigger pool expansion.
-                  onPageReady={isActive ? handleActivePageReady : undefined}
-                />
-              );
-            })}
+      {/* ── Talks ─────────────────────────────────────────────────────── */}
+      {mountedSections.has("talks") && (
+        <View style={[styles.section, activeSection !== "talks" && styles.sectionHidden]}>
+          <TalksScreen onOpenDrawer={openDrawer} />
+        </View>
+      )}
 
-          {/* Minimize button — after WebViews in JSX so it paints on top */}
-          {isFullscreen && (
-            <Pressable
-              style={[
-                styles.minimizeBtn,
-                { backgroundColor: colors.card, top: insets.top + 8 },
-              ]}
-              onPress={handleMinimize}
-            >
-              <Feather name="minimize-2" size={18} color={colors.foreground} />
-            </Pressable>
+      {/* ── Buy / Sell ────────────────────────────────────────────────── */}
+      {mountedSections.has("buysell") && (
+        <View style={[styles.section, activeSection !== "buysell" && styles.sectionHidden]}>
+          <BuySellScreen onOpenDrawer={openDrawer} />
+        </View>
+      )}
+
+      {/* ── Gigs / Work ───────────────────────────────────────────────── */}
+      {mountedSections.has("gigs") && (
+        <View style={[styles.section, activeSection !== "gigs" && styles.sectionHidden]}>
+          <GigsScreen onOpenDrawer={openDrawer} />
+        </View>
+      )}
+
+      {/* ── Freelance / Hire ──────────────────────────────────────────── */}
+      {mountedSections.has("freelance") && (
+        <View style={[styles.section, activeSection !== "freelance" && styles.sectionHidden]}>
+          <FreelanceScreen onOpenDrawer={openDrawer} />
+        </View>
+      )}
+
+      {/* ── Web (curated browser) ─────────────────────────────────────── */}
+      {/* Mounted lazily on first visit; stays alive for LRU pool.
+          Non-members see the membership gate instead of the browser. */}
+      {mountedSections.has("web") && (
+        <View style={[styles.section, activeSection !== "web" && styles.sectionHidden]}>
+          {!isPro ? (
+            <WebMembershipGate topPad={topPad} onOpenDrawer={openDrawer} />
+          ) : (
+            <>
+              <WebHeader
+                topPad={topPad}
+                isFullscreen={isFullscreen}
+                onOpenDrawer={openDrawer}
+                onMinimize={handleMinimize}
+              />
+              {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
+
+              <View style={styles.webContent}>
+                {/* Only pool members are mounted — LRU eviction controls memory */}
+                {webviewTabs
+                  .filter((tab) => pool.includes(tab.id))
+                  .map((tab) => {
+                    const isActive = tab.id === activeTabId;
+                    return (
+                      <WebViewPane
+                        key={tab.id}
+                        tabId={tab.id}
+                        url={tab.url}
+                        initialUrl={getInitialUrlForTab(tab.id, tab.url)}
+                        isVisible={isActive && activeSection === "web"}
+                        onPageReady={isActive ? handleActivePageReady : undefined}
+                      />
+                    );
+                  })}
+
+                {/* Minimize button — after WebViews in JSX so it renders above */}
+                {isFullscreen && (
+                  <Pressable
+                    style={[styles.minimizeBtn, { backgroundColor: colors.card, top: insets.top + 8 }]}
+                    onPress={handleMinimize}
+                  >
+                    <Feather name="minimize-2" size={18} color={colors.foreground} />
+                  </Pressable>
+                )}
+              </View>
+            </>
           )}
         </View>
-
-        <UpgradeModal />
-      </View>
-
-      {/* Talks section — lazy mounted on first switch */}
-      {showTalks && (
-        <View
-          style={[styles.sectionOverlay, talksHidden && styles.sectionInvisible]}
-          pointerEvents={talksHidden ? "none" : "auto"}
-        >
-          <TalksScreen />
-        </View>
       )}
 
-      {!isFullscreen && (
-        <BottomNav activeSection={activeSection} onChange={handleSectionChange} />
-      )}
+      {/* ── Upgrade modal (pro tab locked) ────────────────────────────── */}
+      <UpgradeModal />
 
-      {/* Branded boot splash — dismissed as soon as active page is ready,
-          or after 1.5 s fallback timer, whichever is first. */}
+      {/* ── Drawer ────────────────────────────────────────────────────── */}
+      <DrawerNav
+        isOpen={drawerOpen}
+        activeSection={activeSection}
+        isPro={isPro}
+        onClose={() => setDrawerOpen(false)}
+        onSelect={handleSectionSelect}
+        onOpenProfile={() => {
+          setDrawerOpen(false);
+          router.push("/profile");
+        }}
+      />
+
+      {/* ── Splash ────────────────────────────────────────────────────── */}
       {showSplash && <SplashOverlay onDone={() => setShowSplash(false)} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  section: { flex: 1 },
-  sectionOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10,
+  root: { flex: 1 },
+
+  // Each section fills the screen; hidden ones are invisible + non-interactive
+  section: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
-  sectionInvisible: { opacity: 0 },
-  header: {
+  sectionHidden: {
+    opacity: 0,
+    zIndex: 0,
+    // pointerEvents none applied via View prop below isn't possible with
+    // absoluteFill + zIndex layering, but zIndex:0 + opacity:0 effectively
+    // removes interaction since the visible section (zIndex:1) is on top.
+  } as any,
+
+  // ── Web section ──────────────────────────────────────────────────────────
+  webHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
   },
-  logoArea: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logoMark: {
-    width: 28,
-    height: 28,
+  hamburger: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
+  webLogoRow: { flexDirection: "row", alignItems: "center", gap: 7, flex: 1 },
+  webLogoMark: {
+    width: 26,
+    height: 26,
     borderRadius: 7,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
   },
-  logoImage: { width: 22, height: 22 },
-  logoText: { fontSize: 15, fontWeight: "700", letterSpacing: 0.5 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  webLogoImg: { width: 20, height: 20 },
+  webLogoText: { fontSize: 16, fontWeight: "700", letterSpacing: 0.3 },
+  webHeaderRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
   profileBtn: {
     width: 36,
@@ -371,7 +460,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
   },
-  content: { flex: 1, overflow: "hidden" },
+  webContent: { flex: 1, overflow: "hidden" },
   minimizeBtn: {
     position: "absolute",
     right: 16,
@@ -387,4 +476,51 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+
+  // ── Membership gate ──────────────────────────────────────────────────────
+  gateContainer: { flex: 1 },
+  gateHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  gateContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+    gap: 16,
+    paddingBottom: 40,
+  },
+  gateLockIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  gateTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },
+  gateSub: { fontSize: 15, textAlign: "center", lineHeight: 22 },
+  gateUnlockList: {
+    width: "100%",
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  gateUnlockRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  gateUnlockText: { fontSize: 14, flex: 1 },
+  gateCtaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 36,
+    paddingVertical: 15,
+    borderRadius: 28,
+    marginTop: 4,
+  },
+  gateCtaText: { color: "#ffffff", fontSize: 16, fontWeight: "700" },
+  gateFineprint: { fontSize: 12, textAlign: "center" },
 });

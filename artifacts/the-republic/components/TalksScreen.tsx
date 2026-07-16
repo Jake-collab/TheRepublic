@@ -31,7 +31,7 @@ import {
 type TalkCategory = { id: number; name: string; emoji: string; sortOrder: number; isActive: boolean };
 
 const CITIZEN_VOTE_ID = -1;
-const ALL_PILL: TalkCategory = { id: 0, name: "All", emoji: "✨", sortOrder: 0, isActive: true };
+// ALL_PILL removed — the default (null selectedCatId) is now called "Chat"
 const CV_PILL: TalkCategory = { id: CITIZEN_VOTE_ID, name: "Citizen Vote", emoji: "🗳", sortOrder: -1, isActive: true };
 
 const postKeyExtractor = (item: TalkPost) => String(item.id);
@@ -299,7 +299,7 @@ function FilterPanel({
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
-export default function TalksScreen() {
+export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -335,7 +335,10 @@ export default function TalksScreen() {
     () => cats.filter((c) => c.name !== "Citizen Vote"),
     [cats],
   );
-  const allPills = useMemo(() => [ALL_PILL, CV_PILL, ...filteredCats], [filteredCats]);
+  // Pills: Citizen Vote + specific categories. "Chat" (all posts) is the
+  // default state (selectedCatId === null) with no dedicated pill — tapping
+  // an active pill deselects it and returns to Chat.
+  const allPills = useMemo(() => [CV_PILL, ...filteredCats], [filteredCats]);
 
   // Debounce search
   useEffect(() => {
@@ -452,18 +455,20 @@ export default function TalksScreen() {
     refetch();
   }, [refetch]);
 
-  const handleCatSelect = useCallback((catId: number | null) => {
+  const handleCatSelect = useCallback((catId: number) => {
     Haptics.selectionAsync();
     startTransition(() => {
-      setSelectedCatId(catId);
-      if (catId !== CITIZEN_VOTE_ID) {
-        setFilterGeo(null);
-        setFilterCat(null);
-      }
+      // Tapping the already-active pill deselects it and returns to Chat (null).
+      const nextId = catId === CITIZEN_VOTE_ID
+        ? (selectedCatId === CITIZEN_VOTE_ID ? null : CITIZEN_VOTE_ID)
+        : (selectedCatId === catId ? null : catId);
+      setSelectedCatId(nextId);
+      setFilterGeo(null);
+      setFilterCat(null);
       setSearchVisible(false);
       setSearch("");
     });
-  }, []);
+  }, [selectedCatId]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -484,15 +489,13 @@ export default function TalksScreen() {
         contentContainerStyle={styles.catList}
       >
         {allPills.map((c) => {
-          const isActive =
-            c.id === 0 ? isAllMode : c.id === CITIZEN_VOTE_ID ? isCVMode : selectedCatId === c.id;
-          const catId = c.id === 0 ? null : c.id;
+          const isActive = c.id === CITIZEN_VOTE_ID ? isCVMode : selectedCatId === c.id;
           return (
             <CategoryPill
               key={c.id}
               cat={c}
               isActive={isActive}
-              onPress={() => handleCatSelect(catId)}
+              onPress={() => handleCatSelect(c.id)}
             />
           );
         })}
@@ -538,9 +541,14 @@ export default function TalksScreen() {
           </View>
         ) : (
           <>
-            <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-              {isCVMode ? "Citizen Vote" : "Talks"}
-            </Text>
+            <View style={styles.headerLeft}>
+              <Pressable onPress={onOpenDrawer} style={styles.hamburgerBtn} hitSlop={10}>
+                <Feather name="menu" size={22} color={colors.foreground} />
+              </Pressable>
+              <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+                {isCVMode ? "Citizen Vote" : isAllMode ? "Chat" : (selectedCat?.name ?? "Talks")}
+              </Text>
+            </View>
             <View style={styles.headerActions}>
               {/* Search — only in regular mode */}
               {!isCVMode && (
@@ -613,7 +621,7 @@ export default function TalksScreen() {
               </Text>
             </View>
           }
-          contentContainerStyle={{ paddingBottom: 104 }}
+          contentContainerStyle={{ paddingBottom: 32 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -680,6 +688,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     minHeight: 52,
   },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  hamburgerBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
   headerTitle: { fontSize: 22, fontWeight: "700", letterSpacing: -0.5 },
   headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
   headerIconBtn: {
