@@ -1,3 +1,9 @@
+/**
+ * UpgradeModal — two-tier upgrade sheet.
+ *
+ * Web tier  ($2.99/mo) — unlocks the curated Web section.
+ * Pro tier  ($4.99/mo) — waives 5% worker fee + everything in Web.
+ */
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
@@ -7,6 +13,7 @@ import {
   Alert,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -17,37 +24,42 @@ import { useCreateCheckoutSession, useGetMembershipPricing } from "@workspace/ap
 import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
 
-const PRO_FEATURES = [
-  { icon: "star" as const, text: "Access all 26+ Pro curated sites" },
-  { icon: "sliders" as const, text: "Custom tab colors & reorder" },
-  { icon: "flag" as const, text: "Citizen Vote — create posts" },
-  { icon: "shield" as const, text: "Full community features" },
-  { icon: "zap" as const, text: "Priority support" },
-];
+type Tier = "web" | "pro";
 
-function formatCents(cents: number): string {
+function fmt(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+const WEB_FEATURES = [
+  { icon: "globe" as const,    text: "Full curated Web section (10+ sites)" },
+  { icon: "bookmark" as const, text: "All free content & Citizen Vote" },
+];
+
+const PRO_FEATURES = [
+  { icon: "star"    as const, text: "Everything in Web" },
+  { icon: "globe"   as const, text: "All 27+ curated sites unlocked" },
+  { icon: "percent" as const, text: "Worker fee waived (save 5% on every gig payout)" },
+  { icon: "zap"     as const, text: "Priority support" },
+];
+
 export default function UpgradeModal() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
+  const colors  = useColors();
+  const insets  = useSafeAreaInsets();
   const { upgradeModalVisible, setUpgradeModalVisible } = useBrowser();
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("monthly");
+  const [selected, setSelected]   = useState<Tier>("pro");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { data: pricing } = useGetMembershipPricing();
-  const { mutateAsync: createCheckout } = useCreateCheckoutSession();
+  const { data: pricing }          = useGetMembershipPricing();
+  const { mutateAsync: checkout }  = useCreateCheckoutSession();
 
-  const monthlyPrice = pricing ? formatCents(pricing.monthlyPriceCents) : "$2.99";
-  const annualPrice = pricing ? formatCents(pricing.annualPriceCents) : "$20.00";
-  const monthlyPerMonth = pricing ? formatCents(Math.round(pricing.annualPriceCents / 12)) : "$1.67";
+  const webPrice = pricing ? fmt(pricing.webMonthlyCents) : "$2.99";
+  const proPrice = pricing ? fmt(pricing.proMonthlyCents) : "$4.99";
 
   const handleUpgrade = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
     try {
-      const result = await createCheckout({ data: { plan: selectedPlan } });
+      const result = await checkout({ data: { tier: selected } });
       if (result.url) {
         setUpgradeModalVisible(false);
         await WebBrowser.openBrowserAsync(result.url);
@@ -66,71 +78,102 @@ export default function UpgradeModal() {
       transparent
       onRequestClose={() => setUpgradeModalVisible(false)}
     >
-      <Pressable
-        style={styles.backdrop}
-        onPress={() => setUpgradeModalVisible(false)}
-      />
-      <View
-        style={[
-          styles.sheet,
-          {
-            backgroundColor: colors.card,
-            paddingBottom: insets.bottom + 20,
-          },
-        ]}
-      >
+      <Pressable style={styles.backdrop} onPress={() => setUpgradeModalVisible(false)} />
+
+      <View style={[styles.sheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]}>
         <View style={[styles.handle, { backgroundColor: colors.muted }]} />
+
         <View style={styles.crown}>
           <Text style={styles.crownEmoji}>⚜️</Text>
         </View>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          Go Republic Pro
-        </Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>Choose Your Plan</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Unlock the full curated web experience
+          Unlock the full Republic experience
         </Text>
 
-        <View style={styles.features}>
-          {PRO_FEATURES.map(({ icon, text }) => (
-            <View key={text} style={styles.featureRow}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.secondary }]}>
-                <Feather name={icon} size={16} color={colors.primary} />
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
+          {/* ── Web tier card ── */}
+          <Pressable
+            style={[
+              styles.tierCard,
+              {
+                backgroundColor: selected === "web" ? colors.primary + "12" : colors.secondary,
+                borderColor:     selected === "web" ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={() => { Haptics.selectionAsync(); setSelected("web"); }}
+          >
+            <View style={styles.tierHeader}>
+              <View style={styles.tierTitleRow}>
+                <Text style={[styles.tierName, { color: colors.foreground }]}>Web</Text>
+                <View style={[styles.tierBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                  <Text style={[styles.tierBadgeText, { color: colors.mutedForeground }]}>BASIC</Text>
+                </View>
               </View>
-              <Text style={[styles.featureText, { color: colors.foreground }]}>
-                {text}
-              </Text>
+              <View style={styles.tierPriceRow}>
+                <Text style={[styles.tierPrice, { color: colors.primary }]}>{webPrice}</Text>
+                <Text style={[styles.tierPriceSuffix, { color: colors.mutedForeground }]}>/mo</Text>
+              </View>
             </View>
-          ))}
-        </View>
 
-        <View style={styles.planRow}>
-          <Pressable
-            style={[
-              styles.planOption,
-              { borderColor: selectedPlan === "monthly" ? colors.primary : colors.border, backgroundColor: colors.secondary },
-            ]}
-            onPress={() => setSelectedPlan("monthly")}
-          >
-            <Text style={[styles.planLabel, { color: colors.foreground }]}>Monthly</Text>
-            <Text style={[styles.planPrice, { color: colors.primary }]}>{monthlyPrice}</Text>
-            <Text style={[styles.planSub, { color: colors.mutedForeground }]}>/ month</Text>
+            <View style={styles.featureList}>
+              {WEB_FEATURES.map(({ icon, text }) => (
+                <View key={text} style={styles.featureRow}>
+                  <Feather name={icon} size={14} color={colors.mutedForeground} />
+                  <Text style={[styles.featureText, { color: colors.foreground }]}>{text}</Text>
+                </View>
+              ))}
+            </View>
+
+            {selected === "web" && (
+              <View style={[styles.selectedIndicator, { backgroundColor: colors.primary }]}>
+                <Feather name="check" size={12} color="#fff" />
+              </View>
+            )}
           </Pressable>
 
+          {/* ── Pro tier card ── */}
           <Pressable
             style={[
-              styles.planOption,
-              { borderColor: selectedPlan === "annual" ? colors.primary : colors.border, backgroundColor: colors.secondary },
+              styles.tierCard,
+              {
+                backgroundColor: selected === "pro" ? colors.primary + "12" : colors.secondary,
+                borderColor:     selected === "pro" ? colors.primary : colors.border,
+              },
             ]}
-            onPress={() => setSelectedPlan("annual")}
+            onPress={() => { Haptics.selectionAsync(); setSelected("pro"); }}
           >
-            <View style={[styles.saveBadge, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.saveBadgeText, { color: colors.primaryForeground }]}>Save 44%</Text>
+            {/* Best value badge */}
+            <View style={[styles.bestValueBadge, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.bestValueText, { color: colors.primaryForeground }]}>BEST VALUE</Text>
             </View>
-            <Text style={[styles.planLabel, { color: colors.foreground }]}>Annual</Text>
-            <Text style={[styles.planPrice, { color: colors.primary }]}>{annualPrice}</Text>
-            <Text style={[styles.planSub, { color: colors.mutedForeground }]}>{monthlyPerMonth}/mo</Text>
+
+            <View style={styles.tierHeader}>
+              <View style={styles.tierTitleRow}>
+                <Text style={[styles.tierName, { color: colors.foreground }]}>Pro</Text>
+              </View>
+              <View style={styles.tierPriceRow}>
+                <Text style={[styles.tierPrice, { color: colors.primary }]}>{proPrice}</Text>
+                <Text style={[styles.tierPriceSuffix, { color: colors.mutedForeground }]}>/mo</Text>
+              </View>
+            </View>
+
+            <View style={styles.featureList}>
+              {PRO_FEATURES.map(({ icon, text }) => (
+                <View key={text} style={styles.featureRow}>
+                  <Feather name={icon} size={14} color={colors.primary} />
+                  <Text style={[styles.featureText, { color: colors.foreground }]}>{text}</Text>
+                </View>
+              ))}
+            </View>
+
+            {selected === "pro" && (
+              <View style={[styles.selectedIndicator, { backgroundColor: colors.primary }]}>
+                <Feather name="check" size={12} color="#fff" />
+              </View>
+            )}
           </Pressable>
-        </View>
+        </ScrollView>
 
         <Pressable
           style={({ pressed }) => [
@@ -144,14 +187,13 @@ export default function UpgradeModal() {
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
             <Text style={[styles.upgradeText, { color: colors.primaryForeground }]}>
-              Upgrade to Pro
+              Upgrade to {selected === "pro" ? "Pro" : "Web"} — {selected === "pro" ? proPrice : webPrice}/mo
             </Text>
           )}
         </Pressable>
+
         <Pressable onPress={() => setUpgradeModalVisible(false)} style={styles.dismissBtn}>
-          <Text style={[styles.dismissText, { color: colors.mutedForeground }]}>
-            Not now
-          </Text>
+          <Text style={[styles.dismissText, { color: colors.mutedForeground }]}>Not now</Text>
         </Pressable>
       </View>
     </Modal>
@@ -164,76 +206,88 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   sheet: {
-    borderTopLeftRadius: 24,
+    borderTopLeftRadius:  24,
     borderTopRightRadius: 24,
-    padding: 24,
-    gap: 12,
+    padding:              24,
+    gap:                  12,
+    maxHeight:            "85%",
   },
   handle: {
-    width: 40,
-    height: 4,
+    width:      40,
+    height:     4,
     borderRadius: 2,
-    alignSelf: "center",
+    alignSelf:  "center",
     marginBottom: 8,
   },
-  crown: { alignItems: "center" },
+  crown:     { alignItems: "center" },
   crownEmoji: { fontSize: 36 },
   title: {
-    fontSize: 24,
+    fontSize:   22,
     fontWeight: "700",
-    textAlign: "center",
+    textAlign:  "center",
   },
   subtitle: {
-    fontSize: 14,
+    fontSize:  14,
     textAlign: "center",
-    marginBottom: 4,
   },
-  features: { gap: 8 },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+  scroll: { flexGrow: 0 },
+
+  // ── Tier cards ──────────────────────────────────────────────────────────────
+  tierCard: {
+    borderWidth:  2,
+    borderRadius: 16,
+    padding:      16,
+    marginBottom: 12,
+    position:     "relative",
+    overflow:     "hidden",
   },
-  featureIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  tierHeader:   { gap: 4, marginBottom: 12 },
+  tierTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  tierName:     { fontSize: 18, fontWeight: "700" },
+  tierBadge: {
+    borderWidth:   1,
+    borderRadius:  6,
+    paddingHorizontal: 6,
+    paddingVertical:   2,
+  },
+  tierBadgeText: { fontSize: 9, fontWeight: "700", letterSpacing: 0.5 },
+  tierPriceRow:  { flexDirection: "row", alignItems: "baseline", gap: 2 },
+  tierPrice:     { fontSize: 28, fontWeight: "800" },
+  tierPriceSuffix: { fontSize: 13 },
+
+  featureList:  { gap: 8 },
+  featureRow:   { flexDirection: "row", alignItems: "center", gap: 10 },
+  featureText:  { fontSize: 13, flex: 1 },
+
+  bestValueBadge: {
+    position:         "absolute",
+    top:              12,
+    right:            -1,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical:   4,
+  },
+  bestValueText: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
+
+  selectedIndicator: {
+    position:    "absolute",
+    top:         12,
+    left:        12,
+    width:       22,
+    height:      22,
+    borderRadius: 11,
+    alignItems:  "center",
     justifyContent: "center",
-    alignItems: "center",
   },
-  featureText: { fontSize: 14, flex: 1 },
-  planRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginVertical: 4,
-  },
-  planOption: {
-    flex: 1,
-    borderWidth: 2,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: "center",
-    gap: 2,
-    position: "relative",
-  },
-  saveBadge: {
-    position: "absolute",
-    top: -10,
-    right: 8,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  saveBadgeText: { fontSize: 10, fontWeight: "700" },
-  planLabel: { fontSize: 12, fontWeight: "600" },
-  planPrice: { fontSize: 22, fontWeight: "700" },
-  planSub: { fontSize: 11 },
+
+  // ── CTA ─────────────────────────────────────────────────────────────────────
   upgradeBtn: {
-    borderRadius: 14,
+    borderRadius:   14,
     paddingVertical: 15,
-    alignItems: "center",
+    alignItems:     "center",
   },
-  upgradeText: { fontSize: 16, fontWeight: "700" },
-  dismissBtn: { alignItems: "center", paddingVertical: 8 },
-  dismissText: { fontSize: 14 },
+  upgradeText:  { fontSize: 16, fontWeight: "700" },
+  dismissBtn:   { alignItems: "center", paddingVertical: 8 },
+  dismissText:  { fontSize: 14 },
 });

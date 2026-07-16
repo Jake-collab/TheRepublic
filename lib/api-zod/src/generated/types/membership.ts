@@ -5,12 +5,14 @@
  * The Republic API
  * OpenAPI spec version: 0.1.0
  */
-import type { MembershipPlan } from './membershipPlan';
 import type { MembershipStatus } from './membershipStatus';
 
 export interface Membership {
   userId: string;
-  plan: MembershipPlan;
+  /** "free" | "web" | "pro" */
+  tier: string;
+  /** billing cadence — "free" | "monthly" | "annual" */
+  plan: string;
   status: MembershipStatus;
   /** @nullable */
   stripeCustomerId?: string | null;
@@ -18,4 +20,9 @@ export interface Membership {
   stripeSubscriptionId?: string | null;
   /** @nullable */
   currentPeriodEnd?: string | null;
+  /**
+     * Stripe Connect account ID (workers)
+     * @nullable
+     */
+  stripeAccountId?: string | null;
 }

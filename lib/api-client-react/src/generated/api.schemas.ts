@@ -179,15 +179,6 @@ export interface UserProfileUpdate {
   acceptedPrivacyAt?: string | null;
 }
 
-export type MembershipPlan = typeof MembershipPlan[keyof typeof MembershipPlan];
-
-
-export const MembershipPlan = {
-  free: 'free',
-  monthly: 'monthly',
-  annual: 'annual',
-} as const;
-
 export type MembershipStatus = typeof MembershipStatus[keyof typeof MembershipStatus];
 
 
@@ -200,7 +191,10 @@ export const MembershipStatus = {
 
 export interface Membership {
   userId: string;
-  plan: MembershipPlan;
+  /** "free" | "web" | "pro" */
+  tier: string;
+  /** billing cadence — "free" | "monthly" | "annual" */
+  plan: string;
   status: MembershipStatus;
   /** @nullable */
   stripeCustomerId?: string | null;
@@ -208,6 +202,11 @@ export interface Membership {
   stripeSubscriptionId?: string | null;
   /** @nullable */
   currentPeriodEnd?: string | null;
+  /**
+     * Stripe Connect account ID (workers)
+     * @nullable
+     */
+  stripeAccountId?: string | null;
 }
 
 export interface MembershipUpdate {
@@ -215,16 +214,11 @@ export interface MembershipUpdate {
   status?: string;
 }
 
-export type CheckoutInputPlan = typeof CheckoutInputPlan[keyof typeof CheckoutInputPlan];
-
-
-export const CheckoutInputPlan = {
-  monthly: 'monthly',
-  annual: 'annual',
-} as const;
-
 export interface CheckoutInput {
-  plan: CheckoutInputPlan;
+  /** "web" ($2.99/mo) | "pro" ($4.99/mo) */
+  tier?: string;
+  /** Legacy — "monthly" | "annual" (tier takes priority) */
+  plan?: string;
 }
 
 export interface CheckoutSession {
@@ -236,8 +230,20 @@ export interface PortalSession {
 }
 
 export interface MembershipPricing {
+  /** Web tier monthly price in cents ($2.99 default) */
+  webMonthlyCents: number;
+  /** Pro tier monthly price in cents ($4.99 default) */
+  proMonthlyCents: number;
   monthlyPriceCents: number;
   annualPriceCents: number;
+}
+
+export interface ConnectStatus {
+  connected: boolean;
+  /** @nullable */
+  accountId?: string | null;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
 }
 
 export interface StripeSettings {

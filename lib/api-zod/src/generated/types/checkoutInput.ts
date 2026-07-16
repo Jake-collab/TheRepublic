@@ -5,8 +5,10 @@
  * The Republic API
  * OpenAPI spec version: 0.1.0
  */
-import type { CheckoutInputPlan } from './checkoutInputPlan';
 
 export interface CheckoutInput {
-  plan: CheckoutInputPlan;
+  /** "web" ($2.99/mo) | "pro" ($4.99/mo) */
+  tier?: string;
+  /** Legacy — "monthly" | "annual" (tier takes priority) */
+  plan?: string;
 }

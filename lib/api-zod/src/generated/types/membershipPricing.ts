@@ -7,6 +7,10 @@
  */
 
 export interface MembershipPricing {
+  /** Web tier monthly price in cents ($2.99 default) */
+  webMonthlyCents: number;
+  /** Pro tier monthly price in cents ($4.99 default) */
+  proMonthlyCents: number;
   monthlyPriceCents: number;
   annualPriceCents: number;
 }

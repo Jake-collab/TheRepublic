@@ -9,32 +9,44 @@ const router = Router();
 
 router.use(requireAuth, ensureUser);
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function profileShape(user: typeof usersTable.$inferSelect, m?: typeof membershipsTable.$inferSelect) {
+  return {
+    id:               user.id,
+    email:            user.email,
+    displayName:      user.displayName,
+    avatarUrl:        user.avatarUrl ?? null,
+    isPro:            user.isPro,
+    membershipTier:   user.membershipTier,
+    stripeAccountId:  user.stripeAccountId ?? null,
+    acceptedTermsAt:  user.acceptedTermsAt?.toISOString() ?? null,
+    acceptedPrivacyAt: user.acceptedPrivacyAt?.toISOString() ?? null,
+    createdAt:        user.createdAt.toISOString(),
+    theme:            user.theme,
+    membershipPlan:   m?.plan   ?? "free",
+    membershipStatus: m?.status ?? "none",
+    membershipPeriodEnd: m?.currentPeriodEnd?.toISOString() ?? null,
+  };
+}
+
+// ── GET /user/profile ─────────────────────────────────────────────────────────
+
 router.get("/profile", async (req, res) => {
   const userId = (req as any).userId as string;
-  const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  const user   = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user[0]) { res.status(404).json({ error: "Not found" }); return; }
   const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
   res.set("Cache-Control", "private, max-age=120, stale-while-revalidate=300");
-  res.json({
-    id: user[0].id,
-    email: user[0].email,
-    displayName: user[0].displayName,
-    avatarUrl: user[0].avatarUrl ?? null,
-    isPro: user[0].isPro,
-    acceptedTermsAt: user[0].acceptedTermsAt?.toISOString() ?? null,
-    acceptedPrivacyAt: user[0].acceptedPrivacyAt?.toISOString() ?? null,
-    createdAt: user[0].createdAt.toISOString(),
-    theme: user[0].theme,
-    membershipPlan: membership[0]?.plan ?? "free",
-    membershipStatus: membership[0]?.status ?? "none",
-  });
+  res.json(profileShape(user[0], membership[0]));
 });
+
+// ── PATCH /user/profile ───────────────────────────────────────────────────────
 
 router.patch("/profile", async (req, res) => {
   const userId = (req as any).userId as string;
   const { displayName, avatarUrl, theme, acceptedTermsAt, acceptedPrivacyAt } = req.body;
 
-  // Username uniqueness check — case-insensitive, skip for empty/clearing
   if (displayName !== undefined && displayName.trim() !== "") {
     const existing = await db
       .select({ id: usersTable.id })
@@ -48,66 +60,65 @@ router.patch("/profile", async (req, res) => {
   }
 
   const updates: Partial<typeof usersTable.$inferInsert> = {};
-  if (displayName !== undefined) updates.displayName = displayName.trim();
-  if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
-  if (theme !== undefined) updates.theme = theme;
-  if (acceptedTermsAt !== undefined) updates.acceptedTermsAt = acceptedTermsAt ? new Date(acceptedTermsAt) : null;
-  if (acceptedPrivacyAt !== undefined) updates.acceptedPrivacyAt = acceptedPrivacyAt ? new Date(acceptedPrivacyAt) : null;
+  if (displayName    !== undefined) updates.displayName    = displayName.trim();
+  if (avatarUrl      !== undefined) updates.avatarUrl      = avatarUrl;
+  if (theme          !== undefined) updates.theme          = theme;
+  if (acceptedTermsAt    !== undefined) updates.acceptedTermsAt    = acceptedTermsAt    ? new Date(acceptedTermsAt)    : null;
+  if (acceptedPrivacyAt  !== undefined) updates.acceptedPrivacyAt  = acceptedPrivacyAt  ? new Date(acceptedPrivacyAt)  : null;
   updates.updatedAt = new Date();
 
-  const updated = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
+  const updated    = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
   const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
-  res.json({
-    id: updated[0].id,
-    email: updated[0].email,
-    displayName: updated[0].displayName,
-    avatarUrl: updated[0].avatarUrl ?? null,
-    isPro: updated[0].isPro,
-    acceptedTermsAt: updated[0].acceptedTermsAt?.toISOString() ?? null,
-    acceptedPrivacyAt: updated[0].acceptedPrivacyAt?.toISOString() ?? null,
-    createdAt: updated[0].createdAt.toISOString(),
-    theme: updated[0].theme,
-    membershipPlan: membership[0]?.plan ?? "free",
-    membershipStatus: membership[0]?.status ?? "none",
-  });
+  res.json(profileShape(updated[0], membership[0]));
 });
+
+// ── GET /user/membership ──────────────────────────────────────────────────────
 
 router.get("/membership", async (req, res) => {
   const userId = (req as any).userId as string;
-  const rows = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
+  const [users, rows] = await Promise.all([
+    db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1),
+    db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1),
+  ]);
   const m = rows[0];
-  res.set("Cache-Control", "private, max-age=120, stale-while-revalidate=300");
+  res.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
   res.json({
     userId,
-    plan: m?.plan ?? "free",
-    status: m?.status ?? "none",
-    stripeCustomerId: m?.stripeCustomerId ?? null,
-    stripeSubscriptionId: m?.stripeSubscriptionId ?? null,
-    currentPeriodEnd: m?.currentPeriodEnd?.toISOString() ?? null,
+    tier:                 m?.tier                      ?? users[0]?.membershipTier ?? "free",
+    plan:                 m?.plan                      ?? "free",
+    status:               m?.status                    ?? "none",
+    stripeCustomerId:     m?.stripeCustomerId           ?? null,
+    stripeSubscriptionId: m?.stripeSubscriptionId       ?? null,
+    currentPeriodEnd:     m?.currentPeriodEnd?.toISOString() ?? null,
+    stripeAccountId:      users[0]?.stripeAccountId    ?? null,
   });
 });
 
+// ── POST /user/membership/checkout ────────────────────────────────────────────
+// tier: "web" ($2.99/mo) | "pro" ($4.99/mo)
+// legacy: plan: "monthly" | "annual" still accepted
+
 router.post("/membership/checkout", async (req, res) => {
   const userId = (req as any).userId as string;
-  const { plan } = req.body;
+  const { tier, plan } = req.body as { tier?: string; plan?: string };
 
   const cfg = await getStripeConfig();
-  if (!cfg.secretKey) {
-    res.status(503).json({ error: "Stripe not configured" });
-    return;
-  }
+  if (!cfg.secretKey) { res.status(503).json({ error: "Stripe not configured" }); return; }
 
   try {
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(cfg.secretKey);
-    const priceId = plan === "annual" ? cfg.annualPriceId : cfg.monthlyPriceId;
 
-    if (!priceId) {
-      res.status(503).json({ error: "Price ID not configured for this plan" });
-      return;
-    }
+    // Resolve price ID: tier takes priority over legacy plan param
+    let priceId: string | null = null;
+    if      (tier === "pro")    priceId = cfg.proMonthlyPriceId;
+    else if (tier === "web")    priceId = cfg.webPriceId;
+    else if (plan === "annual") priceId = cfg.annualPriceId;
+    else                        priceId = cfg.monthlyPriceId ?? cfg.webPriceId;
 
-    const user = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!priceId) { res.status(503).json({ error: "Price ID not configured" }); return; }
+
+    const user       = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
 
     let customerId = membership[0]?.stripeCustomerId;
@@ -118,12 +129,12 @@ router.post("/membership/checkout", async (req, res) => {
 
     const baseUrl = getAppBaseUrl();
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: "subscription",
+      customer:             customerId,
+      mode:                 "subscription",
       payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/checkout-cancel`,
+      line_items:           [{ price: priceId, quantity: 1 }],
+      success_url:          `${baseUrl}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:           `${baseUrl}/checkout-cancel`,
     });
 
     res.json({ url: session.url });
@@ -133,30 +144,23 @@ router.post("/membership/checkout", async (req, res) => {
   }
 });
 
+// ── POST /user/membership/portal ──────────────────────────────────────────────
+
 router.post("/membership/portal", async (req, res) => {
   const userId = (req as any).userId as string;
-
-  const cfg = await getStripeConfig();
-  if (!cfg.secretKey) {
-    res.status(503).json({ error: "Stripe not configured" });
-    return;
-  }
+  const cfg    = await getStripeConfig();
+  if (!cfg.secretKey) { res.status(503).json({ error: "Stripe not configured" }); return; }
 
   try {
-    const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(cfg.secretKey);
+    const Stripe     = (await import("stripe")).default;
+    const stripe     = new Stripe(cfg.secretKey);
     const membership = await db.select().from(membershipsTable).where(eq(membershipsTable.userId, userId)).limit(1);
-
-    if (!membership[0]?.stripeCustomerId) {
-      res.status(400).json({ error: "No Stripe customer found" });
-      return;
-    }
+    if (!membership[0]?.stripeCustomerId) { res.status(400).json({ error: "No Stripe customer found" }); return; }
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: membership[0].stripeCustomerId,
+      customer:   membership[0].stripeCustomerId,
       return_url: getAppBaseUrl(),
     });
-
     res.json({ url: session.url });
   } catch (err) {
     req.log.error({ err }, "Stripe portal error");

@@ -138,11 +138,13 @@ export const UpdateUserProfileResponse = zod.object({
  */
 export const GetUserMembershipResponse = zod.object({
   "userId": zod.string(),
-  "plan": zod.enum(['free', 'monthly', 'annual']),
+  "tier": zod.string().describe('\"free\" | \"web\" | \"pro\"'),
+  "plan": zod.string().describe('billing cadence — \"free\" | \"monthly\" | \"annual\"'),
   "status": zod.enum(['active', 'canceled', 'past_due', 'none']),
   "stripeCustomerId": zod.string().nullish(),
   "stripeSubscriptionId": zod.string().nullish(),
-  "currentPeriodEnd": zod.string().nullish()
+  "currentPeriodEnd": zod.string().nullish(),
+  "stripeAccountId": zod.string().nullish().describe('Stripe Connect account ID (workers)')
 })
 
 
@@ -150,7 +152,8 @@ export const GetUserMembershipResponse = zod.object({
  * @summary Create Stripe checkout session
  */
 export const CreateCheckoutSessionBody = zod.object({
-  "plan": zod.enum(['monthly', 'annual'])
+  "tier": zod.string().optional().describe('\"web\" ($2.99\/mo) | \"pro\" ($4.99\/mo)'),
+  "plan": zod.string().optional().describe('Legacy — \"monthly\" | \"annual\" (tier takes priority)')
 })
 
 export const CreateCheckoutSessionResponse = zod.object({
@@ -400,8 +403,29 @@ export const MarkNotificationReadParams = zod.object({
  * @summary Get current membership pricing (no auth required)
  */
 export const GetMembershipPricingResponse = zod.object({
+  "webMonthlyCents": zod.number().describe('Web tier monthly price in cents ($2.99 default)'),
+  "proMonthlyCents": zod.number().describe('Pro tier monthly price in cents ($4.99 default)'),
   "monthlyPriceCents": zod.number(),
   "annualPriceCents": zod.number()
+})
+
+
+/**
+ * @summary Start Stripe Connect Express onboarding for worker payouts
+ */
+export const StripeConnectOnboardResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
+ * @summary Get current user's Stripe Connect account status
+ */
+export const GetStripeConnectStatusResponse = zod.object({
+  "connected": zod.boolean(),
+  "accountId": zod.string().nullish(),
+  "chargesEnabled": zod.boolean(),
+  "payoutsEnabled": zod.boolean()
 })
 
 
@@ -670,11 +694,13 @@ export const AdminUpdateUserMembershipBody = zod.object({
 
 export const AdminUpdateUserMembershipResponse = zod.object({
   "userId": zod.string(),
-  "plan": zod.enum(['free', 'monthly', 'annual']),
+  "tier": zod.string().describe('\"free\" | \"web\" | \"pro\"'),
+  "plan": zod.string().describe('billing cadence — \"free\" | \"monthly\" | \"annual\"'),
   "status": zod.enum(['active', 'canceled', 'past_due', 'none']),
   "stripeCustomerId": zod.string().nullish(),
   "stripeSubscriptionId": zod.string().nullish(),
-  "currentPeriodEnd": zod.string().nullish()
+  "currentPeriodEnd": zod.string().nullish(),
+  "stripeAccountId": zod.string().nullish().describe('Stripe Connect account ID (workers)')
 })
 
 

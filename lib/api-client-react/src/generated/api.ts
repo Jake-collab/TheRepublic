@@ -60,6 +60,7 @@ import type {
   CitizenVotePostInput,
   CitizenVotePostList,
   ClearSessionResult,
+  ConnectStatus,
   ContentFlag,
   DailyContentActivity,
   DailyNewUsers,
@@ -1851,6 +1852,153 @@ export function useGetMembershipPricing<TData = Awaited<ReturnType<typeof getMem
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMembershipPricingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getStripeConnectOnboardUrl = () => {
+
+
+
+
+  return `/api/stripe/connect/onboard`
+}
+
+/**
+ * @summary Start Stripe Connect Express onboarding for worker payouts
+ */
+export const stripeConnectOnboard = async ( options?: RequestInit): Promise<CheckoutSession> => {
+
+  return customFetch<CheckoutSession>(getStripeConnectOnboardUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStripeConnectOnboardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stripeConnectOnboard>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stripeConnectOnboard>>, TError,void, TContext> => {
+
+const mutationKey = ['stripeConnectOnboard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stripeConnectOnboard>>, void> = () => {
+
+
+          return  stripeConnectOnboard(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StripeConnectOnboardMutationResult = NonNullable<Awaited<ReturnType<typeof stripeConnectOnboard>>>
+
+    export type StripeConnectOnboardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start Stripe Connect Express onboarding for worker payouts
+ */
+export const useStripeConnectOnboard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stripeConnectOnboard>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof stripeConnectOnboard>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStripeConnectOnboardMutationOptions(options));
+    }
+
+export const getGetStripeConnectStatusUrl = () => {
+
+
+
+
+  return `/api/stripe/connect/status`
+}
+
+/**
+ * @summary Get current user's Stripe Connect account status
+ */
+export const getStripeConnectStatus = async ( options?: RequestInit): Promise<ConnectStatus> => {
+
+  return customFetch<ConnectStatus>(getGetStripeConnectStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStripeConnectStatusQueryKey = () => {
+    return [
+    `/api/stripe/connect/status`
+    ] as const;
+    }
+
+
+export const getGetStripeConnectStatusQueryOptions = <TData = Awaited<ReturnType<typeof getStripeConnectStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStripeConnectStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStripeConnectStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStripeConnectStatus>>> = ({ signal }) => getStripeConnectStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStripeConnectStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStripeConnectStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getStripeConnectStatus>>>
+export type GetStripeConnectStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current user's Stripe Connect account status
+ */
+
+export function useGetStripeConnectStatus<TData = Awaited<ReturnType<typeof getStripeConnectStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStripeConnectStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStripeConnectStatusQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

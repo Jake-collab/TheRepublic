@@ -35,7 +35,12 @@ router.use("/admin", adminRouter);
 router.get("/membership/pricing", async (_req, res) => {
   const cfg = await getStripeConfig();
   res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
-  res.json({ monthlyPriceCents: cfg.monthlyPriceCents, annualPriceCents: cfg.annualPriceCents });
+  res.json({
+    webMonthlyCents:   cfg.webMonthlyCents,
+    proMonthlyCents:   cfg.proMonthlyCents,
+    monthlyPriceCents: cfg.monthlyPriceCents,
+    annualPriceCents:  cfg.annualPriceCents,
+  });
 });
 
 export default router;

@@ -352,20 +352,25 @@ export default function ProfileScreen() {
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Membership</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
-          {isPro ? (
+          {membership?.tier === "free" ? (
+            <SettingRow
+              icon="star"
+              label="Upgrade Plan"
+              value={pricing ? `Web $${(pricing.webMonthlyCents / 100).toFixed(2)}/mo` : "from $2.99/mo"}
+              onPress={() => router.back()}
+            />
+          ) : (
             <SettingRow
               icon="credit-card"
               label={portalLoading ? "Opening portal…" : "Manage Subscription"}
               onPress={handleManageSubscription}
             />
-          ) : (
-            <SettingRow
-              icon="star"
-              label="Republic Pro"
-              value={pricing ? `$${(pricing.monthlyPriceCents / 100).toFixed(2)}/mo` : "$2.99/mo"}
-              onPress={() => router.back()}
-            />
           )}
+          <SettingRow
+            icon="percent"
+            label="Platform Charges"
+            onPress={() => router.push("/platform-charges")}
+          />
         </View>
 
         <Pressable

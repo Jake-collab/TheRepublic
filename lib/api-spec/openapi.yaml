@@ -433,6 +433,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/MembershipPricing"
 
+  /stripe/connect/onboard:
+    post:
+      operationId: stripeConnectOnboard
+      tags: [stripe]
+      summary: Start Stripe Connect Express onboarding for worker payouts
+      responses:
+        "200":
+          description: Onboarding URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+
+  /stripe/connect/status:
+    get:
+      operationId: getStripeConnectStatus
+      tags: [stripe]
+      summary: Get current user's Stripe Connect account status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectStatus"
+
   # ── Stripe Webhook ────────────────────────────────────────────────────────────
   /stripe/webhook:
     post:
@@ -2630,13 +2656,16 @@ components:
     # ── Membership ───────────────────────────────────────────────────────────────
     Membership:
       type: object
-      required: [userId, plan, status]
+      required: [userId, tier, plan, status]
       properties:
         userId:
           type: string
+        tier:
+          type: string
+          description: '"free" | "web" | "pro"'
         plan:
           type: string
-          enum: [free, monthly, annual]
+          description: billing cadence — "free" | "monthly" | "annual"
         status:
           type: string
           enum: [active, canceled, past_due, none]
@@ -2646,6 +2675,9 @@ components:
           type: ["string", "null"]
         currentPeriodEnd:
           type: ["string", "null"]
+        stripeAccountId:
+          type: ["string", "null"]
+          description: Stripe Connect account ID (workers)
 
     MembershipUpdate:
       type: object
@@ -2657,11 +2689,13 @@ components:
 
     CheckoutInput:
       type: object
-      required: [plan]
       properties:
+        tier:
+          type: string
+          description: '"web" ($2.99/mo) | "pro" ($4.99/mo)'
         plan:
           type: string
-          enum: [monthly, annual]
+          description: Legacy — "monthly" | "annual" (tier takes priority)
 
     CheckoutSession:
       type: object
@@ -2679,12 +2713,31 @@ components:
 
     MembershipPricing:
       type: object
-      required: [monthlyPriceCents, annualPriceCents]
+      required: [webMonthlyCents, proMonthlyCents, monthlyPriceCents, annualPriceCents]
       properties:
+        webMonthlyCents:
+          type: integer
+          description: Web tier monthly price in cents ($2.99 default)
+        proMonthlyCents:
+          type: integer
+          description: Pro tier monthly price in cents ($4.99 default)
         monthlyPriceCents:
           type: integer
         annualPriceCents:
           type: integer
+
+    ConnectStatus:
+      type: object
+      required: [connected, chargesEnabled, payoutsEnabled]
+      properties:
+        connected:
+          type: boolean
+        accountId:
+          type: ["string", "null"]
+        chargesEnabled:
+          type: boolean
+        payoutsEnabled:
+          type: boolean
 
     StripeSettings:
       type: object
