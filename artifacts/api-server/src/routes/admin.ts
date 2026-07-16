@@ -7,6 +7,7 @@ import {
   talkCategoriesTable, talkPostsTable, talkCommentsTable, talkVotesTable,
   contentFlagsTable, blockedWordsTable,
   notificationCampaignsTable, appSettingsTable,
+  identityVerificationsTable,
 } from "@workspace/db";
 import { invalidateBlockedWordsCache } from "../utils/blockedWords";
 import { getStripeConfig, invalidateStripeCache } from "../utils/stripeHelpers";
@@ -564,12 +565,20 @@ router.get("/stripe-settings", async (req, res) => {
     annualPriceId: cfg.annualPriceId,
     monthlyPriceCents: cfg.monthlyPriceCents,
     annualPriceCents: cfg.annualPriceCents,
+    webPriceId: cfg.webPriceId,
+    webMonthlyCents: cfg.webMonthlyCents,
+    proMonthlyPriceId: cfg.proMonthlyPriceId,
+    proMonthlyCents: cfg.proMonthlyCents,
     updatedAt: new Date().toISOString(),
   });
 });
 
 router.put("/stripe-settings", async (req, res) => {
-  const { secretKey, webhookSecret, monthlyPriceId, annualPriceId, monthlyPriceCents, annualPriceCents } = req.body;
+  const {
+    secretKey, webhookSecret,
+    monthlyPriceId, annualPriceId, monthlyPriceCents, annualPriceCents,
+    webPriceId, webMonthlyCents, proMonthlyPriceId, proMonthlyCents,
+  } = req.body;
 
   const rows = await db.select().from(stripeSettingsTable).limit(1);
   const updates: Partial<typeof stripeSettingsTable.$inferInsert> = { updatedAt: new Date() };
@@ -580,6 +589,10 @@ router.put("/stripe-settings", async (req, res) => {
   if (annualPriceId !== undefined) updates.annualPriceId = annualPriceId;
   if (monthlyPriceCents !== undefined) updates.monthlyPriceCents = Number(monthlyPriceCents);
   if (annualPriceCents !== undefined) updates.annualPriceCents = Number(annualPriceCents);
+  if (webPriceId !== undefined) updates.webPriceId = webPriceId;
+  if (webMonthlyCents !== undefined) updates.webMonthlyCents = Number(webMonthlyCents);
+  if (proMonthlyPriceId !== undefined) updates.proMonthlyPriceId = proMonthlyPriceId;
+  if (proMonthlyCents !== undefined) updates.proMonthlyCents = Number(proMonthlyCents);
 
   if (!rows[0]) {
     await db.insert(stripeSettingsTable).values({ ...updates });
@@ -598,6 +611,10 @@ router.put("/stripe-settings", async (req, res) => {
     annualPriceId: cfg.annualPriceId,
     monthlyPriceCents: cfg.monthlyPriceCents,
     annualPriceCents: cfg.annualPriceCents,
+    webPriceId: cfg.webPriceId,
+    webMonthlyCents: cfg.webMonthlyCents,
+    proMonthlyPriceId: cfg.proMonthlyPriceId,
+    proMonthlyCents: cfg.proMonthlyCents,
     updatedAt: new Date().toISOString(),
   });
 });
@@ -1146,6 +1163,124 @@ router.put("/app-config", async (req, res) => {
 
   await logAction((req as any).userId, "update_app_config");
   res.json({ ...result, updatedAt: result.updatedAt.toISOString() });
+});
+
+// ── Identity Verifications ─────────────────────────────────────────────────────
+router.get("/identity-verifications", async (_req, res) => {
+  const rows = await db
+    .select({
+      id: identityVerificationsTable.id,
+      userId: identityVerificationsTable.userId,
+      status: identityVerificationsTable.status,
+      fullName: identityVerificationsTable.fullName,
+      dob: identityVerificationsTable.dob,
+      addressLine1: identityVerificationsTable.addressLine1,
+      city: identityVerificationsTable.city,
+      state: identityVerificationsTable.state,
+      zip: identityVerificationsTable.zip,
+      rejectionReason: identityVerificationsTable.rejectionReason,
+      reviewedBy: identityVerificationsTable.reviewedBy,
+      reviewedAt: identityVerificationsTable.reviewedAt,
+      createdAt: identityVerificationsTable.createdAt,
+      updatedAt: identityVerificationsTable.updatedAt,
+      email: usersTable.email,
+      displayName: usersTable.displayName,
+    })
+    .from(identityVerificationsTable)
+    .leftJoin(usersTable, eq(usersTable.id, identityVerificationsTable.userId))
+    .orderBy(desc(identityVerificationsTable.createdAt));
+
+  res.json(
+    rows.map((r) => ({
+      ...r,
+      reviewedAt: r.reviewedAt?.toISOString() ?? null,
+      createdAt: r.createdAt.toISOString(),
+      updatedAt: r.updatedAt.toISOString(),
+    }))
+  );
+});
+
+router.get("/identity-verifications/:id/photo/:side", async (req, res) => {
+  const id = Number(req.params.id);
+  const side = req.params.side;
+
+  const rows = await db
+    .select()
+    .from(identityVerificationsTable)
+    .where(eq(identityVerificationsTable.id, id));
+
+  if (!rows[0]) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const path = side === "front" ? rows[0].idFrontPath : rows[0].idBackPath;
+  if (!path) {
+    res.status(404).json({ error: "Photo not uploaded" });
+    return;
+  }
+
+  const { ObjectStorageService } = await import("../lib/objectStorage");
+  const storageSvc = new ObjectStorageService();
+  const file = await storageSvc.getObjectEntityFile(path);
+  const response = await storageSvc.downloadObject(file);
+  const buf = Buffer.from(await response.arrayBuffer());
+  res.set("Content-Type", response.headers.get("Content-Type") ?? "image/jpeg");
+  res.set("Cache-Control", "private, max-age=3600");
+  res.send(buf);
+});
+
+router.patch("/identity-verifications/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const adminId = (req as any).userId as string;
+  const { action, reason } = req.body as { action?: string; reason?: string };
+
+  if (action !== "approve" && action !== "reject") {
+    res.status(400).json({ error: "action must be 'approve' or 'reject'" });
+    return;
+  }
+  if (action === "reject" && !reason?.trim()) {
+    res.status(400).json({ error: "reason is required when rejecting" });
+    return;
+  }
+
+  const rows = await db
+    .select()
+    .from(identityVerificationsTable)
+    .where(eq(identityVerificationsTable.id, id));
+
+  if (!rows[0]) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const newStatus = action === "approve" ? "verified" : "rejected";
+  await db
+    .update(identityVerificationsTable)
+    .set({
+      status: newStatus,
+      rejectionReason: action === "reject" ? reason!.trim() : null,
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(identityVerificationsTable.id, id));
+
+  const notifTitle =
+    action === "approve" ? "Identity Verified ✓" : "Identity Verification Rejected";
+  const notifMessage =
+    action === "approve"
+      ? "Your identity has been verified. You can now access Work mode in Gigs and Freelance."
+      : `Your identity verification was not approved. Reason: ${reason}`;
+
+  await db.insert(notificationsTable).values({
+    userId: rows[0].userId,
+    title: notifTitle,
+    message: notifMessage,
+  });
+
+  await logAction(adminId, `identity_${action}`, `id=${id},userId=${rows[0].userId}`);
+  res.json({ ok: true, status: newStatus });
 });
 
 export default router;

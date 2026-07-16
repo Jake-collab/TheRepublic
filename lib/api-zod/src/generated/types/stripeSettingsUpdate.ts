@@ -15,4 +15,8 @@ export interface StripeSettingsUpdate {
   annualPriceId?: string;
   monthlyPriceCents?: number;
   annualPriceCents?: number;
+  webPriceId?: string;
+  webMonthlyCents?: number;
+  proMonthlyPriceId?: string;
+  proMonthlyCents?: number;
 }

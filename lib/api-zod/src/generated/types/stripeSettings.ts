@@ -15,5 +15,11 @@ export interface StripeSettings {
   annualPriceId?: string | null;
   monthlyPriceCents: number;
   annualPriceCents: number;
+  /** @nullable */
+  webPriceId?: string | null;
+  webMonthlyCents: number;
+  /** @nullable */
+  proMonthlyPriceId?: string | null;
+  proMonthlyCents: number;
   updatedAt?: string;
 }

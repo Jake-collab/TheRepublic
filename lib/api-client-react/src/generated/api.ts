@@ -31,6 +31,7 @@ import type {
   AdminListTalkPostsParams,
   AdminListUsersParams,
   AdminListWebsitesParams,
+  AdminReviewIdentityVerification200,
   AdminSendTicketEmail200,
   AdminStats,
   AdminTalkCategory,
@@ -88,6 +89,12 @@ import type {
   GigMessage,
   GigMessageInput,
   HealthStatus,
+  IdentityUploadUrlRequest,
+  IdentityUploadUrlResponse,
+  IdentityVerification,
+  IdentityVerificationAction,
+  IdentityVerificationAdmin,
+  IdentityVerificationSubmit,
   ListCitizenVotePostsParams,
   ListFreelanceProjectsParams,
   ListGigJobsParams,
@@ -108,6 +115,7 @@ import type {
   ResyncSubscriptionResult,
   StripeSettings,
   StripeSettingsUpdate,
+  SubmitIdentityVerification201,
   SupportTicket,
   SupportTicketAdminUpdate,
   SupportTicketInput,
@@ -3843,6 +3851,374 @@ export const useAdminUpdateAppConfig = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminUpdateAppConfigMutationOptions(options));
+    }
+
+export const getGetUserIdentityUrl = () => {
+
+
+
+
+  return `/api/user/identity`
+}
+
+/**
+ * @summary Get current user's identity verification status
+ */
+export const getUserIdentity = async ( options?: RequestInit): Promise<IdentityVerification> => {
+
+  return customFetch<IdentityVerification>(getGetUserIdentityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUserIdentityQueryKey = () => {
+    return [
+    `/api/user/identity`
+    ] as const;
+    }
+
+
+export const getGetUserIdentityQueryOptions = <TData = Awaited<ReturnType<typeof getUserIdentity>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserIdentity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUserIdentityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserIdentity>>> = ({ signal }) => getUserIdentity({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserIdentity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUserIdentityQueryResult = NonNullable<Awaited<ReturnType<typeof getUserIdentity>>>
+export type GetUserIdentityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current user's identity verification status
+ */
+
+export function useGetUserIdentity<TData = Awaited<ReturnType<typeof getUserIdentity>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserIdentity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUserIdentityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSubmitIdentityVerificationUrl = () => {
+
+
+
+
+  return `/api/user/identity`
+}
+
+/**
+ * @summary Submit or re-submit identity verification
+ */
+export const submitIdentityVerification = async (identityVerificationSubmit: IdentityVerificationSubmit, options?: RequestInit): Promise<SubmitIdentityVerification201> => {
+
+  return customFetch<SubmitIdentityVerification201>(getSubmitIdentityVerificationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      identityVerificationSubmit,)
+  }
+);}
+
+
+
+
+export const getSubmitIdentityVerificationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitIdentityVerification>>, TError,{data: BodyType<IdentityVerificationSubmit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitIdentityVerification>>, TError,{data: BodyType<IdentityVerificationSubmit>}, TContext> => {
+
+const mutationKey = ['submitIdentityVerification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitIdentityVerification>>, {data: BodyType<IdentityVerificationSubmit>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitIdentityVerification(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitIdentityVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof submitIdentityVerification>>>
+    export type SubmitIdentityVerificationMutationBody = BodyType<IdentityVerificationSubmit>
+    export type SubmitIdentityVerificationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit or re-submit identity verification
+ */
+export const useSubmitIdentityVerification = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitIdentityVerification>>, TError,{data: BodyType<IdentityVerificationSubmit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitIdentityVerification>>,
+        TError,
+        {data: BodyType<IdentityVerificationSubmit>},
+        TContext
+      > => {
+      return useMutation(getSubmitIdentityVerificationMutationOptions(options));
+    }
+
+export const getRequestIdentityUploadUrlUrl = () => {
+
+
+
+
+  return `/api/user/identity/upload-url`
+}
+
+/**
+ * @summary Request a presigned URL to upload an ID photo
+ */
+export const requestIdentityUploadUrl = async (identityUploadUrlRequest: IdentityUploadUrlRequest, options?: RequestInit): Promise<IdentityUploadUrlResponse> => {
+
+  return customFetch<IdentityUploadUrlResponse>(getRequestIdentityUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      identityUploadUrlRequest,)
+  }
+);}
+
+
+
+
+export const getRequestIdentityUploadUrlMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestIdentityUploadUrl>>, TError,{data: BodyType<IdentityUploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestIdentityUploadUrl>>, TError,{data: BodyType<IdentityUploadUrlRequest>}, TContext> => {
+
+const mutationKey = ['requestIdentityUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestIdentityUploadUrl>>, {data: BodyType<IdentityUploadUrlRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestIdentityUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestIdentityUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestIdentityUploadUrl>>>
+    export type RequestIdentityUploadUrlMutationBody = BodyType<IdentityUploadUrlRequest>
+    export type RequestIdentityUploadUrlMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Request a presigned URL to upload an ID photo
+ */
+export const useRequestIdentityUploadUrl = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestIdentityUploadUrl>>, TError,{data: BodyType<IdentityUploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestIdentityUploadUrl>>,
+        TError,
+        {data: BodyType<IdentityUploadUrlRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestIdentityUploadUrlMutationOptions(options));
+    }
+
+export const getAdminListIdentityVerificationsUrl = () => {
+
+
+
+
+  return `/api/admin/identity-verifications`
+}
+
+/**
+ * @summary List all identity verification requests
+ */
+export const adminListIdentityVerifications = async ( options?: RequestInit): Promise<IdentityVerificationAdmin[]> => {
+
+  return customFetch<IdentityVerificationAdmin[]>(getAdminListIdentityVerificationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListIdentityVerificationsQueryKey = () => {
+    return [
+    `/api/admin/identity-verifications`
+    ] as const;
+    }
+
+
+export const getAdminListIdentityVerificationsQueryOptions = <TData = Awaited<ReturnType<typeof adminListIdentityVerifications>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListIdentityVerifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListIdentityVerificationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListIdentityVerifications>>> = ({ signal }) => adminListIdentityVerifications({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListIdentityVerifications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListIdentityVerificationsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListIdentityVerifications>>>
+export type AdminListIdentityVerificationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all identity verification requests
+ */
+
+export function useAdminListIdentityVerifications<TData = Awaited<ReturnType<typeof adminListIdentityVerifications>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListIdentityVerifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListIdentityVerificationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminReviewIdentityVerificationUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/identity-verifications/${id}`
+}
+
+/**
+ * @summary Approve or reject an identity verification
+ */
+export const adminReviewIdentityVerification = async (id: number,
+    identityVerificationAction: IdentityVerificationAction, options?: RequestInit): Promise<AdminReviewIdentityVerification200> => {
+
+  return customFetch<AdminReviewIdentityVerification200>(getAdminReviewIdentityVerificationUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      identityVerificationAction,)
+  }
+);}
+
+
+
+
+export const getAdminReviewIdentityVerificationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminReviewIdentityVerification>>, TError,{id: number;data: BodyType<IdentityVerificationAction>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminReviewIdentityVerification>>, TError,{id: number;data: BodyType<IdentityVerificationAction>}, TContext> => {
+
+const mutationKey = ['adminReviewIdentityVerification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminReviewIdentityVerification>>, {id: number;data: BodyType<IdentityVerificationAction>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminReviewIdentityVerification(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminReviewIdentityVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof adminReviewIdentityVerification>>>
+    export type AdminReviewIdentityVerificationMutationBody = BodyType<IdentityVerificationAction>
+    export type AdminReviewIdentityVerificationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve or reject an identity verification
+ */
+export const useAdminReviewIdentityVerification = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminReviewIdentityVerification>>, TError,{id: number;data: BodyType<IdentityVerificationAction>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminReviewIdentityVerification>>,
+        TError,
+        {id: number;data: BodyType<IdentityVerificationAction>},
+        TContext
+      > => {
+      return useMutation(getAdminReviewIdentityVerificationMutationOptions(options));
     }
 
 export const getAdminGetStripeSettingsUrl = () => {

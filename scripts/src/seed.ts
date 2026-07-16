@@ -1,17 +1,17 @@
 import { db } from "@workspace/db";
-import { categories, websites } from "@workspace/db/schema";
+import { categoriesTable as categories, websitesTable as websites } from "@workspace/db/schema";
 
 const CATEGORIES_DATA = [
-  { name: "Food & Delivery", slug: "food-delivery", sortOrder: 1 },
-  { name: "Gig Work", slug: "gig-work", sortOrder: 2 },
-  { name: "Jobs", slug: "jobs", sortOrder: 3 },
-  { name: "Shopping", slug: "shopping", sortOrder: 4 },
-  { name: "Entertainment", slug: "entertainment", sortOrder: 5 },
-  { name: "Travel & Rentals", slug: "travel-rentals", sortOrder: 6 },
-  { name: "Events & Tickets", slug: "events-tickets", sortOrder: 7 },
-  { name: "Finance", slug: "finance", sortOrder: 8 },
-  { name: "News", slug: "news", sortOrder: 9 },
-  { name: "Social", slug: "social", sortOrder: 10 },
+  { name: "Food & Delivery", sortOrder: 1 },
+  { name: "Gig Work", sortOrder: 2 },
+  { name: "Jobs", sortOrder: 3 },
+  { name: "Shopping", sortOrder: 4 },
+  { name: "Entertainment", sortOrder: 5 },
+  { name: "Travel & Rentals", sortOrder: 6 },
+  { name: "Events & Tickets", sortOrder: 7 },
+  { name: "Finance", sortOrder: 8 },
+  { name: "News", sortOrder: 9 },
+  { name: "Social", sortOrder: 10 },
 ];
 
 async function seed() {
@@ -28,15 +28,26 @@ async function seed() {
   const catMap: Record<string, number> = {};
   const allCats = await db.select().from(categories);
   for (const c of allCats) {
-    catMap[c.slug] = c.id;
+    catMap[c.name] = c.id;
   }
+
+  const fd = catMap["Food & Delivery"]!;
+  const gw = catMap["Gig Work"]!;
+  const jo = catMap["Jobs"]!;
+  const sh = catMap["Shopping"]!;
+  const en = catMap["Entertainment"]!;
+  const tr = catMap["Travel & Rentals"]!;
+  const ev = catMap["Events & Tickets"]!;
+  const fi = catMap["Finance"]!;
+  const so = catMap["Social"]!;
 
   const WEBSITES_DATA = [
     // Free (10)
     {
       name: "Instacart",
       url: "https://www.instacart.com",
-      categoryId: catMap["food-delivery"]!,
+      displayDomain: "instacart.com",
+      categoryId: fd,
       isFree: true,
       sortOrder: 1,
       description: "Grocery delivery from local stores",
@@ -44,7 +55,8 @@ async function seed() {
     {
       name: "Uber Eats",
       url: "https://www.ubereats.com",
-      categoryId: catMap["food-delivery"]!,
+      displayDomain: "ubereats.com",
+      categoryId: fd,
       isFree: true,
       sortOrder: 2,
       description: "Food delivery from restaurants near you",
@@ -52,7 +64,8 @@ async function seed() {
     {
       name: "TaskRabbit",
       url: "https://www.taskrabbit.com",
-      categoryId: catMap["gig-work"]!,
+      displayDomain: "taskrabbit.com",
+      categoryId: gw,
       isFree: true,
       sortOrder: 3,
       description: "Hire trusted local handypeople",
@@ -60,7 +73,8 @@ async function seed() {
     {
       name: "Freelancer",
       url: "https://www.freelancer.com",
-      categoryId: catMap["gig-work"]!,
+      displayDomain: "freelancer.com",
+      categoryId: gw,
       isFree: true,
       sortOrder: 4,
       description: "Find freelance jobs and hire talent",
@@ -68,7 +82,8 @@ async function seed() {
     {
       name: "ZipRecruiter",
       url: "https://www.ziprecruiter.com",
-      categoryId: catMap["jobs"]!,
+      displayDomain: "ziprecruiter.com",
+      categoryId: jo,
       isFree: true,
       sortOrder: 5,
       description: "Job search and hiring platform",
@@ -76,7 +91,8 @@ async function seed() {
     {
       name: "OfferUp",
       url: "https://offerup.com",
-      categoryId: catMap["shopping"]!,
+      displayDomain: "offerup.com",
+      categoryId: sh,
       isFree: true,
       sortOrder: 6,
       description: "Buy and sell locally",
@@ -84,7 +100,8 @@ async function seed() {
     {
       name: "Vrbo",
       url: "https://www.vrbo.com",
-      categoryId: catMap["travel-rentals"]!,
+      displayDomain: "vrbo.com",
+      categoryId: tr,
       isFree: true,
       sortOrder: 7,
       description: "Vacation rentals for families",
@@ -92,7 +109,8 @@ async function seed() {
     {
       name: "YouTube",
       url: "https://www.youtube.com",
-      categoryId: catMap["entertainment"]!,
+      displayDomain: "youtube.com",
+      categoryId: en,
       isFree: true,
       sortOrder: 8,
       description: "Video sharing and streaming",
@@ -100,7 +118,8 @@ async function seed() {
     {
       name: "SeatGeek",
       url: "https://seatgeek.com",
-      categoryId: catMap["events-tickets"]!,
+      displayDomain: "seatgeek.com",
+      categoryId: ev,
       isFree: true,
       sortOrder: 9,
       description: "Tickets for sports, concerts & more",
@@ -108,16 +127,18 @@ async function seed() {
     {
       name: "Walmart",
       url: "https://www.walmart.com",
-      categoryId: catMap["shopping"]!,
+      displayDomain: "walmart.com",
+      categoryId: sh,
       isFree: true,
       sortOrder: 10,
       description: "Everyday low prices, online & in-store",
     },
-    // Pro sites
+    // Pro (17)
     {
       name: "DoorDash",
       url: "https://www.doordash.com",
-      categoryId: catMap["food-delivery"]!,
+      displayDomain: "doordash.com",
+      categoryId: fd,
       isFree: false,
       sortOrder: 11,
       description: "Restaurant delivery at your door",
@@ -125,7 +146,8 @@ async function seed() {
     {
       name: "Grubhub",
       url: "https://www.grubhub.com",
-      categoryId: catMap["food-delivery"]!,
+      displayDomain: "grubhub.com",
+      categoryId: fd,
       isFree: false,
       sortOrder: 12,
       description: "Order food online from local restaurants",
@@ -133,7 +155,8 @@ async function seed() {
     {
       name: "Fiverr",
       url: "https://www.fiverr.com",
-      categoryId: catMap["gig-work"]!,
+      displayDomain: "fiverr.com",
+      categoryId: gw,
       isFree: false,
       sortOrder: 13,
       description: "Freelance services marketplace",
@@ -141,7 +164,8 @@ async function seed() {
     {
       name: "Upwork",
       url: "https://www.upwork.com",
-      categoryId: catMap["gig-work"]!,
+      displayDomain: "upwork.com",
+      categoryId: gw,
       isFree: false,
       sortOrder: 14,
       description: "Top freelance marketplace for businesses",
@@ -149,7 +173,8 @@ async function seed() {
     {
       name: "Indeed",
       url: "https://www.indeed.com",
-      categoryId: catMap["jobs"]!,
+      displayDomain: "indeed.com",
+      categoryId: jo,
       isFree: false,
       sortOrder: 15,
       description: "World's #1 job site",
@@ -157,7 +182,8 @@ async function seed() {
     {
       name: "LinkedIn",
       url: "https://www.linkedin.com",
-      categoryId: catMap["jobs"]!,
+      displayDomain: "linkedin.com",
+      categoryId: jo,
       isFree: false,
       sortOrder: 16,
       description: "Professional networking and jobs",
@@ -165,7 +191,8 @@ async function seed() {
     {
       name: "Amazon",
       url: "https://www.amazon.com",
-      categoryId: catMap["shopping"]!,
+      displayDomain: "amazon.com",
+      categoryId: sh,
       isFree: false,
       sortOrder: 17,
       description: "Earth's biggest selection",
@@ -173,7 +200,8 @@ async function seed() {
     {
       name: "eBay",
       url: "https://www.ebay.com",
-      categoryId: catMap["shopping"]!,
+      displayDomain: "ebay.com",
+      categoryId: sh,
       isFree: false,
       sortOrder: 18,
       description: "Buy and sell electronics, cars, clothing",
@@ -181,7 +209,8 @@ async function seed() {
     {
       name: "Airbnb",
       url: "https://www.airbnb.com",
-      categoryId: catMap["travel-rentals"]!,
+      displayDomain: "airbnb.com",
+      categoryId: tr,
       isFree: false,
       sortOrder: 19,
       description: "Book unique homes and experiences",
@@ -189,7 +218,8 @@ async function seed() {
     {
       name: "Expedia",
       url: "https://www.expedia.com",
-      categoryId: catMap["travel-rentals"]!,
+      displayDomain: "expedia.com",
+      categoryId: tr,
       isFree: false,
       sortOrder: 20,
       description: "Flights, hotels, cars, and vacation packages",
@@ -197,7 +227,8 @@ async function seed() {
     {
       name: "Netflix",
       url: "https://www.netflix.com",
-      categoryId: catMap["entertainment"]!,
+      displayDomain: "netflix.com",
+      categoryId: en,
       isFree: false,
       sortOrder: 21,
       description: "Watch TV shows and movies online",
@@ -205,7 +236,8 @@ async function seed() {
     {
       name: "Ticketmaster",
       url: "https://www.ticketmaster.com",
-      categoryId: catMap["events-tickets"]!,
+      displayDomain: "ticketmaster.com",
+      categoryId: ev,
       isFree: false,
       sortOrder: 22,
       description: "Official ticket marketplace",
@@ -213,7 +245,8 @@ async function seed() {
     {
       name: "StubHub",
       url: "https://www.stubhub.com",
-      categoryId: catMap["events-tickets"]!,
+      displayDomain: "stubhub.com",
+      categoryId: ev,
       isFree: false,
       sortOrder: 23,
       description: "World's largest ticket marketplace",
@@ -221,7 +254,8 @@ async function seed() {
     {
       name: "Robinhood",
       url: "https://robinhood.com",
-      categoryId: catMap["finance"]!,
+      displayDomain: "robinhood.com",
+      categoryId: fi,
       isFree: false,
       sortOrder: 24,
       description: "Invest in stocks, ETFs & crypto",
@@ -229,7 +263,8 @@ async function seed() {
     {
       name: "Coinbase",
       url: "https://www.coinbase.com",
-      categoryId: catMap["finance"]!,
+      displayDomain: "coinbase.com",
+      categoryId: fi,
       isFree: false,
       sortOrder: 25,
       description: "Buy, sell and manage cryptocurrency",
@@ -237,7 +272,8 @@ async function seed() {
     {
       name: "Reddit",
       url: "https://www.reddit.com",
-      categoryId: catMap["social"]!,
+      displayDomain: "reddit.com",
+      categoryId: so,
       isFree: false,
       sortOrder: 26,
       description: "The front page of the internet",
@@ -245,7 +281,8 @@ async function seed() {
     {
       name: "X (Twitter)",
       url: "https://x.com",
-      categoryId: catMap["social"]!,
+      displayDomain: "x.com",
+      categoryId: so,
       isFree: false,
       sortOrder: 27,
       description: "Real-time news and social platform",

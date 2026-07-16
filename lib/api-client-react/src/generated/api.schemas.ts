@@ -255,6 +255,12 @@ export interface StripeSettings {
   annualPriceId?: string | null;
   monthlyPriceCents: number;
   annualPriceCents: number;
+  /** @nullable */
+  webPriceId?: string | null;
+  webMonthlyCents: number;
+  /** @nullable */
+  proMonthlyPriceId?: string | null;
+  proMonthlyCents: number;
   updatedAt?: string;
 }
 
@@ -267,6 +273,10 @@ export interface StripeSettingsUpdate {
   annualPriceId?: string;
   monthlyPriceCents?: number;
   annualPriceCents?: number;
+  webPriceId?: string;
+  webMonthlyCents?: number;
+  proMonthlyPriceId?: string;
+  proMonthlyCents?: number;
 }
 
 export interface WebsitePref {
@@ -1080,6 +1090,112 @@ export interface FreelanceMilestoneUpdate {
   status: string;
 }
 
+export type IdentityVerificationStatus = typeof IdentityVerificationStatus[keyof typeof IdentityVerificationStatus];
+
+
+export const IdentityVerificationStatus = {
+  unverified: 'unverified',
+  pending: 'pending',
+  verified: 'verified',
+  rejected: 'rejected',
+} as const;
+
+export interface IdentityVerification {
+  /** @nullable */
+  id?: number | null;
+  status: IdentityVerificationStatus;
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  dob?: string | null;
+  /** @nullable */
+  addressLine1?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
+  zip?: string | null;
+  /** @nullable */
+  rejectionReason?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export interface IdentityVerificationSubmit {
+  fullName: string;
+  dob: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  zip: string;
+  idFrontPath: string;
+  idBackPath: string;
+}
+
+export interface IdentityUploadUrlRequest {
+  contentType: string;
+}
+
+export interface IdentityUploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export type IdentityVerificationAdminStatus = typeof IdentityVerificationAdminStatus[keyof typeof IdentityVerificationAdminStatus];
+
+
+export const IdentityVerificationAdminStatus = {
+  pending: 'pending',
+  verified: 'verified',
+  rejected: 'rejected',
+} as const;
+
+export interface IdentityVerificationAdmin {
+  id: number;
+  userId: string;
+  status: IdentityVerificationAdminStatus;
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  dob?: string | null;
+  /** @nullable */
+  addressLine1?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
+  zip?: string | null;
+  /** @nullable */
+  rejectionReason?: string | null;
+  /** @nullable */
+  reviewedBy?: string | null;
+  /** @nullable */
+  reviewedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  displayName?: string | null;
+}
+
+export type IdentityVerificationActionAction = typeof IdentityVerificationActionAction[keyof typeof IdentityVerificationActionAction];
+
+
+export const IdentityVerificationActionAction = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface IdentityVerificationAction {
+  action: IdentityVerificationActionAction;
+  reason?: string;
+}
+
 export interface FreelanceMessage {
   id: number;
   projectId: number;
@@ -1142,6 +1258,15 @@ categoryId?: number | null;
 export type AdminListUsersParams = {
 page?: number;
 limit?: number;
+};
+
+export type SubmitIdentityVerification201 = {
+  status: string;
+};
+
+export type AdminReviewIdentityVerification200 = {
+  ok: boolean;
+  status: string;
 };
 
 export type AdminListSupportTicketsParams = {

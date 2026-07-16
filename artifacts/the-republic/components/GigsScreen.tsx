@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 import { useUser } from "@clerk/expo";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
+import { useRouter } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -47,6 +48,8 @@ import {
   getListMyGigApplicationsQueryKey,
   getGetGigJobQueryKey,
   getListGigMessagesQueryKey,
+  useGetUserIdentity,
+  getGetUserIdentityQueryKey,
 } from "@workspace/api-client-react";
 import type {
   GigJob,
@@ -1208,9 +1211,32 @@ export default function GigsScreen({ onOpenDrawer }: { onOpenDrawer: () => void 
   const { user, isLoaded } = useUser();
   const qc = useQueryClient();
 
+  const router = useRouter();
+  const { data: identity } = useGetUserIdentity({
+    query: { queryKey: getGetUserIdentityQueryKey() },
+  });
+
   const [mode, setMode] = useState<Mode>("hire");
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [locationLabel, setLocationLabel] = useState<string>("Detecting location…");
+
+  const handleModeChange = useCallback(
+    (m: Mode) => {
+      if (m === "work" && identity?.status !== "verified") {
+        Alert.alert(
+          "Identity Verification Required",
+          "You must verify your identity before accessing Work mode. This protects both hirers and workers on the platform.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Verify Now", onPress: () => router.push("/identity-verification") },
+          ]
+        );
+        return;
+      }
+      setMode(m);
+    },
+    [identity?.status, router]
+  );
 
   // modal state
   const [showPost, setShowPost] = useState(false);
@@ -1303,7 +1329,7 @@ export default function GigsScreen({ onOpenDrawer }: { onOpenDrawer: () => void 
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>
           {mode === "hire" ? "Gigs" : "Find Work"}
         </Text>
-        <ModeToggle mode={mode} onChange={setMode} />
+        <ModeToggle mode={mode} onChange={handleModeChange} />
       </View>
 
       {/* ── Category chips ── */}

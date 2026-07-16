@@ -16,3 +16,4 @@ export * from "./appSettings";
 export * from "./marketplace";
 export * from "./gigs";
 export * from "./freelance";
+export * from "./identityVerifications";

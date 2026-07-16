@@ -24,6 +24,7 @@ import Discussions from "@/pages/discussions";
 import Moderation from "@/pages/moderation";
 import Analytics from "@/pages/analytics";
 import AppConfig from "@/pages/app-config";
+import IdentityVerifications from "@/pages/identity-verifications";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -180,6 +181,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/moderation" component={() => <ProtectedRoute component={Moderation} />} />
           <Route path="/analytics" component={() => <ProtectedRoute component={Analytics} />} />
           <Route path="/app-config" component={() => <ProtectedRoute component={AppConfig} />} />
+          <Route path="/identity-verifications" component={() => <ProtectedRoute component={IdentityVerifications} />} />
 
           <Route component={NotFound} />
         </Switch>

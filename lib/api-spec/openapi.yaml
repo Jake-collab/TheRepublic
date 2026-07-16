@@ -925,6 +925,112 @@ paths:
               schema:
                 $ref: "#/components/schemas/AppConfig"
 
+  # ── Identity Verification ─────────────────────────────────────────────────────
+  /user/identity:
+    get:
+      operationId: getUserIdentity
+      tags: [user]
+      summary: Get current user's identity verification status
+      security:
+        - ClerkAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityVerification"
+    post:
+      operationId: submitIdentityVerification
+      tags: [user]
+      summary: Submit or re-submit identity verification
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityVerificationSubmit"
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+
+  /user/identity/upload-url:
+    post:
+      operationId: requestIdentityUploadUrl
+      tags: [user]
+      summary: Request a presigned URL to upload an ID photo
+      security:
+        - ClerkAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityUploadUrlRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityUploadUrlResponse"
+
+  /admin/identity-verifications:
+    get:
+      operationId: adminListIdentityVerifications
+      tags: [admin]
+      summary: List all identity verification requests
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IdentityVerificationAdmin"
+
+  /admin/identity-verifications/{id}:
+    patch:
+      operationId: adminReviewIdentityVerification
+      tags: [admin]
+      summary: Approve or reject an identity verification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityVerificationAction"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, status]
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: string
+
   # ── Admin: Stripe Settings ────────────────────────────────────────────────────
   /admin/stripe-settings:
     get:
@@ -2741,7 +2847,7 @@ components:
 
     StripeSettings:
       type: object
-      required: [secretKeyConfigured, webhookSecretConfigured, monthlyPriceCents, annualPriceCents]
+      required: [secretKeyConfigured, webhookSecretConfigured, monthlyPriceCents, annualPriceCents, webMonthlyCents, proMonthlyCents]
       properties:
         secretKeyConfigured:
           type: boolean
@@ -2754,6 +2860,14 @@ components:
         monthlyPriceCents:
           type: integer
         annualPriceCents:
+          type: integer
+        webPriceId:
+          type: ["string", "null"]
+        webMonthlyCents:
+          type: integer
+        proMonthlyPriceId:
+          type: ["string", "null"]
+        proMonthlyCents:
           type: integer
         updatedAt:
           type: string
@@ -2772,6 +2886,14 @@ components:
         monthlyPriceCents:
           type: integer
         annualPriceCents:
+          type: integer
+        webPriceId:
+          type: string
+        webMonthlyCents:
+          type: integer
+        proMonthlyPriceId:
+          type: string
+        proMonthlyCents:
           type: integer
 
     # ── User Website Preferences ─────────────────────────────────────────────────
@@ -4154,6 +4276,124 @@ components:
       required: [status]
       properties:
         status:
+          type: string
+
+    IdentityVerification:
+      type: object
+      required: [status]
+      properties:
+        id:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [unverified, pending, verified, rejected]
+        fullName:
+          type: ["string", "null"]
+        dob:
+          type: ["string", "null"]
+        addressLine1:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
+        zip:
+          type: ["string", "null"]
+        rejectionReason:
+          type: ["string", "null"]
+        createdAt:
+          type: ["string", "null"]
+          format: date-time
+        updatedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    IdentityVerificationSubmit:
+      type: object
+      required: [fullName, dob, addressLine1, city, state, zip, idFrontPath, idBackPath]
+      properties:
+        fullName:
+          type: string
+        dob:
+          type: string
+        addressLine1:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        idFrontPath:
+          type: string
+        idBackPath:
+          type: string
+
+    IdentityUploadUrlRequest:
+      type: object
+      required: [contentType]
+      properties:
+        contentType:
+          type: string
+
+    IdentityUploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+
+    IdentityVerificationAdmin:
+      type: object
+      required: [id, userId, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        status:
+          type: string
+          enum: [pending, verified, rejected]
+        fullName:
+          type: ["string", "null"]
+        dob:
+          type: ["string", "null"]
+        addressLine1:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
+        zip:
+          type: ["string", "null"]
+        rejectionReason:
+          type: ["string", "null"]
+        reviewedBy:
+          type: ["string", "null"]
+        reviewedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        email:
+          type: ["string", "null"]
+        displayName:
+          type: ["string", "null"]
+
+    IdentityVerificationAction:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [approve, reject]
+        reason:
           type: string
 
     FreelanceMessage:

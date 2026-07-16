@@ -23,12 +23,21 @@ export default function StripeSettingsPage() {
 
   const [secretKey, setSecretKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+
+  // Legacy pricing
   const [monthlyPriceId, setMonthlyPriceId] = useState("");
   const [annualPriceId, setAnnualPriceId] = useState("");
   const [monthlyPrice, setMonthlyPrice] = useState("");
   const [annualPrice, setAnnualPrice] = useState("");
-  const [showSecretKey, setShowSecretKey] = useState(false);
-  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+
+  // Tiered pricing (Section 6)
+  const [webPriceId, setWebPriceId] = useState("");
+  const [webPrice, setWebPrice] = useState("");
+  const [proMonthlyPriceId, setProMonthlyPriceId] = useState("");
+  const [proPrice, setProPrice] = useState("");
+
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -38,14 +47,23 @@ export default function StripeSettingsPage() {
       setAnnualPriceId(settings.annualPriceId ?? "");
       setMonthlyPrice(centsToDisplay(settings.monthlyPriceCents));
       setAnnualPrice(centsToDisplay(settings.annualPriceCents));
+      setWebPriceId(settings.webPriceId ?? "");
+      setWebPrice(centsToDisplay(settings.webMonthlyCents));
+      setProMonthlyPriceId(settings.proMonthlyPriceId ?? "");
+      setProPrice(centsToDisplay(settings.proMonthlyCents));
     }
   }, [settings]);
 
   const handleSave = async () => {
     const monthlyPriceCents = Math.round(parseFloat(monthlyPrice) * 100);
     const annualPriceCents = Math.round(parseFloat(annualPrice) * 100);
+    const webMonthlyCents = Math.round(parseFloat(webPrice) * 100);
+    const proMonthlyCents = Math.round(parseFloat(proPrice) * 100);
 
-    if (isNaN(monthlyPriceCents) || isNaN(annualPriceCents)) {
+    if (
+      isNaN(monthlyPriceCents) || isNaN(annualPriceCents) ||
+      isNaN(webMonthlyCents) || isNaN(proMonthlyCents)
+    ) {
       toast({ title: "Invalid prices", description: "Please enter valid dollar amounts.", variant: "destructive" });
       return;
     }
@@ -59,6 +77,10 @@ export default function StripeSettingsPage() {
           annualPriceId: annualPriceId || undefined,
           monthlyPriceCents,
           annualPriceCents,
+          webPriceId: webPriceId || undefined,
+          webMonthlyCents,
+          proMonthlyPriceId: proMonthlyPriceId || undefined,
+          proMonthlyCents,
         }
       });
       setSecretKey("");
@@ -94,6 +116,7 @@ export default function StripeSettingsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
+          {/* Credentials */}
           <Card>
             <CardHeader>
               <CardTitle>Credentials</CardTitle>
@@ -162,11 +185,79 @@ export default function StripeSettingsPage() {
             </CardContent>
           </Card>
 
+          {/* Tiered Pricing */}
           <Card>
             <CardHeader>
-              <CardTitle>Pricing</CardTitle>
+              <CardTitle>Tiered Pricing</CardTitle>
               <CardDescription>
-                Stripe Price IDs from your Stripe dashboard (Products → Prices). Dollar amounts are shown to users in the app.
+                Price IDs and amounts for the Web and Pro membership tiers. Create these in your Stripe Dashboard under Products → Prices.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Web Tier — Price ID</Label>
+                  <Input
+                    placeholder="price_1abc..."
+                    value={webPriceId}
+                    onChange={e => setWebPriceId(e.target.value)}
+                    className="font-mono text-sm"
+                    spellCheck={false}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Web Tier — Monthly Price ($)</Label>
+                  <div className="flex">
+                    <span className="flex items-center px-3 border border-r-0 rounded-l-md bg-muted text-muted-foreground text-sm">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="2.99"
+                      value={webPrice}
+                      onChange={e => setWebPrice(e.target.value)}
+                      className="rounded-l-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Pro Tier — Price ID</Label>
+                  <Input
+                    placeholder="price_1abc..."
+                    value={proMonthlyPriceId}
+                    onChange={e => setProMonthlyPriceId(e.target.value)}
+                    className="font-mono text-sm"
+                    spellCheck={false}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Pro Tier — Monthly Price ($)</Label>
+                  <div className="flex">
+                    <span className="flex items-center px-3 border border-r-0 rounded-l-md bg-muted text-muted-foreground text-sm">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="4.99"
+                      value={proPrice}
+                      onChange={e => setProPrice(e.target.value)}
+                      className="rounded-l-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Legacy Pricing */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Legacy Pricing</CardTitle>
+              <CardDescription>
+                Original monthly/annual pricing (kept for backwards compatibility).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

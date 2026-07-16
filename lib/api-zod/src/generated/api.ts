@@ -870,6 +870,94 @@ export const AdminUpdateAppConfigResponse = zod.object({
 
 
 /**
+ * @summary Get current user's identity verification status
+ */
+export const GetUserIdentityResponse = zod.object({
+  "id": zod.number().nullish(),
+  "status": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
+  "fullName": zod.string().nullish(),
+  "dob": zod.string().nullish(),
+  "addressLine1": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "zip": zod.string().nullish(),
+  "rejectionReason": zod.string().nullish(),
+  "createdAt": zod.coerce.date().nullish(),
+  "updatedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Submit or re-submit identity verification
+ */
+export const SubmitIdentityVerificationBody = zod.object({
+  "fullName": zod.string(),
+  "dob": zod.string(),
+  "addressLine1": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "zip": zod.string(),
+  "idFrontPath": zod.string(),
+  "idBackPath": zod.string()
+})
+
+
+/**
+ * @summary Request a presigned URL to upload an ID photo
+ */
+export const RequestIdentityUploadUrlBody = zod.object({
+  "contentType": zod.string()
+})
+
+export const RequestIdentityUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary List all identity verification requests
+ */
+export const AdminListIdentityVerificationsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "status": zod.enum(['pending', 'verified', 'rejected']),
+  "fullName": zod.string().nullish(),
+  "dob": zod.string().nullish(),
+  "addressLine1": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "zip": zod.string().nullish(),
+  "rejectionReason": zod.string().nullish(),
+  "reviewedBy": zod.string().nullish(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "email": zod.string().nullish(),
+  "displayName": zod.string().nullish()
+})
+export const AdminListIdentityVerificationsResponse = zod.array(AdminListIdentityVerificationsResponseItem)
+
+
+/**
+ * @summary Approve or reject an identity verification
+ */
+export const AdminReviewIdentityVerificationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminReviewIdentityVerificationBody = zod.object({
+  "action": zod.enum(['approve', 'reject']),
+  "reason": zod.string().optional()
+})
+
+export const AdminReviewIdentityVerificationResponse = zod.object({
+  "ok": zod.boolean(),
+  "status": zod.string()
+})
+
+
+/**
  * @summary Get Stripe configuration (sensitive fields masked)
  */
 export const AdminGetStripeSettingsResponse = zod.object({
@@ -879,6 +967,10 @@ export const AdminGetStripeSettingsResponse = zod.object({
   "annualPriceId": zod.string().nullish(),
   "monthlyPriceCents": zod.number(),
   "annualPriceCents": zod.number(),
+  "webPriceId": zod.string().nullish(),
+  "webMonthlyCents": zod.number(),
+  "proMonthlyPriceId": zod.string().nullish(),
+  "proMonthlyCents": zod.number(),
   "updatedAt": zod.string().optional()
 })
 
@@ -892,7 +984,11 @@ export const AdminUpdateStripeSettingsBody = zod.object({
   "monthlyPriceId": zod.string().optional(),
   "annualPriceId": zod.string().optional(),
   "monthlyPriceCents": zod.number().optional(),
-  "annualPriceCents": zod.number().optional()
+  "annualPriceCents": zod.number().optional(),
+  "webPriceId": zod.string().optional(),
+  "webMonthlyCents": zod.number().optional(),
+  "proMonthlyPriceId": zod.string().optional(),
+  "proMonthlyCents": zod.number().optional()
 })
 
 export const AdminUpdateStripeSettingsResponse = zod.object({
@@ -902,6 +998,10 @@ export const AdminUpdateStripeSettingsResponse = zod.object({
   "annualPriceId": zod.string().nullish(),
   "monthlyPriceCents": zod.number(),
   "annualPriceCents": zod.number(),
+  "webPriceId": zod.string().nullish(),
+  "webMonthlyCents": zod.number(),
+  "proMonthlyPriceId": zod.string().nullish(),
+  "proMonthlyCents": zod.number(),
   "updatedAt": zod.string().optional()
 })
 

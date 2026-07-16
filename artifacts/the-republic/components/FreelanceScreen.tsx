@@ -9,6 +9,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useUser } from "@clerk/expo";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -48,6 +49,8 @@ import {
   getListMyFreelanceProjectsQueryKey,
   getListMyFreelanceBidsQueryKey,
   getListFreelanceMessagesQueryKey,
+  useGetUserIdentity,
+  getGetUserIdentityQueryKey,
 } from "@workspace/api-client-react";
 import type {
   FreelanceProject,
@@ -1277,8 +1280,31 @@ export default function FreelanceScreen({ onOpenDrawer }: { onOpenDrawer: () => 
   const { user, isLoaded } = useUser();
   const qc = useQueryClient();
 
+  const router = useRouter();
+  const { data: identity } = useGetUserIdentity({
+    query: { queryKey: getGetUserIdentityQueryKey() },
+  });
+
   const [mode, setMode] = useState<Mode>("hire");
   const [activeCat, setActiveCat] = useState<string>(FL_CATS[0].id);
+
+  const handleModeChange = useCallback(
+    (m: Mode) => {
+      if (m === "work" && identity?.status !== "verified") {
+        Alert.alert(
+          "Identity Verification Required",
+          "You must verify your identity before offering freelance services on the platform.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Verify Now", onPress: () => router.push("/identity-verification") },
+          ]
+        );
+        return;
+      }
+      setMode(m);
+    },
+    [identity?.status, router]
+  );
 
   // modal state
   const [showPost, setShowPost] = useState(false);
@@ -1346,7 +1372,7 @@ export default function FreelanceScreen({ onOpenDrawer }: { onOpenDrawer: () => 
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>
           {mode === "hire" ? "Freelance" : "Find Projects"}
         </Text>
-        <ModeToggle mode={mode} onChange={setMode} />
+        <ModeToggle mode={mode} onChange={handleModeChange} />
       </View>
 
       {/* ── Category tabs (both modes) ── */}
