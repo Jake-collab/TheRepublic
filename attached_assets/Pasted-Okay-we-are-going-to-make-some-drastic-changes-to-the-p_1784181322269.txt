@@ -1,0 +1,47 @@
+Okay we are going to make some drastic changes to the platform. you can make these instructions into multiple sections to be thorough. Please let me know your plan and I can tell you to go to the next section to complete the full UI,UX & logic for all the features/changes.
+
+Open tab menu from a three line button in the top left. (You can make the spell-out of ‘Republic’ at the top go away to make more space & keep the logo)’
+
+Default screen on buy item page showing the page of items for sale. So default top tab on the menu will be buy & next to it should show a sideways flip button that should say sell on the other site that flips to the sale page if the tab is pressed. The same thing should go for all the other tabs that the work or consumer provider is the flip tab button and the default is the consumer side. Below buy in the next tab should be ‘gigs’ (tab switch changes to the work page & default is the hire page) across the top where the webview tabs for this there should be all the categories of this topic (you can reference stuff that Angie’s list/thumbtack & task rabbit have), below that button option should be ‘Online Freelance’ same thing goes for that a filter tab thst saids work on the side for those pages to be able to list a post to go under a category and the default the hiring side with the categories across the top. You can reference sites like freelancer & fiverr for categories to use. Lastly the button below that should be ‘Jobs’ with the tab being flipped for ‘work’ & you can reference sites like indeed/zip recruiter. All the consumer side should have a working search function. As the bottom button in that navigation menu that will build functionality for later it should say ‘Medicine manufacturing teams’
+
+
+
+Please make the user flow contain ALL the logic necessary to browse or sign up & hire.
+
+For the gig side in the work section should just be a list of requested jobs , with category, description if clicked on, the total pay / or pay by time with also a filter for a radius from the users location. If pay by time this means that a user will need after confirming a job. Creates a private message with the hirer to confirm specificity  
+
+Some other stuff in the user flow for the logic you’ll have to consider — That there will also be a button to confirm on the job and the hirer has to at some point confirm a notifcation that’s when they were on the job and the same goes for when the job ends to make sure it’s a proper payout if it’s a pay by time
+
+
+On the opposite side the person hiring after clicking a category should be able to put in details about their request that would be applicable drop a pin on their place that should show a 5 mile radius of their place for display of the job when clicked on but it needs to encrypt the exact location so it’s not detectable until a user shares it in the app once hiree has accepted the job. 
+
+Every aspect of the process will need to send notifcations.
+
+
+$2.99 membership explcitit access to third-party websites - such as but not limited to stock investing exchanges, crypto investing exchanges, rentals, all types of ticket services, retail stores like Walmart & Target. Just nothing like the services provided on the platform like offer-up for in person selling, taskrabbit/thumbtack for gig work (& no delivery gig websites), freelancer/fiverr(for online freelancing), indeed/ziprecruiter (for job hiring/search) -> these should show 
+
+$4.99 membership fee for workers to not have a fee taken from their pay & also everything included in the $2.99 membership 
+
+
+1% transaction fee (capped at $20) for their consumer / purchaser & 5% for the worker if they don’t have a $4.99 membership 
+
+
+There will need to be a way to see the charges in a platform info section on their account page & in the transaction confirmation step that goes with the other payment & total amount breakdown. 
+
+
+For the talks section just like the website add/minimize/reorder screen where users can manage what websites display and the order for them there should be a list for what categories of the discussions to display& the order for them 
+
+Please require user to verify their account for each of the work sections by uploading their ID & submitting other personal information this information should be encrypted but accessible from the admin panel 
+
+
+Apply  the correlated aspects for all of the added features to the admin panel. Please also input extensive diagnostic testing for the expansive capability. 
+
+-i want you to take away the bottom navigation tab & move the talks tab to the top of the side navigation bar above buy/sell & on the talks screen you can take away the all tab & instead make the default tab for that section & when you open the app called ‘chat’ which would just be a generic category feed. 
+
+-make the webview options at the bottom (through the membership gateway) through another tab called ‘web’ 
+
+-for the buy section the display should be categories as header on the left above the items with sideways item scroll and a view all the right side which if clicked on shows the item of that category as a full page. 
+
+-Contrary to whatever i described The gigs display for consumer will show the categories across the screen (make it look good) / (since the jobs are picked up differently that while as in without a worker profile displaying) , but the online freelance will show the categories across the top and sideways tabs (make it look good) and each one clicked on will show the list of people to hire 
+
+Also input & correlate all loading efficiencies. 
