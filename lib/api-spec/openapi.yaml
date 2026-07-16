@@ -1794,6 +1794,109 @@ paths:
               schema:
                 $ref: "#/components/schemas/TalkComment"
 
+  /marketplace/listings:
+    get:
+      operationId: listMarketplaceListings
+      tags: [marketplace]
+      summary: List marketplace listings (paginated, active only)
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: cursor
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 24
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceListingsPage"
+    post:
+      operationId: createMarketplaceListing
+      tags: [marketplace]
+      summary: Create a new marketplace listing (auth required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketplaceListingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceListing"
+
+  /marketplace/listings/{id}:
+    get:
+      operationId: getMarketplaceListing
+      tags: [marketplace]
+      summary: Get a single marketplace listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceListing"
+    patch:
+      operationId: updateMarketplaceListing
+      tags: [marketplace]
+      summary: Update a listing (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketplaceListingUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceListing"
+    delete:
+      operationId: deleteMarketplaceListing
+      tags: [marketplace]
+      summary: Delete a listing (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -3043,5 +3146,96 @@ components:
             $ref: "#/components/schemas/AdminTalkPost"
         total:
           type: integer
+        nextCursor:
+          type: ["integer", "null"]
+
+    MarketplaceListing:
+      type: object
+      required: [id, sellerId, sellerName, title, description, priceCents, category, photos, city, stateCode, status, createdAt]
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: string
+        sellerName:
+          type: string
+        sellerAvatar:
+          type: ["string", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        priceCents:
+          type: integer
+        category:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        city:
+          type: string
+        stateCode:
+          type: string
+        status:
+          type: string
+          enum: [active, sold, removed]
+        createdAt:
+          type: string
+
+    MarketplaceListingInput:
+      type: object
+      required: [title, description, priceCents, category]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        priceCents:
+          type: integer
+          minimum: 1
+        category:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        city:
+          type: string
+        stateCode:
+          type: string
+
+    MarketplaceListingUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priceCents:
+          type: integer
+        category:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        city:
+          type: string
+        stateCode:
+          type: string
+        status:
+          type: string
+          enum: [active, sold, removed]
+
+    MarketplaceListingsPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketplaceListing"
         nextCursor:
           type: ["integer", "null"]

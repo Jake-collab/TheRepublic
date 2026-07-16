@@ -13,3 +13,4 @@ export * from "./talks";
 export * from "./stripeSettings";
 export * from "./notificationCampaigns";
 export * from "./appSettings";
+export * from "./marketplace";

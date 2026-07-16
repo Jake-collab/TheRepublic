@@ -1562,3 +1562,120 @@ export const CreateTalkCommentBody = zod.object({
 })
 
 
+/**
+ * @summary List marketplace listings (paginated, active only)
+ */
+export const listMarketplaceListingsQueryLimitDefault = 24;
+
+export const ListMarketplaceListingsQueryParams = zod.object({
+  "category": zod.coerce.string().nullish(),
+  "search": zod.coerce.string().nullish(),
+  "cursor": zod.coerce.number().nullish(),
+  "limit": zod.coerce.number().default(listMarketplaceListingsQueryLimitDefault)
+})
+
+export const ListMarketplaceListingsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "sellerId": zod.string(),
+  "sellerName": zod.string(),
+  "sellerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "priceCents": zod.number(),
+  "category": zod.string(),
+  "photos": zod.array(zod.string()),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.enum(['active', 'sold', 'removed']),
+  "createdAt": zod.string()
+})),
+  "nextCursor": zod.number().nullish()
+})
+
+
+/**
+ * @summary Create a new marketplace listing (auth required)
+ */
+
+
+
+
+export const CreateMarketplaceListingBody = zod.object({
+  "title": zod.string().min(1),
+  "description": zod.string(),
+  "priceCents": zod.number().min(1),
+  "category": zod.string(),
+  "photos": zod.array(zod.string()).optional(),
+  "city": zod.string().optional(),
+  "stateCode": zod.string().optional()
+})
+
+
+/**
+ * @summary Get a single marketplace listing
+ */
+export const GetMarketplaceListingParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetMarketplaceListingResponse = zod.object({
+  "id": zod.number(),
+  "sellerId": zod.string(),
+  "sellerName": zod.string(),
+  "sellerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "priceCents": zod.number(),
+  "category": zod.string(),
+  "photos": zod.array(zod.string()),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.enum(['active', 'sold', 'removed']),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a listing (owner only)
+ */
+export const UpdateMarketplaceListingParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateMarketplaceListingBody = zod.object({
+  "title": zod.string().optional(),
+  "description": zod.string().optional(),
+  "priceCents": zod.number().optional(),
+  "category": zod.string().optional(),
+  "photos": zod.array(zod.string()).optional(),
+  "city": zod.string().optional(),
+  "stateCode": zod.string().optional(),
+  "status": zod.enum(['active', 'sold', 'removed']).optional()
+})
+
+export const UpdateMarketplaceListingResponse = zod.object({
+  "id": zod.number(),
+  "sellerId": zod.string(),
+  "sellerName": zod.string(),
+  "sellerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "priceCents": zod.number(),
+  "category": zod.string(),
+  "photos": zod.array(zod.string()),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.enum(['active', 'sold', 'removed']),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a listing (owner only)
+ */
+export const DeleteMarketplaceListingParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+

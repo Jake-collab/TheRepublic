@@ -10,6 +10,7 @@ import notificationsRouter from "./notifications";
 import stripeRouter from "./stripe";
 import adminRouter from "./admin";
 import talksRouter from "./talks";
+import marketplaceRouter from "./marketplace";
 import { getStripeConfig } from "../utils/stripeHelpers";
 
 const router: IRouter = Router();
@@ -24,6 +25,7 @@ router.use("/support", supportRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/stripe", stripeRouter);
 router.use("/talks", talksRouter);
+router.use("/marketplace", marketplaceRouter);
 router.use("/admin", adminRouter);
 
 router.get("/membership/pricing", async (_req, res) => {

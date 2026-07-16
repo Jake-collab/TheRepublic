@@ -829,6 +829,70 @@ export interface AdminTalkPostsPage {
   nextCursor?: number | null;
 }
 
+export type MarketplaceListingStatus = typeof MarketplaceListingStatus[keyof typeof MarketplaceListingStatus];
+
+
+export const MarketplaceListingStatus = {
+  active: 'active',
+  sold: 'sold',
+  removed: 'removed',
+} as const;
+
+export interface MarketplaceListing {
+  id: number;
+  sellerId: string;
+  sellerName: string;
+  /** @nullable */
+  sellerAvatar?: string | null;
+  title: string;
+  description: string;
+  priceCents: number;
+  category: string;
+  photos: string[];
+  city: string;
+  stateCode: string;
+  status: MarketplaceListingStatus;
+  createdAt: string;
+}
+
+export interface MarketplaceListingInput {
+  /** @minLength 1 */
+  title: string;
+  description: string;
+  /** @minimum 1 */
+  priceCents: number;
+  category: string;
+  photos?: string[];
+  city?: string;
+  stateCode?: string;
+}
+
+export type MarketplaceListingUpdateStatus = typeof MarketplaceListingUpdateStatus[keyof typeof MarketplaceListingUpdateStatus];
+
+
+export const MarketplaceListingUpdateStatus = {
+  active: 'active',
+  sold: 'sold',
+  removed: 'removed',
+} as const;
+
+export interface MarketplaceListingUpdate {
+  title?: string;
+  description?: string;
+  priceCents?: number;
+  category?: string;
+  photos?: string[];
+  city?: string;
+  stateCode?: string;
+  status?: MarketplaceListingUpdateStatus;
+}
+
+export interface MarketplaceListingsPage {
+  items: MarketplaceListing[];
+  /** @nullable */
+  nextCursor?: number | null;
+}
+
 export type ListWebsitesParams = {
 /**
  * @nullable
@@ -980,4 +1044,20 @@ export const ListTalkPostsSort = {
   new: 'new',
   top: 'top',
 } as const;
+
+export type ListMarketplaceListingsParams = {
+/**
+ * @nullable
+ */
+category?: string | null;
+/**
+ * @nullable
+ */
+search?: string | null;
+/**
+ * @nullable
+ */
+cursor?: number | null;
+limit?: number;
+};
 
