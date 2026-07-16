@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useTalksCategory } from "@/contexts/TalksCategoryContext";
 import TalksPostCard, { type TalkPost } from "@/components/TalksPostCard";
 import CitizenVoteFeed, { GEO_OPTIONS as CV_GEO, CAT_OPTIONS as CV_CATS } from "@/components/CitizenVoteFeed";
 import {
@@ -328,17 +329,36 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
   const cats = (categories as TalkCategory[]) ?? [];
   const selectedCat = cats.find((c) => c.id === selectedCatId);
 
-  // All pills for display
-  // Filter out any "Citizen Vote" category that may exist in the DB — it's
-  // represented exclusively by the hardcoded CV_PILL sentinel (id = -1).
+  const { hiddenCatIds, catOrder } = useTalksCategory();
+
+  // Base list: exclude the "Citizen Vote" DB entry (always shown as CV_PILL).
   const filteredCats = useMemo(
-    () => cats.filter((c) => c.name !== "Citizen Vote"),
+    () => cats.filter((c) => c.isActive && c.name !== "Citizen Vote"),
     [cats],
   );
-  // Pills: Citizen Vote + specific categories. "Chat" (all posts) is the
-  // default state (selectedCatId === null) with no dedicated pill — tapping
+
+  // Apply user's preferred order, then filter out hidden categories.
+  const orderedVisibleCats = useMemo(() => {
+    const allIds = filteredCats.map((c) => c.id);
+    const sorted =
+      catOrder.length > 0
+        ? [
+            ...catOrder
+              .map((id) => filteredCats.find((c) => c.id === id))
+              .filter(Boolean) as TalkCategory[],
+            ...filteredCats.filter((c) => !catOrder.includes(c.id)),
+          ]
+        : filteredCats;
+    return sorted.filter((c) => !hiddenCatIds.includes(c.id));
+  }, [filteredCats, catOrder, hiddenCatIds]);
+
+  // Pills: Citizen Vote (pinned) + user-ordered, user-filtered discussion categories.
+  // "Chat" (null selectedCatId) is the default — no dedicated pill; tapping
   // an active pill deselects it and returns to Chat.
-  const allPills = useMemo(() => [CV_PILL, ...filteredCats], [filteredCats]);
+  const allPills = useMemo(
+    () => [CV_PILL, ...orderedVisibleCats],
+    [orderedVisibleCats],
+  );
 
   // Debounce search
   useEffect(() => {
@@ -559,6 +579,15 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
                   <Feather name="search" size={17} color={colors.mutedForeground} />
                 </Pressable>
               )}
+
+              {/* Manage categories button */}
+              <Pressable
+                onPress={() => router.push("/manage-talks-categories")}
+                style={[styles.headerIconBtn, { backgroundColor: colors.secondary }]}
+                hitSlop={8}
+              >
+                <Feather name="settings" size={17} color={colors.mutedForeground} />
+              </Pressable>
 
               {/* CV mode: filter button | Regular mode: sort button */}
               {isCVMode ? (

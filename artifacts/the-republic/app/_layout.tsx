@@ -25,6 +25,7 @@ import {
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BrowserProvider } from "@/contexts/BrowserContext";
+import { TalksCategoryProvider } from "@/contexts/TalksCategoryContext";
 
 // react-native-keyboard-controller requires a native dev build — not available in Expo Go.
 // This boundary catches the render-time crash and silently falls back to just rendering children.
@@ -129,6 +130,14 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="manage-talks-categories"
+          options={{
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
           name="talk-post"
           options={{
             headerShown: false,
@@ -170,11 +179,13 @@ export default function RootLayout() {
           <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
               <BrowserProvider>
+                <TalksCategoryProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   <KeyboardProviderBoundary>
                     <RootLayoutNav />
                   </KeyboardProviderBoundary>
                 </GestureHandlerRootView>
+                </TalksCategoryProvider>
               </BrowserProvider>
             </QueryClientProvider>
           </ErrorBoundary>
