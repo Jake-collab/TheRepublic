@@ -37,6 +37,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@clerk/expo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useColors } from "@/hooks/useColors";
 import {
@@ -73,6 +74,85 @@ const CATEGORIES: Category[] = [
 function formatPrice(cents: number) {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+
+// ── Skeleton loading card (2-column grid) ─────────────────────────────────────
+
+function SkeletonCard() {
+  const anim = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 0.85, duration: 850, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 850, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim]);
+  return (
+    <Animated.View style={[skStyles.card, { opacity: anim }]}>
+      <View style={skStyles.cardImg} />
+      <View style={skStyles.cardBody}>
+        <View style={skStyles.line100} />
+        <View style={skStyles.line70} />
+        <View style={skStyles.linePrice} />
+      </View>
+    </Animated.View>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <View style={skStyles.grid}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </View>
+  );
+}
+
+const skStyles = StyleSheet.create({
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 12,
+    paddingTop: 16,
+    gap: 10,
+  },
+  card: {
+    width: "48%",
+    borderRadius: 14,
+    backgroundColor: "#8882",
+    overflow: "hidden",
+  },
+  cardImg: {
+    height: 120,
+    backgroundColor: "#8882",
+  },
+  cardBody: {
+    padding: 10,
+    gap: 7,
+  },
+  line100: {
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#8882",
+    width: "100%",
+  },
+  line70: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#8882",
+    width: "70%",
+  },
+  linePrice: {
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#8882",
+    width: "45%",
+    marginTop: 2,
+  },
+});
 
 // ── Mode flip toggle ──────────────────────────────────────────────────────────
 
@@ -650,6 +730,12 @@ export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
     if (page?.items) {
       setAllListings(page.items);
       setCursor(page.nextCursor ?? undefined);
+      // Seed AsyncStorage so the next cold-start renders immediately while
+      // React Query re-validates in the background.
+      AsyncStorage.setItem(
+        "rq:marketplace:page1",
+        JSON.stringify(page.items.slice(0, 12))
+      ).catch(() => {});
     }
   }, [page]);
 
@@ -809,9 +895,7 @@ export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
       ) : isLoading && allListings.length === 0 ? (
         <>
           {ListHeader}
-          <View style={styles.loadingCenter}>
-            <ActivityIndicator color={colors.primary} size="large" />
-          </View>
+          <SkeletonGrid />
         </>
       ) : (
         <FlatList

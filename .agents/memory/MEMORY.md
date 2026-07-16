@@ -1,3 +1,5 @@
-- [Admin direct-fetch pattern](admin-direct-fetch.md) — new admin-only routes use useAuth().getToken() + direct fetch instead of OpenAPI codegen
-- [DrawerNav z-index](drawer-zindex.md) — DrawerNav root View needs explicit zIndex:100; sections need pointerEvents="none" when hidden
-- [TalksScreen pill IDs](talks-pill-ids.md) — CHAT_ALL_ID=-2 (all posts), CITIZEN_VOTE_ID=-1 (CV feed), positive IDs = categories
+- [Admin direct-fetch pattern](admin-direct-fetch.md) — new admin-only routes use useAuth+fetch instead of OpenAPI codegen
+- [DrawerNav z-index](drawer-zindex.md) — DrawerNav root View needs zIndex:100; sections need pointerEvents="none" when hidden
+- [TalksScreen pill IDs](talks-pill-ids.md) — CHAT_ALL_ID=-2 (all posts), CITIZEN_VOTE_ID=-1 (CV), positive = category
+- [Membership tier web access](membership-tiers.md) — web ($2.99) AND pro ($4.99) both unlock the browser; free does not
+- [Skeleton screen pattern](skeleton-screens.md) — Animated.loop pulse via useNativeDriver; each screen has local SkeletonRow/Card/List

@@ -234,7 +234,8 @@ export default function BrowserScreen() {
   const { data: membership } = useGetUserMembership();
   const updateProfile = useUpdateUserProfile();
 
-  const isPro = (membership as any)?.tier === "pro";
+  // Both "web" ($2.99/mo) and "pro" ($4.99/mo) unlock the curated browser.
+  const hasWebAccess = ["web", "pro"].includes((membership as any)?.tier ?? "free");
 
   useEffect(() => {
     if (!websites) return;
@@ -357,8 +358,11 @@ export default function BrowserScreen() {
       {/* Mounted lazily on first visit; stays alive for LRU pool.
           Non-members see the membership gate instead of the browser. */}
       {mountedSections.has("web") && (
-        <View style={[styles.section, activeSection !== "web" && styles.sectionHidden]}>
-          {!isPro ? (
+        <View
+          style={[styles.section, activeSection !== "web" && styles.sectionHidden]}
+          pointerEvents={activeSection !== "web" ? "none" : "auto"}
+        >
+          {!hasWebAccess ? (
             <WebMembershipGate topPad={topPad} onOpenDrawer={openDrawer} />
           ) : (
             <>
@@ -368,7 +372,7 @@ export default function BrowserScreen() {
                 onOpenDrawer={openDrawer}
                 onMinimize={handleMinimize}
               />
-              {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
+              {!isFullscreen && <WebsiteTabBar isPro={hasWebAccess} />}
 
               <View style={styles.webContent}>
                 {/* Only pool members are mounted — LRU eviction controls memory */}
@@ -410,7 +414,7 @@ export default function BrowserScreen() {
       <DrawerNav
         isOpen={drawerOpen}
         activeSection={activeSection}
-        isPro={isPro}
+        isPro={hasWebAccess}
         onClose={() => setDrawerOpen(false)}
         onSelect={handleSectionSelect}
         onOpenProfile={() => {

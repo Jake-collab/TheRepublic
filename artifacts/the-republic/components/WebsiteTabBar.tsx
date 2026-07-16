@@ -70,6 +70,36 @@ const TabPill = memo(function TabPill({ tab, isActive, isPro, customColor, onPre
   );
 });
 
+// ── Skeleton pills shown while websites are loading ───────────────────────────
+
+const SKELETON_WIDTHS = [72, 90, 64, 80, 68, 76];
+
+function SkeletonPills() {
+  return (
+    <View style={skPillStyles.container}>
+      {SKELETON_WIDTHS.map((w, i) => (
+        <View key={i} style={[skPillStyles.pill, { width: w }]} />
+      ))}
+    </View>
+  );
+}
+
+const skPillStyles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  pill: {
+    height: 32,
+    borderRadius: 20,
+    backgroundColor: "#8882",
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function WebsiteTabBar({ isPro }: Props) {
   const colors = useColors();
   const {
@@ -136,6 +166,15 @@ export default function WebsiteTabBar({ isPro }: Props) {
       onPressIn={() => handleTabPressIn(item)}
     />
   ), [handleTabPress, handleTabPressIn]);
+
+  // Show ghost pills while the website list is fetching on first render.
+  if (visibleTabs.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <SkeletonPills />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>

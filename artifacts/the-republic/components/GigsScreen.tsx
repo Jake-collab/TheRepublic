@@ -17,6 +17,7 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Alert,
   FlatList,
   KeyboardAvoidingView,
@@ -83,6 +84,71 @@ function getCat(id: string) {
     color: "#64748b",
   };
 }
+
+// ── Skeleton loading row ──────────────────────────────────────────────────────
+
+function SkeletonRow() {
+  const anim = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 0.85, duration: 850, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 850, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim]);
+  return (
+    <Animated.View style={[gigSkStyles.row, { opacity: anim }]}>
+      <View style={gigSkStyles.icon} />
+      <View style={{ flex: 1, gap: 8 }}>
+        <View style={gigSkStyles.line80} />
+        <View style={gigSkStyles.line50} />
+        <View style={gigSkStyles.line35} />
+      </View>
+      <View style={gigSkStyles.badge} />
+    </Animated.View>
+  );
+}
+
+function SkeletonList({ count = 5 }: { count?: number }) {
+  return (
+    <View style={{ paddingTop: 8, gap: 10 }}>
+      {Array.from({ length: count }).map((_, i) => <SkeletonRow key={i} />)}
+    </View>
+  );
+}
+
+const gigSkStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#8882",
+    marginHorizontal: 16,
+  },
+  icon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#8882",
+    flexShrink: 0,
+  },
+  line80: { height: 13, borderRadius: 6, backgroundColor: "#8882", width: "80%" },
+  line50: { height: 10, borderRadius: 5, backgroundColor: "#8882", width: "50%" },
+  line35: { height: 10, borderRadius: 5, backgroundColor: "#8882", width: "35%" },
+  badge: {
+    width: 52,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#8882",
+    flexShrink: 0,
+  },
+});
 
 // ── Formatting helpers ────────────────────────────────────────────────────────
 
@@ -1417,11 +1483,7 @@ export default function GigsScreen({ onOpenDrawer }: { onOpenDrawer: () => void 
               ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
               ListEmptyComponent={
                 myJobsLoading ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={colors.mutedForeground}
-                    style={{ marginTop: 32 }}
-                  />
+                  <SkeletonList count={3} />
                 ) : (
                   <Text
                     style={[
@@ -1570,11 +1632,7 @@ export default function GigsScreen({ onOpenDrawer }: { onOpenDrawer: () => void 
           }
           ListEmptyComponent={
             workLoading ? (
-              <ActivityIndicator
-                size="small"
-                color={colors.mutedForeground}
-                style={{ marginTop: 32 }}
-              />
+              <SkeletonList count={5} />
             ) : (
               <Text
                 style={[

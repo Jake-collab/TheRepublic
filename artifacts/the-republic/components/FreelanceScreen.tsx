@@ -18,6 +18,7 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Alert,
   FlatList,
   KeyboardAvoidingView,
@@ -80,6 +81,71 @@ const FL_CATS = [
 function getCat(id: string) {
   return FL_CATS.find((c) => c.id === id) ?? { id, label: id, emoji: "💼" };
 }
+
+// ── Skeleton loading row ──────────────────────────────────────────────────────
+
+function SkeletonRow() {
+  const anim = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 0.85, duration: 850, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 850, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim]);
+  return (
+    <Animated.View style={[flSkStyles.row, { opacity: anim }]}>
+      <View style={flSkStyles.icon} />
+      <View style={{ flex: 1, gap: 8 }}>
+        <View style={flSkStyles.line85} />
+        <View style={flSkStyles.line55} />
+        <View style={flSkStyles.line40} />
+      </View>
+      <View style={flSkStyles.badge} />
+    </Animated.View>
+  );
+}
+
+function SkeletonList({ count = 5 }: { count?: number }) {
+  return (
+    <View style={{ paddingTop: 8, gap: 10 }}>
+      {Array.from({ length: count }).map((_, i) => <SkeletonRow key={i} />)}
+    </View>
+  );
+}
+
+const flSkStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#8882",
+    marginHorizontal: 16,
+  },
+  icon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#8882",
+    flexShrink: 0,
+  },
+  line85: { height: 13, borderRadius: 6, backgroundColor: "#8882", width: "85%" },
+  line55: { height: 10, borderRadius: 5, backgroundColor: "#8882", width: "55%" },
+  line40: { height: 10, borderRadius: 5, backgroundColor: "#8882", width: "40%" },
+  badge: {
+    width: 56,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#8882",
+    flexShrink: 0,
+  },
+});
 
 // ── Formatting helpers ────────────────────────────────────────────────────────
 
@@ -1438,7 +1504,7 @@ export default function FreelanceScreen({ onOpenDrawer }: { onOpenDrawer: () => 
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
             ListEmptyComponent={
               myProjectsLoading ? (
-                <ActivityIndicator size="small" color={colors.mutedForeground} style={{ marginTop: 32 }} />
+                <SkeletonList count={3} />
               ) : (
                 <Text style={[styles.emptyText, { color: colors.mutedForeground, marginTop: 16, textAlign: "center" }]}>
                   No projects in {getCat(activeCat).label} yet.{"\n"}Post one to get proposals!
@@ -1512,7 +1578,7 @@ export default function FreelanceScreen({ onOpenDrawer }: { onOpenDrawer: () => 
           }
           ListEmptyComponent={
             workLoading ? (
-              <ActivityIndicator size="small" color={colors.mutedForeground} style={{ marginTop: 32 }} />
+              <SkeletonList count={5} />
             ) : (
               <Text style={[styles.emptyText, { color: colors.mutedForeground, marginTop: 24, textAlign: "center" }]}>
                 No open projects in {getCat(activeCat).label} yet.{"\n"}Check back soon!
