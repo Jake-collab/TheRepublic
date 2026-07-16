@@ -568,7 +568,7 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
                 <Feather name="menu" size={22} color={colors.foreground} />
               </Pressable>
               <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-                {isCVMode ? "Citizen Vote" : isAllMode ? "Chat" : (selectedCat?.name ?? "Talks")}
+                {isCVMode ? "Citizen Vote" : isAllMode ? "Republic" : (selectedCat?.name ?? "Talks")}
               </Text>
             </View>
             <View style={styles.headerActions}>
@@ -581,15 +581,6 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
                   <Feather name="search" size={17} color={colors.mutedForeground} />
                 </Pressable>
               )}
-
-              {/* Account / profile button */}
-              <Pressable
-                onPress={() => router.push("/profile")}
-                style={[styles.headerIconBtn, { backgroundColor: colors.secondary }]}
-                hitSlop={8}
-              >
-                <Feather name="user" size={17} color={colors.mutedForeground} />
-              </Pressable>
 
               {/* CV mode: filter button | Regular mode: sort button */}
               {isCVMode ? (
@@ -682,9 +673,9 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
       {/* ── Create Post Modal ── */}
       <CreatePostModal
         visible={showCreate}
-        categoryId={isAllMode ? null : (selectedCatId ?? null)}
+        categoryId={isAllMode ? (cats[0]?.id ?? null) : (selectedCatId ?? null)}
         categoryName={isAllMode ? "" : (selectedCat?.name ?? "")}
-        categories={isAllMode ? cats : undefined}
+        categories={undefined}
         onClose={() => {
           setShowCreate(false);
           setAllPosts([]);

@@ -1340,7 +1340,7 @@ function PostProjectModal({
 
 // ── Main FreelanceScreen ──────────────────────────────────────────────────────
 
-export default function FreelanceScreen({ onOpenDrawer }: { onOpenDrawer: () => void }) {
+export default function FreelanceScreen({ onOpenDrawer, externalMode }: { onOpenDrawer: () => void; externalMode?: "hire" | "work" }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, isLoaded } = useUser();
@@ -1352,6 +1352,10 @@ export default function FreelanceScreen({ onOpenDrawer }: { onOpenDrawer: () => 
   });
 
   const [mode, setMode] = useState<Mode>("hire");
+
+  useEffect(() => {
+    if (externalMode) setMode(externalMode as Mode);
+  }, [externalMode]);
   const [activeCat, setActiveCat] = useState<string>(FL_CATS[0].id);
 
   const handleModeChange = useCallback(

@@ -3,3 +3,7 @@
 - [TalksScreen pill IDs](talks-pill-ids.md) — CHAT_ALL_ID=-2 (all posts), CITIZEN_VOTE_ID=-1 (CV), positive = category
 - [Membership tier web access](membership-tiers.md) — web ($2.99) AND pro ($4.99) both unlock the browser; free does not
 - [Skeleton screen pattern](skeleton-screens.md) — Animated.loop pulse via useNativeDriver; each screen has local SkeletonRow/Card/List
+- [DrawerNav toggle pattern](drawernav-toggles.md) — sections with two modes use inline toggle pills; onSelect for talks/web, onSelectWithMode for buysell/gigs/freelance/jobs; SectionModes type lives in DrawerNav.tsx.
+- [externalMode pattern](external-mode-pattern.md) — all section screens accept externalMode prop + useEffect sync; index.tsx owns sectionModes state and passes down.
+- [BuySellScreen browse/grid split](buysell-browse-grid.md) — buy mode defaults to horizontal browse per category (PLACEHOLDER_LISTINGS static data); viewAllCat state switches to 2-col grid; GridHeader has back button.
+- [Jobs feature](jobs-feature.md) — 3 DB tables (jobListings/jobApplications/jobMessages) in lib/db/src/schema/jobs.ts; API at /api/jobs/* in routes/jobs.ts; JobsScreen uses fetch() directly — no codegen needed.

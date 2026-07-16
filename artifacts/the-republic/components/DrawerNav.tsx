@@ -1,12 +1,8 @@
 /**
- * DrawerNav — slide-out left navigation drawer.
+ * DrawerNav — slide-out left navigation with inline mode toggles.
  *
- * Slides in from left with a spring animation. A dark-tinted backdrop
- * appears behind it and can be tapped to close. On iOS the drawer uses
- * BlurView for a native glass look; Android falls back to a solid dark card.
- *
- * Sections (top → bottom): Talks, Buy/Sell, Gigs/Work, Freelance/Hire, Web.
- * The Web item is membership-gated and shows a lock badge for non-members.
+ * Toggle rows: Buy ⇄ Sell, Gigs ⇄ Work, Freelance ⇄ Work, Jobs ⇄ Hire
+ * Tapping either side of a toggle navigates to that section + mode.
  */
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
@@ -24,56 +20,53 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export type AppSection = "talks" | "buysell" | "gigs" | "freelance" | "web";
+export type AppSection = "talks" | "buysell" | "gigs" | "freelance" | "jobs" | "web";
 
-interface NavItem {
-  id: AppSection;
-  label: string;
-  icon: string;
-  membershipGated?: boolean;
-  membershipLabel?: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { id: "talks",     label: "Talks",           icon: "message-circle" },
-  { id: "buysell",   label: "Buy / Sell",       icon: "shopping-bag" },
-  { id: "gigs",      label: "Gigs / Work",      icon: "tool" },
-  { id: "freelance", label: "Freelance / Hire",  icon: "briefcase" },
-  { id: "web",       label: "Web",              icon: "globe", membershipGated: true, membershipLabel: "from $2.99" },
-];
+export type SectionModes = {
+  buysell: "buy" | "sell";
+  gigs: "hire" | "work";
+  freelance: "hire" | "work";
+  jobs: "browse" | "hire";
+};
 
 const DRAWER_WIDTH = Math.min(Dimensions.get("window").width * 0.78, 320);
 
-// Hardcoded dark palette for the drawer so it contrasts clearly against any
-// content behind it regardless of the app's light/dark color scheme.
 const D = {
-  bg:          "rgba(9,9,11,0.98)",
-  border:      "rgba(255,255,255,0.09)",
-  text:        "#f2f2f5",
-  sub:         "rgba(255,255,255,0.45)",
-  activeText:  "#ffffff",
-  activeBg:    "rgba(255,255,255,0.10)",
-  iconBg:      "rgba(255,255,255,0.08)",
-  iconActive:  "#2563eb",          // primary blue
-  badgeBg:     "rgba(255,255,255,0.07)",
-  badgeText:   "rgba(255,255,255,0.45)",
+  bg:         "rgba(9,9,11,0.98)",
+  border:     "rgba(255,255,255,0.09)",
+  text:       "#f2f2f5",
+  sub:        "rgba(255,255,255,0.45)",
+  activeText: "#ffffff",
+  activeBg:   "rgba(255,255,255,0.10)",
+  iconBg:     "rgba(255,255,255,0.08)",
+  iconActive: "#2563eb",
+  badgeBg:    "rgba(255,255,255,0.07)",
+  badgeText:  "rgba(255,255,255,0.45)",
+  modeActive: "#2563eb",
+  modeInactive: "rgba(255,255,255,0.35)",
+  modePillBg: "rgba(255,255,255,0.06)",
+  modeDivider: "rgba(255,255,255,0.12)",
 };
 
 interface Props {
   isOpen: boolean;
   activeSection: AppSection;
+  sectionModes: SectionModes;
   isPro: boolean;
   onClose: () => void;
-  onSelect: (section: AppSection) => void;
+  onSelect: (section: "talks" | "web") => void;
+  onSelectWithMode: (section: AppSection, mode: string) => void;
   onOpenProfile: () => void;
 }
 
 export default function DrawerNav({
   isOpen,
   activeSection,
+  sectionModes,
   isPro,
   onClose,
   onSelect,
+  onSelectWithMode,
   onOpenProfile,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -96,9 +89,15 @@ export default function DrawerNav({
     ]).start();
   }, [isOpen, translateX, backdropOpacity]);
 
-  const handleSelect = (item: NavItem) => {
+  const handleSimpleSelect = (section: "talks" | "web") => {
     Haptics.selectionAsync();
-    onSelect(item.id);
+    onSelect(section);
+    onClose();
+  };
+
+  const handleModeSelect = (section: AppSection, mode: string) => {
+    Haptics.selectionAsync();
+    onSelectWithMode(section, mode);
     onClose();
   };
 
@@ -107,9 +106,105 @@ export default function DrawerNav({
     onOpenProfile();
   };
 
+  // ── Toggle pill row ────────────────────────────────────────────────────────
+  function ToggleRow({
+    section,
+    icon,
+    leftLabel,
+    leftMode,
+    rightLabel,
+    rightMode,
+    currentMode,
+  }: {
+    section: AppSection;
+    icon: string;
+    leftLabel: string;
+    leftMode: string;
+    rightLabel: string;
+    rightMode: string;
+    currentMode: string;
+  }) {
+    const isActive = activeSection === section;
+    const leftActive = currentMode === leftMode;
+    const rightActive = currentMode === rightMode;
+
+    return (
+      <View style={[styles.navItem, isActive && styles.navItemActive]}>
+        {isActive && <View style={styles.activeBar} />}
+        <View style={[styles.navIcon, { backgroundColor: isActive ? D.iconActive : D.iconBg }]}>
+          <Feather name={icon as any} size={16} color={isActive ? "#ffffff" : D.sub} />
+        </View>
+
+        <View style={styles.modePill}>
+          <Pressable
+            style={styles.modeHalf}
+            onPress={() => handleModeSelect(section, leftMode)}
+            hitSlop={6}
+          >
+            <Text style={[styles.modeLabel, { color: leftActive ? D.modeActive : D.modeInactive, fontWeight: leftActive ? "700" : "400" }]}>
+              {leftLabel}
+            </Text>
+            {leftActive && <View style={styles.modeDot} />}
+          </Pressable>
+
+          <View style={styles.modeSlash} />
+
+          <Pressable
+            style={styles.modeHalf}
+            onPress={() => handleModeSelect(section, rightMode)}
+            hitSlop={6}
+          >
+            {rightActive && <View style={styles.modeDot} />}
+            <Text style={[styles.modeLabel, { color: rightActive ? D.modeActive : D.modeInactive, fontWeight: rightActive ? "700" : "400" }]}>
+              {rightLabel}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Simple full-width nav row ──────────────────────────────────────────────
+  function SimpleRow({
+    section,
+    icon,
+    label,
+    locked,
+    lockLabel,
+  }: {
+    section: "talks" | "web";
+    icon: string;
+    label: string;
+    locked?: boolean;
+    lockLabel?: string;
+  }) {
+    const isActive = activeSection === section;
+    return (
+      <Pressable
+        style={({ pressed }) => [styles.navItem, isActive && styles.navItemActive, pressed && { opacity: 0.75 }]}
+        onPress={() => handleSimpleSelect(section)}
+        hitSlop={4}
+      >
+        {isActive && <View style={styles.activeBar} />}
+        <View style={[styles.navIcon, { backgroundColor: isActive ? D.iconActive : D.iconBg }]}>
+          <Feather name={icon as any} size={16} color={isActive ? "#ffffff" : D.sub} />
+        </View>
+        <Text style={[styles.navLabel, { color: isActive ? D.activeText : D.text }, isActive && styles.navLabelActive]}>
+          {label}
+        </Text>
+        {locked && (
+          <View style={styles.lockBadge}>
+            <Feather name="lock" size={9} color={D.badgeText} style={{ marginRight: 3 }} />
+            <Text style={styles.lockBadgeText}>{lockLabel}</Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  }
+
   const drawerInner = (
     <View style={styles.drawerInner} pointerEvents="auto">
-      {/* ── Logo / brand header ─────────────────────────────────────────── */}
+      {/* ── Brand header ─────────────────────────────────────────────── */}
       <View style={[styles.brandRow, { paddingTop: insets.top + 18 }]}>
         <View style={styles.logoWrap}>
           <Image
@@ -126,68 +221,74 @@ export default function DrawerNav({
 
       <View style={[styles.divider, { marginTop: 20, marginBottom: 12 }]} />
 
-      {/* ── Nav items ───────────────────────────────────────────────────── */}
+      {/* ── Nav items ───────────────────────────────────────────────── */}
       <View style={styles.navList}>
-        {NAV_ITEMS.map((item) => {
-          const isActive = activeSection === item.id;
-          const isLocked = item.membershipGated && !isPro;
+        {/* Talks — simple row */}
+        <SimpleRow section="talks" icon="message-circle" label="Talks" />
 
-          return (
-            <Pressable
-              key={item.id}
-              style={({ pressed }) => [
-                styles.navItem,
-                isActive && styles.navItemActive,
-                pressed && { opacity: 0.75 },
-              ]}
-              onPress={() => handleSelect(item)}
-              hitSlop={4}
-            >
-              {/* Left color bar for active item */}
-              {isActive && <View style={styles.activeBar} />}
+        {/* Buy / Sell toggle */}
+        <ToggleRow
+          section="buysell"
+          icon="shopping-bag"
+          leftLabel="Buy"
+          leftMode="buy"
+          rightLabel="Sell"
+          rightMode="sell"
+          currentMode={sectionModes.buysell}
+        />
 
-              {/* Icon */}
-              <View
-                style={[
-                  styles.navIcon,
-                  { backgroundColor: isActive ? D.iconActive : D.iconBg },
-                ]}
-              >
-                <Feather
-                  name={item.icon as any}
-                  size={16}
-                  color={isActive ? "#ffffff" : D.sub}
-                />
-              </View>
+        {/* Gigs / Work toggle */}
+        <ToggleRow
+          section="gigs"
+          icon="tool"
+          leftLabel="Gigs"
+          leftMode="hire"
+          rightLabel="Work"
+          rightMode="work"
+          currentMode={sectionModes.gigs}
+        />
 
-              {/* Label */}
-              <Text
-                style={[
-                  styles.navLabel,
-                  { color: isActive ? D.activeText : D.text },
-                  isActive && styles.navLabelActive,
-                ]}
-              >
-                {item.label}
-              </Text>
+        {/* Freelance / Work toggle */}
+        <ToggleRow
+          section="freelance"
+          icon="briefcase"
+          leftLabel="Freelance"
+          leftMode="hire"
+          rightLabel="Work"
+          rightMode="work"
+          currentMode={sectionModes.freelance}
+        />
 
-              {/* Lock badge */}
-              {isLocked && (
-                <View style={styles.lockBadge}>
-                  <Feather name="lock" size={9} color={D.badgeText} style={{ marginRight: 3 }} />
-                  <Text style={styles.lockBadgeText}>{item.membershipLabel}</Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
+        {/* Jobs / Hire toggle */}
+        <ToggleRow
+          section="jobs"
+          icon="map-pin"
+          leftLabel="Jobs"
+          leftMode="browse"
+          rightLabel="Hire"
+          rightMode="hire"
+          currentMode={sectionModes.jobs}
+        />
+
+        {/* Web — simple locked row */}
+        <SimpleRow
+          section="web"
+          icon="globe"
+          label="Web"
+          locked={!isPro}
+          lockLabel="from $2.99"
+        />
       </View>
 
-      {/* ── Bottom: profile ─────────────────────────────────────────────── */}
+      {/* ── Bottom: profile ─────────────────────────────────────────── */}
       <View style={styles.spacer} />
       <View style={[styles.divider, { marginBottom: 8 }]} />
       <Pressable
-        style={({ pressed }) => [styles.profileRow, { paddingBottom: insets.bottom + 16 }, pressed && { opacity: 0.75 }]}
+        style={({ pressed }) => [
+          styles.profileRow,
+          { paddingBottom: insets.bottom + 16 },
+          pressed && { opacity: 0.75 },
+        ]}
         onPress={handleProfile}
         hitSlop={8}
       >
@@ -201,9 +302,7 @@ export default function DrawerNav({
   );
 
   return (
-    // Always in tree so the spring animation plays in and out smoothly.
     <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]} pointerEvents={isOpen ? "auto" : "none"}>
-      {/* Semi-transparent backdrop */}
       <Animated.View
         style={[styles.backdrop, { opacity: backdropOpacity }]}
         pointerEvents={isOpen ? "auto" : "none"}
@@ -211,12 +310,8 @@ export default function DrawerNav({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
 
-      {/* Drawer panel */}
       <Animated.View
-        style={[
-          styles.drawerOuter,
-          { width: DRAWER_WIDTH, transform: [{ translateX }] },
-        ]}
+        style={[styles.drawerOuter, { width: DRAWER_WIDTH, transform: [{ translateX }] }]}
         pointerEvents="box-none"
       >
         {Platform.OS === "ios" ? (
@@ -254,12 +349,9 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 24,
   },
-  blurOverlay: {
-    backgroundColor: "rgba(0,0,0,0.28)",
-  },
-  drawerInner: {
-    flex: 1,
-  },
+  blurOverlay: { backgroundColor: "rgba(0,0,0,0.28)" },
+  drawerInner: { flex: 1 },
+
   brandRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -277,39 +369,26 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   logoImg: { width: 30, height: 30 },
-  brandName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: D.text,
-    letterSpacing: 0.3,
-  },
-  brandSub: {
-    fontSize: 12,
-    color: D.sub,
-    marginTop: 1,
-  },
+  brandName: { fontSize: 17, fontWeight: "700", color: D.text, letterSpacing: 0.3 },
+  brandSub: { fontSize: 12, color: D.sub, marginTop: 1 },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: D.border,
     marginHorizontal: 16,
   },
-  navList: {
-    paddingHorizontal: 8,
-    gap: 2,
-  },
+
+  navList: { paddingHorizontal: 8, gap: 2 },
   navItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 13,
+    paddingVertical: 11,
     borderRadius: 12,
     position: "relative",
     overflow: "hidden",
   },
-  navItemActive: {
-    backgroundColor: D.activeBg,
-  },
+  navItemActive: { backgroundColor: D.activeBg },
   activeBar: {
     position: "absolute",
     left: 0,
@@ -326,15 +405,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  navLabel: {
-    fontSize: 15,
+  navLabel: { fontSize: 15, flex: 1, letterSpacing: 0.1 },
+  navLabelActive: { fontWeight: "700", color: D.activeText },
+
+  // Mode toggle pill (replaces nav label for toggleable sections)
+  modePill: {
     flex: 1,
-    letterSpacing: 0.1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: D.modePillBg,
+    borderRadius: 10,
+    paddingHorizontal: 2,
+    paddingVertical: 4,
   },
-  navLabelActive: {
-    fontWeight: "700",
-    color: D.activeText,
+  modeHalf: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderRadius: 8,
   },
+  modeLabel: { fontSize: 13, letterSpacing: 0.1 },
+  modeSlash: {
+    width: StyleSheet.hairlineWidth,
+    height: 16,
+    backgroundColor: D.modeDivider,
+  },
+  modeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: D.modeActive,
+  },
+
   lockBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -343,11 +449,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  lockBadgeText: {
-    fontSize: 10,
-    color: D.badgeText,
-    fontWeight: "500",
-  },
+  lockBadgeText: { fontSize: 10, color: D.badgeText, fontWeight: "500" },
+
   spacer: { flex: 1 },
   profileRow: {
     flexDirection: "row",
@@ -366,10 +469,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: D.border,
   },
-  profileLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: D.text,
-  },
+  profileLabel: { flex: 1, fontSize: 14, fontWeight: "600", color: D.text },
 });

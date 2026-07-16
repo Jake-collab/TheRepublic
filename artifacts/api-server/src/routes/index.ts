@@ -13,6 +13,7 @@ import talksRouter from "./talks";
 import marketplaceRouter from "./marketplace";
 import gigsRouter from "./gigs";
 import freelanceRouter from "./freelance";
+import jobsRouter from "./jobs";
 import identityRouter from "./identity";
 import storageRouter from "./storage";
 import { getStripeConfig } from "../utils/stripeHelpers";
@@ -34,6 +35,7 @@ router.use("/talks", talksRouter);
 router.use("/marketplace", marketplaceRouter);
 router.use("/gigs", gigsRouter);
 router.use("/freelance", freelanceRouter);
+router.use("/jobs", jobsRouter);
 router.use("/admin", adminRouter);
 
 router.get("/membership/pricing", async (_req, res) => {

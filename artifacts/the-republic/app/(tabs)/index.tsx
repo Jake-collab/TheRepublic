@@ -36,12 +36,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import DrawerNav, { type AppSection } from "@/components/DrawerNav";
+import DrawerNav, { type AppSection, type SectionModes } from "@/components/DrawerNav";
 import SplashOverlay from "@/components/SplashOverlay";
 import TalksScreen from "@/components/TalksScreen";
 import BuySellScreen from "@/components/BuySellScreen";
 import GigsScreen from "@/components/GigsScreen";
 import FreelanceScreen from "@/components/FreelanceScreen";
+import JobsScreen from "@/components/JobsScreen";
 import UpgradeModal from "@/components/UpgradeModal";
 import WebViewPane from "@/components/WebViewPane";
 import WebsiteTabBar from "@/components/WebsiteTabBar";
@@ -196,6 +197,12 @@ export default function BrowserScreen() {
   // ── Navigation state ────────────────────────────────────────────────────
   const [activeSection, setActiveSection] = useState<AppSection>("talks");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sectionModes, setSectionModes] = useState<SectionModes>({
+    buysell: "buy",
+    gigs: "hire",
+    freelance: "hire",
+    jobs: "browse",
+  });
 
   // Lazy-mount: each section stays in the React tree after first visit
   // so its state (scroll position, data cache) is preserved on return.
@@ -215,8 +222,15 @@ export default function BrowserScreen() {
     setDrawerOpen(true);
   }, []);
 
-  const handleSectionSelect = useCallback((section: AppSection) => {
+  const handleSectionSelect = useCallback((section: "talks" | "web") => {
     startTransition(() => setActiveSection(section));
+  }, []);
+
+  const handleSectionModeSelect = useCallback((section: AppSection, mode: string) => {
+    startTransition(() => {
+      setActiveSection(section);
+      setSectionModes((prev) => ({ ...prev, [section]: mode as any }));
+    });
   }, []);
 
   // ── Boot splash ──────────────────────────────────────────────────────────
@@ -330,7 +344,7 @@ export default function BrowserScreen() {
           style={[styles.section, activeSection !== "buysell" && styles.sectionHidden]}
           pointerEvents={activeSection !== "buysell" ? "none" : "auto"}
         >
-          <BuySellScreen onOpenDrawer={openDrawer} />
+          <BuySellScreen onOpenDrawer={openDrawer} externalMode={sectionModes.buysell} />
         </View>
       )}
 
@@ -340,7 +354,7 @@ export default function BrowserScreen() {
           style={[styles.section, activeSection !== "gigs" && styles.sectionHidden]}
           pointerEvents={activeSection !== "gigs" ? "none" : "auto"}
         >
-          <GigsScreen onOpenDrawer={openDrawer} />
+          <GigsScreen onOpenDrawer={openDrawer} externalMode={sectionModes.gigs} />
         </View>
       )}
 
@@ -350,7 +364,17 @@ export default function BrowserScreen() {
           style={[styles.section, activeSection !== "freelance" && styles.sectionHidden]}
           pointerEvents={activeSection !== "freelance" ? "none" : "auto"}
         >
-          <FreelanceScreen onOpenDrawer={openDrawer} />
+          <FreelanceScreen onOpenDrawer={openDrawer} externalMode={sectionModes.freelance} />
+        </View>
+      )}
+
+      {/* ── Jobs / Hire ───────────────────────────────────────────────── */}
+      {mountedSections.has("jobs") && (
+        <View
+          style={[styles.section, activeSection !== "jobs" && styles.sectionHidden]}
+          pointerEvents={activeSection !== "jobs" ? "none" : "auto"}
+        >
+          <JobsScreen onOpenDrawer={openDrawer} externalMode={sectionModes.jobs} />
         </View>
       )}
 
@@ -414,9 +438,11 @@ export default function BrowserScreen() {
       <DrawerNav
         isOpen={drawerOpen}
         activeSection={activeSection}
+        sectionModes={sectionModes}
         isPro={hasWebAccess}
         onClose={() => setDrawerOpen(false)}
         onSelect={handleSectionSelect}
+        onSelectWithMode={handleSectionModeSelect}
         onOpenProfile={() => {
           setDrawerOpen(false);
           router.push("/profile");

@@ -71,6 +71,73 @@ const CATEGORIES: Category[] = [
   { id: "other",        label: "Other",         emoji: "📦" },
 ];
 
+type PlaceholderItem = { id: string; emoji: string; title: string; priceCents: number };
+const PLACEHOLDER_LISTINGS: Record<string, PlaceholderItem[]> = {
+  electronics: [
+    { id: "p-e-1", emoji: "📱", title: "iPhone 14 Pro 128GB", priceCents: 75000 },
+    { id: "p-e-2", emoji: "💻", title: "MacBook Air M2", priceCents: 110000 },
+    { id: "p-e-3", emoji: "🎧", title: "AirPods Pro 2nd Gen", priceCents: 18000 },
+    { id: "p-e-4", emoji: "⌚", title: "Apple Watch Series 9", priceCents: 29900 },
+    { id: "p-e-5", emoji: "📺", title: '55" 4K Smart TV', priceCents: 34999 },
+  ],
+  clothing: [
+    { id: "p-c-1", emoji: "👟", title: "Nike Air Max 270", priceCents: 8500 },
+    { id: "p-c-2", emoji: "👕", title: "Vintage Levi's Jacket", priceCents: 4500 },
+    { id: "p-c-3", emoji: "👗", title: "Summer Maxi Dress", priceCents: 2500 },
+    { id: "p-c-4", emoji: "🧥", title: "North Face Puffer", priceCents: 12000 },
+    { id: "p-c-5", emoji: "👜", title: "Coach Leather Tote", priceCents: 7500 },
+  ],
+  furniture: [
+    { id: "p-f-1", emoji: "🛋", title: "Mid-Century Sofa", priceCents: 45000 },
+    { id: "p-f-2", emoji: "🪑", title: "Ergonomic Desk Chair", priceCents: 18000 },
+    { id: "p-f-3", emoji: "🛏", title: "Queen Bed Frame", priceCents: 32000 },
+    { id: "p-f-4", emoji: "📚", title: "Tall Bookshelf", priceCents: 8500 },
+    { id: "p-f-5", emoji: "🪞", title: "Full-Length Floor Mirror", priceCents: 5500 },
+  ],
+  vehicles: [
+    { id: "p-v-1", emoji: "🚗", title: "2019 Honda Civic EX", priceCents: 1590000 },
+    { id: "p-v-2", emoji: "🛵", title: "Vespa GTS 300", priceCents: 320000 },
+    { id: "p-v-3", emoji: "🚙", title: "2020 Toyota RAV4", priceCents: 2490000 },
+    { id: "p-v-4", emoji: "🚲", title: "Trek Road Bike 2022", priceCents: 45000 },
+    { id: "p-v-5", emoji: "⚡", title: "Electric Bike 500W", priceCents: 98000 },
+  ],
+  collectibles: [
+    { id: "p-co-1", emoji: "🎨", title: "Original Oil Painting", priceCents: 25000 },
+    { id: "p-co-2", emoji: "🏆", title: "Signed Baseball Cards", priceCents: 5500 },
+    { id: "p-co-3", emoji: "🎭", title: "Vintage Movie Poster", priceCents: 8000 },
+    { id: "p-co-4", emoji: "🪆", title: "Antique Ceramic Set", priceCents: 12000 },
+    { id: "p-co-5", emoji: "💎", title: "Vintage Luxury Watch", priceCents: 55000 },
+  ],
+  sports: [
+    { id: "p-s-1", emoji: "⚽", title: "Wilson Soccer Ball", priceCents: 3500 },
+    { id: "p-s-2", emoji: "🎾", title: "Babolat Tennis Racket", priceCents: 8500 },
+    { id: "p-s-3", emoji: "🏋", title: "Dumbbell Set 50lbs", priceCents: 7500 },
+    { id: "p-s-4", emoji: "🎿", title: "Ski Set + Poles", priceCents: 28000 },
+    { id: "p-s-5", emoji: "🏄", title: "7ft Longboard Surfboard", priceCents: 45000 },
+  ],
+  home: [
+    { id: "p-h-1", emoji: "🌱", title: "Indoor Plant Collection", priceCents: 4500 },
+    { id: "p-h-2", emoji: "🍲", title: "Instant Pot Duo 7-in-1", priceCents: 6500 },
+    { id: "p-h-3", emoji: "🌀", title: "Dyson Vacuum V15", priceCents: 45000 },
+    { id: "p-h-4", emoji: "☕", title: "Breville Espresso Machine", priceCents: 28000 },
+    { id: "p-h-5", emoji: "🪴", title: "Outdoor Patio Set (6pc)", priceCents: 65000 },
+  ],
+  books: [
+    { id: "p-b-1", emoji: "📚", title: "Business Books Bundle (5)", priceCents: 4000 },
+    { id: "p-b-2", emoji: "📖", title: "Harry Potter Complete Set", priceCents: 8500 },
+    { id: "p-b-3", emoji: "🔬", title: "Science Textbooks (10 vols)", priceCents: 12000 },
+    { id: "p-b-4", emoji: "🎭", title: "Classic Literature Box Set", priceCents: 3500 },
+    { id: "p-b-5", emoji: "🍳", title: "Cookbook Collection (8)", priceCents: 5500 },
+  ],
+  other: [
+    { id: "p-o-1", emoji: "🎮", title: "Nintendo Switch OLED Bundle", priceCents: 28000 },
+    { id: "p-o-2", emoji: "🎸", title: "Fender Acoustic Guitar", priceCents: 35000 },
+    { id: "p-o-3", emoji: "🎉", title: "Party Decoration Kit", priceCents: 2500 },
+    { id: "p-o-4", emoji: "🪁", title: "Outdoor Games Bundle", priceCents: 8500 },
+    { id: "p-o-5", emoji: "🎯", title: "Dart Board Pro Set", priceCents: 4500 },
+  ],
+};
+
 function formatPrice(cents: number) {
   return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -110,6 +177,36 @@ function SkeletonGrid() {
     </View>
   );
 }
+
+// ── Horizontal listing card (browse view) ─────────────────────────────────────
+
+const HorizontalListingCard = memo(function HorizontalListingCard({
+  item,
+  onPress,
+}: {
+  item: PlaceholderItem;
+  onPress?: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      style={[styles.hCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={onPress}
+    >
+      <View style={[styles.hCardThumb, { backgroundColor: colors.secondary }]}>
+        <Text style={styles.hCardEmoji}>{item.emoji}</Text>
+      </View>
+      <View style={styles.hCardBody}>
+        <Text style={[styles.hCardTitle, { color: colors.foreground }]} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <Text style={[styles.hCardPrice, { color: colors.primary }]}>
+          {formatPrice(item.priceCents)}
+        </Text>
+      </View>
+    </Pressable>
+  );
+});
 
 const skStyles = StyleSheet.create({
   grid: {
@@ -691,7 +788,7 @@ function SellView({ onCreated }: { onCreated: () => void }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => void }) {
+export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDrawer: () => void; externalMode?: "buy" | "sell" }) {
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
   const { userId } = useAuth();
@@ -705,6 +802,7 @@ export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
   const [loadingMore, setLoadingMore]   = useState(false);
   const [detailListing, setDetailListing] = useState<MarketplaceListing | null>(null);
   const [sellSuccess, setSellSuccess]   = useState(false);
+  const [viewAllCat, setViewAllCat]     = useState<string | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -712,14 +810,30 @@ export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
     return () => clearTimeout(t);
   }, [search]);
 
+  // Sync external mode from DrawerNav
+  useEffect(() => {
+    if (externalMode) {
+      setMode(externalMode as Mode);
+      setViewAllCat(null);
+    }
+  }, [externalMode]);
+
+  // When switching to sell mode, clear viewAllCat
+  useEffect(() => {
+    if (mode === "sell") setViewAllCat(null);
+  }, [mode]);
+
+  // effectiveCat = viewAllCat when drilling into a category, else selectedCat filter
+  const effectiveCat = viewAllCat ?? selectedCat;
+
   // Reset on filter change
   useEffect(() => {
     setAllListings([]);
     setCursor(undefined);
-  }, [selectedCat, debouncedSearch]);
+  }, [effectiveCat, debouncedSearch]);
 
   const { data, isLoading, refetch, isRefetching } = useListMarketplaceListings({
-    category: selectedCat ?? undefined,
+    category: effectiveCat ?? undefined,
     search: debouncedSearch || undefined,
     limit: 24,
   });
@@ -830,14 +944,29 @@ export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
     </ScrollView>
   );
 
-  const ListHeader = (
+  const GridHeader = (
     <>
+      {/* Back button when drilled into a category */}
+      {viewAllCat && (
+        <Pressable
+          style={[styles.backRow, { borderBottomColor: colors.border }]}
+          onPress={() => { setViewAllCat(null); setSearch(""); }}
+        >
+          <Feather name="arrow-left" size={16} color={colors.primary} />
+          <Text style={[styles.backText, { color: colors.primary }]}>Browse All</Text>
+          <View style={styles.backSep} />
+          <Text style={[styles.backCatLabel, { color: colors.foreground }]}>
+            {CATEGORIES.find((c) => c.id === viewAllCat)?.emoji}{" "}
+            {CATEGORIES.find((c) => c.id === viewAllCat)?.label}
+          </Text>
+        </Pressable>
+      )}
       {/* Search bar */}
       <View style={[styles.searchBar, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
         <Feather name="search" size={15} color={colors.mutedForeground} />
         <TextInput
           style={[styles.searchInput, { color: colors.foreground }]}
-          placeholder="Search listings near you…"
+          placeholder={viewAllCat ? `Search ${CATEGORIES.find((c) => c.id === viewAllCat)?.label ?? ""}…` : "Search listings near you…"}
           placeholderTextColor={colors.mutedForeground}
           value={search}
           onChangeText={setSearch}
@@ -850,8 +979,6 @@ export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
           </Pressable>
         )}
       </View>
-      {CategoryChips}
-
       {sellSuccess && (
         <View style={[styles.successBanner, { backgroundColor: "#16a34a20", borderColor: "#16a34a" }]}>
           <Feather name="check-circle" size={14} color="#16a34a" />
@@ -892,45 +1019,100 @@ export default function BuySellScreen({ onOpenDrawer }: { onOpenDrawer: () => vo
       {/* ── Content ── */}
       {mode === "sell" ? (
         <SellView onCreated={handleSellCreated} />
-      ) : isLoading && allListings.length === 0 ? (
-        <>
-          {ListHeader}
-          <SkeletonGrid />
-        </>
+      ) : viewAllCat !== null || debouncedSearch.length > 0 ? (
+        // Grid view — drilled into category or searching
+        isLoading && allListings.length === 0 ? (
+          <>
+            {GridHeader}
+            <SkeletonGrid />
+          </>
+        ) : (
+          <FlatList
+            data={allListings}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
+            ListHeaderComponent={GridHeader}
+            ListFooterComponent={ListFooter}
+            ListEmptyComponent={
+              <View style={styles.emptyCenter}>
+                <Feather name="shopping-bag" size={40} color={colors.mutedForeground} />
+                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No listings found</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+                  {debouncedSearch ? "Try a different search term." : "No listings in this category yet."}
+                </Text>
+              </View>
+            }
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={handleRefresh}
+                tintColor={colors.primary}
+              />
+            }
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.3}
+            showsVerticalScrollIndicator={false}
+          />
+        )
       ) : (
-        <FlatList
-          data={allListings}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          numColumns={2}
-          columnWrapperStyle={styles.columnWrapper}
-          ListHeaderComponent={ListHeader}
-          ListFooterComponent={ListFooter}
-          ListEmptyComponent={
-            <View style={styles.emptyCenter}>
-              <Feather name="shopping-bag" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No listings found</Text>
-              <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                {debouncedSearch
-                  ? "Try a different search term."
-                  : selectedCat
-                  ? "No listings in this category yet. Be the first to sell!"
-                  : "No listings yet. Tap 'Sell' to post the first one!"}
-              </Text>
-            </View>
-          }
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
+        // Horizontal browse per category
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+          <View style={[styles.searchBar, { backgroundColor: colors.secondary, borderColor: colors.border, margin: 12 }]}>
+            <Feather name="search" size={15} color={colors.mutedForeground} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.foreground }]}
+              placeholder="Search listings near you…"
+              placeholderTextColor={colors.mutedForeground}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
             />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.3}
-          showsVerticalScrollIndicator={false}
-        />
+            {search.length > 0 && (
+              <Pressable onPress={() => setSearch("")} hitSlop={8}>
+                <Feather name="x" size={14} color={colors.mutedForeground} />
+              </Pressable>
+            )}
+          </View>
+          {sellSuccess && (
+            <View style={[styles.successBanner, { backgroundColor: "#16a34a20", borderColor: "#16a34a", marginHorizontal: 12, marginBottom: 4 }]}>
+              <Feather name="check-circle" size={14} color="#16a34a" />
+              <Text style={[styles.successText, { color: "#16a34a" }]}>Listing posted! Buyers in your area will see it shortly.</Text>
+            </View>
+          )}
+          {CATEGORIES.map((cat) => {
+            const items = PLACEHOLDER_LISTINGS[cat.id] ?? [];
+            return (
+              <View key={cat.id} style={styles.browseSection}>
+                <View style={styles.browseSectionHeader}>
+                  <Text style={[styles.browseSectionTitle, { color: colors.foreground }]}>
+                    {cat.emoji} {cat.label}
+                  </Text>
+                  <Pressable
+                    onPress={() => { Haptics.selectionAsync(); setViewAllCat(cat.id); }}
+                    style={[styles.viewAllBtn, { borderColor: colors.border }]}
+                    hitSlop={8}
+                  >
+                    <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
+                    <Feather name="chevron-right" size={12} color={colors.primary} />
+                  </Pressable>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
+                  {items.map((item) => (
+                    <HorizontalListingCard
+                      key={item.id}
+                      item={item}
+                      onPress={() => { Haptics.selectionAsync(); setViewAllCat(cat.id); }}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            );
+          })}
+        </ScrollView>
       )}
 
       {/* Listing detail modal */}
@@ -1172,4 +1354,45 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   actionBtnText: { fontSize: 16, fontWeight: "700", color: "#ffffff" },
+
+  // Browse mode — per-category horizontal sections
+  browseSection: { marginBottom: 4 },
+  browseSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  browseSectionTitle: { fontSize: 16, fontWeight: "700" },
+  viewAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  viewAllText: { fontSize: 12, fontWeight: "600" },
+  hScrollContent: { paddingHorizontal: 12, gap: 10, paddingBottom: 8 },
+  hCard: { width: 132, borderRadius: 16, overflow: "hidden", borderWidth: 1 },
+  hCardThumb: { height: 100, justifyContent: "center", alignItems: "center" },
+  hCardEmoji: { fontSize: 38 },
+  hCardBody: { padding: 8, gap: 3 },
+  hCardTitle: { fontSize: 12, lineHeight: 16 },
+  hCardPrice: { fontSize: 13, fontWeight: "700" },
+
+  // Grid mode back row
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backText: { fontSize: 14, fontWeight: "600" },
+  backSep: { width: StyleSheet.hairlineWidth, height: 14, backgroundColor: "rgba(128,128,128,0.3)", marginHorizontal: 2 },
+  backCatLabel: { fontSize: 14, fontWeight: "600", flex: 1 },
 });

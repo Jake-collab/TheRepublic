@@ -1271,7 +1271,7 @@ function PostGigModal({
 
 // ── Main GigsScreen ───────────────────────────────────────────────────────────
 
-export default function GigsScreen({ onOpenDrawer }: { onOpenDrawer: () => void }) {
+export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawer: () => void; externalMode?: "hire" | "work" }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, isLoaded } = useUser();
@@ -1283,6 +1283,10 @@ export default function GigsScreen({ onOpenDrawer }: { onOpenDrawer: () => void 
   });
 
   const [mode, setMode] = useState<Mode>("hire");
+
+  useEffect(() => {
+    if (externalMode) setMode(externalMode as Mode);
+  }, [externalMode]);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [locationLabel, setLocationLabel] = useState<string>("Detecting location…");
 
@@ -1305,7 +1309,7 @@ export default function GigsScreen({ onOpenDrawer }: { onOpenDrawer: () => void 
   );
 
   // modal state
-  const [showPost, setShowPost] = useState(false);
+  const [showPost, setShowPost] = useState(true);
   const [detailJobId, setDetailJobId] = useState<number | null>(null);
   const [myJobId, setMyJobId] = useState<number | null>(null);
 
