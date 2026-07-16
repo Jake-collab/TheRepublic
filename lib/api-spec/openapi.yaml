@@ -2117,6 +2117,243 @@ paths:
                 items:
                   $ref: "#/components/schemas/GigApplicationWithJob"
 
+  /freelance/projects:
+    get:
+      operationId: listFreelanceProjects
+      tags: [freelance]
+      summary: List open freelance projects (paginated)
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: cursor
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreelanceProjectsPage"
+    post:
+      operationId: createFreelanceProject
+      tags: [freelance]
+      summary: Post a new freelance project (auth required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FreelanceProjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreelanceProject"
+
+  /freelance/projects/{id}:
+    get:
+      operationId: getFreelanceProject
+      tags: [freelance]
+      summary: Get a freelance project with bids and milestones
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreelanceProjectDetail"
+
+  /freelance/projects/{id}/bid:
+    post:
+      operationId: submitFreelanceBid
+      tags: [freelance]
+      summary: Submit a bid on a project (auth required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FreelanceBidInput"
+      responses:
+        "201":
+          description: Bid submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreelanceBid"
+
+  /freelance/projects/{id}/accept/{bidId}:
+    post:
+      operationId: acceptFreelanceBid
+      tags: [freelance]
+      summary: Accept a bid (hirer only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: bidId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Bid accepted
+
+  /freelance/projects/{id}/milestones:
+    post:
+      operationId: createFreelanceMilestone
+      tags: [freelance]
+      summary: Add a milestone to a project (hirer or worker)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FreelanceMilestoneInput"
+      responses:
+        "201":
+          description: Milestone created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreelanceMilestone"
+
+  /freelance/projects/{id}/milestones/{milestoneId}:
+    patch:
+      operationId: updateFreelanceMilestone
+      tags: [freelance]
+      summary: Update milestone status (hirer or worker, role-gated transitions)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: milestoneId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FreelanceMilestoneUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreelanceMilestone"
+
+  /freelance/projects/{id}/messages:
+    get:
+      operationId: listFreelanceMessages
+      tags: [freelance]
+      summary: Get message thread for a project (hirer or worker only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FreelanceMessage"
+    post:
+      operationId: sendFreelanceMessage
+      tags: [freelance]
+      summary: Send a message on a project thread (hirer or worker only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FreelanceMessageInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreelanceMessage"
+
+  /freelance/my-projects:
+    get:
+      operationId: listMyFreelanceProjects
+      tags: [freelance]
+      summary: List projects posted by the current user (auth required)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FreelanceProject"
+
+  /freelance/my-bids:
+    get:
+      operationId: listMyFreelanceBids
+      tags: [freelance]
+      summary: List the current user's bids with project data (auth required)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FreelanceBidWithProject"
+
 components:
   schemas:
     HealthStatus:
@@ -3651,5 +3888,259 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GigJob"
+        nextCursor:
+          type: ["integer", "null"]
+
+    FreelanceProject:
+      type: object
+      required:
+        - id
+        - hirerId
+        - hirerName
+        - title
+        - description
+        - category
+        - skillTags
+        - budgetType
+        - budgetMinCents
+        - budgetMaxCents
+        - status
+        - bidCount
+        - createdAt
+      properties:
+        id:
+          type: integer
+        hirerId:
+          type: string
+        hirerName:
+          type: string
+        hirerAvatar:
+          type: ["string", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        skillTags:
+          type: string
+        budgetType:
+          type: string
+          description: '"fixed" or "hourly"'
+        budgetMinCents:
+          type: integer
+        budgetMaxCents:
+          type: integer
+        status:
+          type: string
+          description: '"open" | "in_progress" | "completed" | "cancelled"'
+        workerId:
+          type: ["string", "null"]
+        workerName:
+          type: ["string", "null"]
+        bidCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    FreelanceProjectDetail:
+      allOf:
+        - $ref: "#/components/schemas/FreelanceProject"
+        - type: object
+          required: [bids, milestones]
+          properties:
+            bids:
+              type: array
+              items:
+                $ref: "#/components/schemas/FreelanceBid"
+            milestones:
+              type: array
+              items:
+                $ref: "#/components/schemas/FreelanceMilestone"
+
+    FreelanceProjectInput:
+      type: object
+      required:
+        - hirerId
+        - hirerName
+        - title
+        - description
+        - category
+        - budgetType
+        - budgetMinCents
+        - budgetMaxCents
+      properties:
+        hirerId:
+          type: string
+        hirerName:
+          type: string
+        hirerAvatar:
+          type: ["string", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        skillTags:
+          type: string
+          default: ""
+        budgetType:
+          type: string
+        budgetMinCents:
+          type: integer
+        budgetMaxCents:
+          type: integer
+
+    FreelanceBid:
+      type: object
+      required:
+        - id
+        - projectId
+        - workerId
+        - workerName
+        - proposedCents
+        - deliveryDays
+        - coverLetter
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        workerId:
+          type: string
+        workerName:
+          type: string
+        workerAvatar:
+          type: ["string", "null"]
+        proposedCents:
+          type: integer
+        deliveryDays:
+          type: integer
+        coverLetter:
+          type: string
+        status:
+          type: string
+          description: '"pending" | "accepted" | "rejected" | "withdrawn"'
+        createdAt:
+          type: string
+          format: date-time
+
+    FreelanceBidInput:
+      type: object
+      required: [proposedCents]
+      properties:
+        proposedCents:
+          type: integer
+        deliveryDays:
+          type: integer
+          default: 7
+        coverLetter:
+          type: string
+          default: ""
+
+    FreelanceBidWithProject:
+      allOf:
+        - $ref: "#/components/schemas/FreelanceBid"
+        - type: object
+          required: [project]
+          properties:
+            project:
+              $ref: "#/components/schemas/FreelanceProject"
+
+    FreelanceMilestone:
+      type: object
+      required:
+        - id
+        - projectId
+        - title
+        - description
+        - amountCents
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        amountCents:
+          type: integer
+        status:
+          type: string
+          description: '"pending" | "in_progress" | "submitted" | "approved"'
+        dueDate:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    FreelanceMilestoneInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          default: ""
+        amountCents:
+          type: integer
+          default: 0
+        dueDate:
+          type: ["string", "null"]
+
+    FreelanceMilestoneUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    FreelanceMessage:
+      type: object
+      required:
+        - id
+        - projectId
+        - senderId
+        - senderName
+        - body
+        - createdAt
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        senderId:
+          type: string
+        senderName:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    FreelanceMessageInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+
+    FreelanceProjectsPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FreelanceProject"
         nextCursor:
           type: ["integer", "null"]

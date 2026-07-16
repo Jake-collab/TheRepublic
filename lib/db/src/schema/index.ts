@@ -15,3 +15,4 @@ export * from "./notificationCampaigns";
 export * from "./appSettings";
 export * from "./marketplace";
 export * from "./gigs";
+export * from "./freelance";

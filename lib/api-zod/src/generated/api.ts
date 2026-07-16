@@ -1953,3 +1953,265 @@ export const ListMyGigApplicationsResponseItem = zod.object({
 export const ListMyGigApplicationsResponse = zod.array(ListMyGigApplicationsResponseItem)
 
 
+/**
+ * @summary List open freelance projects (paginated)
+ */
+export const listFreelanceProjectsQueryLimitDefault = 20;
+
+export const ListFreelanceProjectsQueryParams = zod.object({
+  "category": zod.coerce.string().nullish(),
+  "cursor": zod.coerce.number().nullish(),
+  "limit": zod.coerce.number().default(listFreelanceProjectsQueryLimitDefault)
+})
+
+export const ListFreelanceProjectsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "skillTags": zod.string(),
+  "budgetType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "budgetMinCents": zod.number(),
+  "budgetMaxCents": zod.number(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "bidCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})),
+  "nextCursor": zod.number().nullish()
+})
+
+
+/**
+ * @summary Post a new freelance project (auth required)
+ */
+export const createFreelanceProjectBodySkillTagsDefault = ``;
+
+export const CreateFreelanceProjectBody = zod.object({
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "skillTags": zod.string().default(createFreelanceProjectBodySkillTagsDefault),
+  "budgetType": zod.string(),
+  "budgetMinCents": zod.number(),
+  "budgetMaxCents": zod.number()
+})
+
+
+/**
+ * @summary Get a freelance project with bids and milestones
+ */
+export const GetFreelanceProjectParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetFreelanceProjectResponse = zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "skillTags": zod.string(),
+  "budgetType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "budgetMinCents": zod.number(),
+  "budgetMaxCents": zod.number(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "bidCount": zod.number(),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "bids": zod.array(zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "workerId": zod.string(),
+  "workerName": zod.string(),
+  "workerAvatar": zod.string().nullish(),
+  "proposedCents": zod.number(),
+  "deliveryDays": zod.number(),
+  "coverLetter": zod.string(),
+  "status": zod.string().describe('\"pending\" | \"accepted\" | \"rejected\" | \"withdrawn\"'),
+  "createdAt": zod.coerce.date()
+})),
+  "milestones": zod.array(zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "amountCents": zod.number(),
+  "status": zod.string().describe('\"pending\" | \"in_progress\" | \"submitted\" | \"approved\"'),
+  "dueDate": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}))
+}))
+
+
+/**
+ * @summary Submit a bid on a project (auth required)
+ */
+export const SubmitFreelanceBidParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const submitFreelanceBidBodyDeliveryDaysDefault = 7;
+export const submitFreelanceBidBodyCoverLetterDefault = ``;
+
+export const SubmitFreelanceBidBody = zod.object({
+  "proposedCents": zod.number(),
+  "deliveryDays": zod.number().default(submitFreelanceBidBodyDeliveryDaysDefault),
+  "coverLetter": zod.string().default(submitFreelanceBidBodyCoverLetterDefault)
+})
+
+
+/**
+ * @summary Accept a bid (hirer only)
+ */
+export const AcceptFreelanceBidParams = zod.object({
+  "id": zod.coerce.number(),
+  "bidId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a milestone to a project (hirer or worker)
+ */
+export const CreateFreelanceMilestoneParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const createFreelanceMilestoneBodyDescriptionDefault = ``;
+export const createFreelanceMilestoneBodyAmountCentsDefault = 0;
+
+export const CreateFreelanceMilestoneBody = zod.object({
+  "title": zod.string(),
+  "description": zod.string().default(createFreelanceMilestoneBodyDescriptionDefault),
+  "amountCents": zod.number().default(createFreelanceMilestoneBodyAmountCentsDefault),
+  "dueDate": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update milestone status (hirer or worker, role-gated transitions)
+ */
+export const UpdateFreelanceMilestoneParams = zod.object({
+  "id": zod.coerce.number(),
+  "milestoneId": zod.coerce.number()
+})
+
+export const UpdateFreelanceMilestoneBody = zod.object({
+  "status": zod.string()
+})
+
+export const UpdateFreelanceMilestoneResponse = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "amountCents": zod.number(),
+  "status": zod.string().describe('\"pending\" | \"in_progress\" | \"submitted\" | \"approved\"'),
+  "dueDate": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get message thread for a project (hirer or worker only)
+ */
+export const ListFreelanceMessagesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListFreelanceMessagesResponseItem = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "senderId": zod.string(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListFreelanceMessagesResponse = zod.array(ListFreelanceMessagesResponseItem)
+
+
+/**
+ * @summary Send a message on a project thread (hirer or worker only)
+ */
+export const SendFreelanceMessageParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SendFreelanceMessageBody = zod.object({
+  "body": zod.string()
+})
+
+
+/**
+ * @summary List projects posted by the current user (auth required)
+ */
+export const ListMyFreelanceProjectsResponseItem = zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "skillTags": zod.string(),
+  "budgetType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "budgetMinCents": zod.number(),
+  "budgetMaxCents": zod.number(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "bidCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListMyFreelanceProjectsResponse = zod.array(ListMyFreelanceProjectsResponseItem)
+
+
+/**
+ * @summary List the current user's bids with project data (auth required)
+ */
+export const ListMyFreelanceBidsResponseItem = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "workerId": zod.string(),
+  "workerName": zod.string(),
+  "workerAvatar": zod.string().nullish(),
+  "proposedCents": zod.number(),
+  "deliveryDays": zod.number(),
+  "coverLetter": zod.string(),
+  "status": zod.string().describe('\"pending\" | \"accepted\" | \"rejected\" | \"withdrawn\"'),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "project": zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "skillTags": zod.string(),
+  "budgetType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "budgetMinCents": zod.number(),
+  "budgetMaxCents": zod.number(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "bidCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+}))
+export const ListMyFreelanceBidsResponse = zod.array(ListMyFreelanceBidsResponseItem)
+
+

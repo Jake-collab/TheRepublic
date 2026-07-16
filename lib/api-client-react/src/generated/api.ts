@@ -65,6 +65,18 @@ import type {
   DailyNewUsers,
   DailyTicketActivity,
   FlagInput,
+  FreelanceBid,
+  FreelanceBidInput,
+  FreelanceBidWithProject,
+  FreelanceMessage,
+  FreelanceMessageInput,
+  FreelanceMilestone,
+  FreelanceMilestoneInput,
+  FreelanceMilestoneUpdate,
+  FreelanceProject,
+  FreelanceProjectDetail,
+  FreelanceProjectInput,
+  FreelanceProjectsPage,
   GigApplication,
   GigApplicationWithJob,
   GigApplyInput,
@@ -76,6 +88,7 @@ import type {
   GigMessageInput,
   HealthStatus,
   ListCitizenVotePostsParams,
+  ListFreelanceProjectsParams,
   ListGigJobsParams,
   ListMarketplaceListingsParams,
   ListTalkPostsParams,
@@ -8308,6 +8321,831 @@ export function useListMyGigApplications<TData = Awaited<ReturnType<typeof listM
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListMyGigApplicationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListFreelanceProjectsUrl = (params?: ListFreelanceProjectsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/freelance/projects?${stringifiedParams}` : `/api/freelance/projects`
+}
+
+/**
+ * @summary List open freelance projects (paginated)
+ */
+export const listFreelanceProjects = async (params?: ListFreelanceProjectsParams, options?: RequestInit): Promise<FreelanceProjectsPage> => {
+
+  return customFetch<FreelanceProjectsPage>(getListFreelanceProjectsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFreelanceProjectsQueryKey = (params?: ListFreelanceProjectsParams,) => {
+    return [
+    `/api/freelance/projects`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFreelanceProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listFreelanceProjects>>, TError = ErrorType<unknown>>(params?: ListFreelanceProjectsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFreelanceProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFreelanceProjectsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFreelanceProjects>>> = ({ signal }) => listFreelanceProjects(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFreelanceProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFreelanceProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listFreelanceProjects>>>
+export type ListFreelanceProjectsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List open freelance projects (paginated)
+ */
+
+export function useListFreelanceProjects<TData = Awaited<ReturnType<typeof listFreelanceProjects>>, TError = ErrorType<unknown>>(
+ params?: ListFreelanceProjectsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFreelanceProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFreelanceProjectsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateFreelanceProjectUrl = () => {
+
+
+
+
+  return `/api/freelance/projects`
+}
+
+/**
+ * @summary Post a new freelance project (auth required)
+ */
+export const createFreelanceProject = async (freelanceProjectInput: FreelanceProjectInput, options?: RequestInit): Promise<FreelanceProject> => {
+
+  return customFetch<FreelanceProject>(getCreateFreelanceProjectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      freelanceProjectInput,)
+  }
+);}
+
+
+
+
+export const getCreateFreelanceProjectMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFreelanceProject>>, TError,{data: BodyType<FreelanceProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFreelanceProject>>, TError,{data: BodyType<FreelanceProjectInput>}, TContext> => {
+
+const mutationKey = ['createFreelanceProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFreelanceProject>>, {data: BodyType<FreelanceProjectInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFreelanceProject(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFreelanceProjectMutationResult = NonNullable<Awaited<ReturnType<typeof createFreelanceProject>>>
+    export type CreateFreelanceProjectMutationBody = BodyType<FreelanceProjectInput>
+    export type CreateFreelanceProjectMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Post a new freelance project (auth required)
+ */
+export const useCreateFreelanceProject = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFreelanceProject>>, TError,{data: BodyType<FreelanceProjectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFreelanceProject>>,
+        TError,
+        {data: BodyType<FreelanceProjectInput>},
+        TContext
+      > => {
+      return useMutation(getCreateFreelanceProjectMutationOptions(options));
+    }
+
+export const getGetFreelanceProjectUrl = (id: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}`
+}
+
+/**
+ * @summary Get a freelance project with bids and milestones
+ */
+export const getFreelanceProject = async (id: number, options?: RequestInit): Promise<FreelanceProjectDetail> => {
+
+  return customFetch<FreelanceProjectDetail>(getGetFreelanceProjectUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFreelanceProjectQueryKey = (id: number,) => {
+    return [
+    `/api/freelance/projects/${id}`
+    ] as const;
+    }
+
+
+export const getGetFreelanceProjectQueryOptions = <TData = Awaited<ReturnType<typeof getFreelanceProject>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFreelanceProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFreelanceProjectQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFreelanceProject>>> = ({ signal }) => getFreelanceProject(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFreelanceProject>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFreelanceProjectQueryResult = NonNullable<Awaited<ReturnType<typeof getFreelanceProject>>>
+export type GetFreelanceProjectQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a freelance project with bids and milestones
+ */
+
+export function useGetFreelanceProject<TData = Awaited<ReturnType<typeof getFreelanceProject>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFreelanceProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFreelanceProjectQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSubmitFreelanceBidUrl = (id: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/bid`
+}
+
+/**
+ * @summary Submit a bid on a project (auth required)
+ */
+export const submitFreelanceBid = async (id: number,
+    freelanceBidInput: FreelanceBidInput, options?: RequestInit): Promise<FreelanceBid> => {
+
+  return customFetch<FreelanceBid>(getSubmitFreelanceBidUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      freelanceBidInput,)
+  }
+);}
+
+
+
+
+export const getSubmitFreelanceBidMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFreelanceBid>>, TError,{id: number;data: BodyType<FreelanceBidInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitFreelanceBid>>, TError,{id: number;data: BodyType<FreelanceBidInput>}, TContext> => {
+
+const mutationKey = ['submitFreelanceBid'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitFreelanceBid>>, {id: number;data: BodyType<FreelanceBidInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitFreelanceBid(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitFreelanceBidMutationResult = NonNullable<Awaited<ReturnType<typeof submitFreelanceBid>>>
+    export type SubmitFreelanceBidMutationBody = BodyType<FreelanceBidInput>
+    export type SubmitFreelanceBidMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit a bid on a project (auth required)
+ */
+export const useSubmitFreelanceBid = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFreelanceBid>>, TError,{id: number;data: BodyType<FreelanceBidInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitFreelanceBid>>,
+        TError,
+        {id: number;data: BodyType<FreelanceBidInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitFreelanceBidMutationOptions(options));
+    }
+
+export const getAcceptFreelanceBidUrl = (id: number,
+    bidId: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/accept/${bidId}`
+}
+
+/**
+ * @summary Accept a bid (hirer only)
+ */
+export const acceptFreelanceBid = async (id: number,
+    bidId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAcceptFreelanceBidUrl(id,bidId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptFreelanceBidMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptFreelanceBid>>, TError,{id: number;bidId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptFreelanceBid>>, TError,{id: number;bidId: number}, TContext> => {
+
+const mutationKey = ['acceptFreelanceBid'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptFreelanceBid>>, {id: number;bidId: number}> = (props) => {
+          const {id,bidId} = props ?? {};
+
+          return  acceptFreelanceBid(id,bidId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptFreelanceBidMutationResult = NonNullable<Awaited<ReturnType<typeof acceptFreelanceBid>>>
+
+    export type AcceptFreelanceBidMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Accept a bid (hirer only)
+ */
+export const useAcceptFreelanceBid = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptFreelanceBid>>, TError,{id: number;bidId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptFreelanceBid>>,
+        TError,
+        {id: number;bidId: number},
+        TContext
+      > => {
+      return useMutation(getAcceptFreelanceBidMutationOptions(options));
+    }
+
+export const getCreateFreelanceMilestoneUrl = (id: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/milestones`
+}
+
+/**
+ * @summary Add a milestone to a project (hirer or worker)
+ */
+export const createFreelanceMilestone = async (id: number,
+    freelanceMilestoneInput: FreelanceMilestoneInput, options?: RequestInit): Promise<FreelanceMilestone> => {
+
+  return customFetch<FreelanceMilestone>(getCreateFreelanceMilestoneUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      freelanceMilestoneInput,)
+  }
+);}
+
+
+
+
+export const getCreateFreelanceMilestoneMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFreelanceMilestone>>, TError,{id: number;data: BodyType<FreelanceMilestoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFreelanceMilestone>>, TError,{id: number;data: BodyType<FreelanceMilestoneInput>}, TContext> => {
+
+const mutationKey = ['createFreelanceMilestone'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFreelanceMilestone>>, {id: number;data: BodyType<FreelanceMilestoneInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createFreelanceMilestone(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFreelanceMilestoneMutationResult = NonNullable<Awaited<ReturnType<typeof createFreelanceMilestone>>>
+    export type CreateFreelanceMilestoneMutationBody = BodyType<FreelanceMilestoneInput>
+    export type CreateFreelanceMilestoneMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a milestone to a project (hirer or worker)
+ */
+export const useCreateFreelanceMilestone = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFreelanceMilestone>>, TError,{id: number;data: BodyType<FreelanceMilestoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFreelanceMilestone>>,
+        TError,
+        {id: number;data: BodyType<FreelanceMilestoneInput>},
+        TContext
+      > => {
+      return useMutation(getCreateFreelanceMilestoneMutationOptions(options));
+    }
+
+export const getUpdateFreelanceMilestoneUrl = (id: number,
+    milestoneId: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/milestones/${milestoneId}`
+}
+
+/**
+ * @summary Update milestone status (hirer or worker, role-gated transitions)
+ */
+export const updateFreelanceMilestone = async (id: number,
+    milestoneId: number,
+    freelanceMilestoneUpdate: FreelanceMilestoneUpdate, options?: RequestInit): Promise<FreelanceMilestone> => {
+
+  return customFetch<FreelanceMilestone>(getUpdateFreelanceMilestoneUrl(id,milestoneId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      freelanceMilestoneUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateFreelanceMilestoneMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFreelanceMilestone>>, TError,{id: number;milestoneId: number;data: BodyType<FreelanceMilestoneUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFreelanceMilestone>>, TError,{id: number;milestoneId: number;data: BodyType<FreelanceMilestoneUpdate>}, TContext> => {
+
+const mutationKey = ['updateFreelanceMilestone'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFreelanceMilestone>>, {id: number;milestoneId: number;data: BodyType<FreelanceMilestoneUpdate>}> = (props) => {
+          const {id,milestoneId,data} = props ?? {};
+
+          return  updateFreelanceMilestone(id,milestoneId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFreelanceMilestoneMutationResult = NonNullable<Awaited<ReturnType<typeof updateFreelanceMilestone>>>
+    export type UpdateFreelanceMilestoneMutationBody = BodyType<FreelanceMilestoneUpdate>
+    export type UpdateFreelanceMilestoneMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update milestone status (hirer or worker, role-gated transitions)
+ */
+export const useUpdateFreelanceMilestone = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFreelanceMilestone>>, TError,{id: number;milestoneId: number;data: BodyType<FreelanceMilestoneUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFreelanceMilestone>>,
+        TError,
+        {id: number;milestoneId: number;data: BodyType<FreelanceMilestoneUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateFreelanceMilestoneMutationOptions(options));
+    }
+
+export const getListFreelanceMessagesUrl = (id: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/messages`
+}
+
+/**
+ * @summary Get message thread for a project (hirer or worker only)
+ */
+export const listFreelanceMessages = async (id: number, options?: RequestInit): Promise<FreelanceMessage[]> => {
+
+  return customFetch<FreelanceMessage[]>(getListFreelanceMessagesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFreelanceMessagesQueryKey = (id: number,) => {
+    return [
+    `/api/freelance/projects/${id}/messages`
+    ] as const;
+    }
+
+
+export const getListFreelanceMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listFreelanceMessages>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFreelanceMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFreelanceMessagesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFreelanceMessages>>> = ({ signal }) => listFreelanceMessages(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFreelanceMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFreelanceMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listFreelanceMessages>>>
+export type ListFreelanceMessagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get message thread for a project (hirer or worker only)
+ */
+
+export function useListFreelanceMessages<TData = Awaited<ReturnType<typeof listFreelanceMessages>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFreelanceMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFreelanceMessagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSendFreelanceMessageUrl = (id: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/messages`
+}
+
+/**
+ * @summary Send a message on a project thread (hirer or worker only)
+ */
+export const sendFreelanceMessage = async (id: number,
+    freelanceMessageInput: FreelanceMessageInput, options?: RequestInit): Promise<FreelanceMessage> => {
+
+  return customFetch<FreelanceMessage>(getSendFreelanceMessageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      freelanceMessageInput,)
+  }
+);}
+
+
+
+
+export const getSendFreelanceMessageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendFreelanceMessage>>, TError,{id: number;data: BodyType<FreelanceMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendFreelanceMessage>>, TError,{id: number;data: BodyType<FreelanceMessageInput>}, TContext> => {
+
+const mutationKey = ['sendFreelanceMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendFreelanceMessage>>, {id: number;data: BodyType<FreelanceMessageInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendFreelanceMessage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendFreelanceMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendFreelanceMessage>>>
+    export type SendFreelanceMessageMutationBody = BodyType<FreelanceMessageInput>
+    export type SendFreelanceMessageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a message on a project thread (hirer or worker only)
+ */
+export const useSendFreelanceMessage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendFreelanceMessage>>, TError,{id: number;data: BodyType<FreelanceMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendFreelanceMessage>>,
+        TError,
+        {id: number;data: BodyType<FreelanceMessageInput>},
+        TContext
+      > => {
+      return useMutation(getSendFreelanceMessageMutationOptions(options));
+    }
+
+export const getListMyFreelanceProjectsUrl = () => {
+
+
+
+
+  return `/api/freelance/my-projects`
+}
+
+/**
+ * @summary List projects posted by the current user (auth required)
+ */
+export const listMyFreelanceProjects = async ( options?: RequestInit): Promise<FreelanceProject[]> => {
+
+  return customFetch<FreelanceProject[]>(getListMyFreelanceProjectsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyFreelanceProjectsQueryKey = () => {
+    return [
+    `/api/freelance/my-projects`
+    ] as const;
+    }
+
+
+export const getListMyFreelanceProjectsQueryOptions = <TData = Awaited<ReturnType<typeof listMyFreelanceProjects>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyFreelanceProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyFreelanceProjectsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyFreelanceProjects>>> = ({ signal }) => listMyFreelanceProjects({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyFreelanceProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyFreelanceProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyFreelanceProjects>>>
+export type ListMyFreelanceProjectsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List projects posted by the current user (auth required)
+ */
+
+export function useListMyFreelanceProjects<TData = Awaited<ReturnType<typeof listMyFreelanceProjects>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyFreelanceProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyFreelanceProjectsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListMyFreelanceBidsUrl = () => {
+
+
+
+
+  return `/api/freelance/my-bids`
+}
+
+/**
+ * @summary List the current user's bids with project data (auth required)
+ */
+export const listMyFreelanceBids = async ( options?: RequestInit): Promise<FreelanceBidWithProject[]> => {
+
+  return customFetch<FreelanceBidWithProject[]>(getListMyFreelanceBidsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyFreelanceBidsQueryKey = () => {
+    return [
+    `/api/freelance/my-bids`
+    ] as const;
+    }
+
+
+export const getListMyFreelanceBidsQueryOptions = <TData = Awaited<ReturnType<typeof listMyFreelanceBids>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyFreelanceBids>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyFreelanceBidsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyFreelanceBids>>> = ({ signal }) => listMyFreelanceBids({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyFreelanceBids>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyFreelanceBidsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyFreelanceBids>>>
+export type ListMyFreelanceBidsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's bids with project data (auth required)
+ */
+
+export function useListMyFreelanceBids<TData = Awaited<ReturnType<typeof listMyFreelanceBids>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyFreelanceBids>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyFreelanceBidsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

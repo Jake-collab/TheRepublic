@@ -981,6 +981,118 @@ export interface GigJobsPage {
   nextCursor?: number | null;
 }
 
+export interface FreelanceProject {
+  id: number;
+  hirerId: string;
+  hirerName: string;
+  /** @nullable */
+  hirerAvatar?: string | null;
+  title: string;
+  description: string;
+  category: string;
+  skillTags: string;
+  /** "fixed" or "hourly" */
+  budgetType: string;
+  budgetMinCents: number;
+  budgetMaxCents: number;
+  /** "open" | "in_progress" | "completed" | "cancelled" */
+  status: string;
+  /** @nullable */
+  workerId?: string | null;
+  /** @nullable */
+  workerName?: string | null;
+  bidCount: number;
+  createdAt: string;
+}
+
+export interface FreelanceBid {
+  id: number;
+  projectId: number;
+  workerId: string;
+  workerName: string;
+  /** @nullable */
+  workerAvatar?: string | null;
+  proposedCents: number;
+  deliveryDays: number;
+  coverLetter: string;
+  /** "pending" | "accepted" | "rejected" | "withdrawn" */
+  status: string;
+  createdAt: string;
+}
+
+export interface FreelanceMilestone {
+  id: number;
+  projectId: number;
+  title: string;
+  description: string;
+  amountCents: number;
+  /** "pending" | "in_progress" | "submitted" | "approved" */
+  status: string;
+  /** @nullable */
+  dueDate?: string | null;
+  createdAt: string;
+}
+
+export type FreelanceProjectDetail = FreelanceProject & {
+  bids: FreelanceBid[];
+  milestones: FreelanceMilestone[];
+};
+
+export interface FreelanceProjectInput {
+  hirerId: string;
+  hirerName: string;
+  /** @nullable */
+  hirerAvatar?: string | null;
+  title: string;
+  description: string;
+  category: string;
+  skillTags?: string;
+  budgetType: string;
+  budgetMinCents: number;
+  budgetMaxCents: number;
+}
+
+export interface FreelanceBidInput {
+  proposedCents: number;
+  deliveryDays?: number;
+  coverLetter?: string;
+}
+
+export type FreelanceBidWithProject = FreelanceBid & {
+  project: FreelanceProject;
+};
+
+export interface FreelanceMilestoneInput {
+  title: string;
+  description?: string;
+  amountCents?: number;
+  /** @nullable */
+  dueDate?: string | null;
+}
+
+export interface FreelanceMilestoneUpdate {
+  status: string;
+}
+
+export interface FreelanceMessage {
+  id: number;
+  projectId: number;
+  senderId: string;
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface FreelanceMessageInput {
+  body: string;
+}
+
+export interface FreelanceProjectsPage {
+  items: FreelanceProject[];
+  /** @nullable */
+  nextCursor?: number | null;
+}
+
 export type ListWebsitesParams = {
 /**
  * @nullable
@@ -1150,6 +1262,18 @@ limit?: number;
 };
 
 export type ListGigJobsParams = {
+/**
+ * @nullable
+ */
+category?: string | null;
+/**
+ * @nullable
+ */
+cursor?: number | null;
+limit?: number;
+};
+
+export type ListFreelanceProjectsParams = {
 /**
  * @nullable
  */
