@@ -65,8 +65,18 @@ import type {
   DailyNewUsers,
   DailyTicketActivity,
   FlagInput,
+  GigApplication,
+  GigApplicationWithJob,
+  GigApplyInput,
+  GigJob,
+  GigJobDetail,
+  GigJobInput,
+  GigJobsPage,
+  GigMessage,
+  GigMessageInput,
   HealthStatus,
   ListCitizenVotePostsParams,
+  ListGigJobsParams,
   ListMarketplaceListingsParams,
   ListTalkPostsParams,
   ListWebsitesParams,
@@ -7490,4 +7500,823 @@ export const useDeleteMarketplaceListing = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteMarketplaceListingMutationOptions(options));
     }
+
+export const getListGigJobsUrl = (params?: ListGigJobsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/gigs/jobs?${stringifiedParams}` : `/api/gigs/jobs`
+}
+
+/**
+ * @summary List open gig jobs (paginated)
+ */
+export const listGigJobs = async (params?: ListGigJobsParams, options?: RequestInit): Promise<GigJobsPage> => {
+
+  return customFetch<GigJobsPage>(getListGigJobsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGigJobsQueryKey = (params?: ListGigJobsParams,) => {
+    return [
+    `/api/gigs/jobs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListGigJobsQueryOptions = <TData = Awaited<ReturnType<typeof listGigJobs>>, TError = ErrorType<unknown>>(params?: ListGigJobsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGigJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGigJobsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGigJobs>>> = ({ signal }) => listGigJobs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGigJobs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGigJobsQueryResult = NonNullable<Awaited<ReturnType<typeof listGigJobs>>>
+export type ListGigJobsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List open gig jobs (paginated)
+ */
+
+export function useListGigJobs<TData = Awaited<ReturnType<typeof listGigJobs>>, TError = ErrorType<unknown>>(
+ params?: ListGigJobsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGigJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGigJobsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateGigJobUrl = () => {
+
+
+
+
+  return `/api/gigs/jobs`
+}
+
+/**
+ * @summary Post a new gig job (auth required)
+ */
+export const createGigJob = async (gigJobInput: GigJobInput, options?: RequestInit): Promise<GigJob> => {
+
+  return customFetch<GigJob>(getCreateGigJobUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      gigJobInput,)
+  }
+);}
+
+
+
+
+export const getCreateGigJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGigJob>>, TError,{data: BodyType<GigJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGigJob>>, TError,{data: BodyType<GigJobInput>}, TContext> => {
+
+const mutationKey = ['createGigJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGigJob>>, {data: BodyType<GigJobInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGigJob(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGigJobMutationResult = NonNullable<Awaited<ReturnType<typeof createGigJob>>>
+    export type CreateGigJobMutationBody = BodyType<GigJobInput>
+    export type CreateGigJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Post a new gig job (auth required)
+ */
+export const useCreateGigJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGigJob>>, TError,{data: BodyType<GigJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGigJob>>,
+        TError,
+        {data: BodyType<GigJobInput>},
+        TContext
+      > => {
+      return useMutation(getCreateGigJobMutationOptions(options));
+    }
+
+export const getGetGigJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/gigs/jobs/${id}`
+}
+
+/**
+ * @summary Get a single gig job with its applications
+ */
+export const getGigJob = async (id: number, options?: RequestInit): Promise<GigJobDetail> => {
+
+  return customFetch<GigJobDetail>(getGetGigJobUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGigJobQueryKey = (id: number,) => {
+    return [
+    `/api/gigs/jobs/${id}`
+    ] as const;
+    }
+
+
+export const getGetGigJobQueryOptions = <TData = Awaited<ReturnType<typeof getGigJob>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGigJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGigJobQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGigJob>>> = ({ signal }) => getGigJob(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGigJob>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGigJobQueryResult = NonNullable<Awaited<ReturnType<typeof getGigJob>>>
+export type GetGigJobQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a single gig job with its applications
+ */
+
+export function useGetGigJob<TData = Awaited<ReturnType<typeof getGigJob>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGigJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGigJobQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApplyToGigJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/gigs/jobs/${id}/apply`
+}
+
+/**
+ * @summary Apply to a gig job as a worker (auth required)
+ */
+export const applyToGigJob = async (id: number,
+    gigApplyInput: GigApplyInput, options?: RequestInit): Promise<GigApplication> => {
+
+  return customFetch<GigApplication>(getApplyToGigJobUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      gigApplyInput,)
+  }
+);}
+
+
+
+
+export const getApplyToGigJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyToGigJob>>, TError,{id: number;data: BodyType<GigApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyToGigJob>>, TError,{id: number;data: BodyType<GigApplyInput>}, TContext> => {
+
+const mutationKey = ['applyToGigJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyToGigJob>>, {id: number;data: BodyType<GigApplyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  applyToGigJob(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyToGigJobMutationResult = NonNullable<Awaited<ReturnType<typeof applyToGigJob>>>
+    export type ApplyToGigJobMutationBody = BodyType<GigApplyInput>
+    export type ApplyToGigJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Apply to a gig job as a worker (auth required)
+ */
+export const useApplyToGigJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyToGigJob>>, TError,{id: number;data: BodyType<GigApplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyToGigJob>>,
+        TError,
+        {id: number;data: BodyType<GigApplyInput>},
+        TContext
+      > => {
+      return useMutation(getApplyToGigJobMutationOptions(options));
+    }
+
+export const getAcceptGigApplicationUrl = (id: number,
+    appId: number,) => {
+
+
+
+
+  return `/api/gigs/jobs/${id}/accept/${appId}`
+}
+
+/**
+ * @summary Accept an applicant (hirer only)
+ */
+export const acceptGigApplication = async (id: number,
+    appId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAcceptGigApplicationUrl(id,appId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptGigApplicationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptGigApplication>>, TError,{id: number;appId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptGigApplication>>, TError,{id: number;appId: number}, TContext> => {
+
+const mutationKey = ['acceptGigApplication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptGigApplication>>, {id: number;appId: number}> = (props) => {
+          const {id,appId} = props ?? {};
+
+          return  acceptGigApplication(id,appId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptGigApplicationMutationResult = NonNullable<Awaited<ReturnType<typeof acceptGigApplication>>>
+
+    export type AcceptGigApplicationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Accept an applicant (hirer only)
+ */
+export const useAcceptGigApplication = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptGigApplication>>, TError,{id: number;appId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptGigApplication>>,
+        TError,
+        {id: number;appId: number},
+        TContext
+      > => {
+      return useMutation(getAcceptGigApplicationMutationOptions(options));
+    }
+
+export const getStartGigJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/gigs/jobs/${id}/start`
+}
+
+/**
+ * @summary Hirer confirms job has started
+ */
+export const startGigJob = async (id: number, options?: RequestInit): Promise<GigJob> => {
+
+  return customFetch<GigJob>(getStartGigJobUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartGigJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startGigJob>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startGigJob>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['startGigJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startGigJob>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  startGigJob(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartGigJobMutationResult = NonNullable<Awaited<ReturnType<typeof startGigJob>>>
+
+    export type StartGigJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Hirer confirms job has started
+ */
+export const useStartGigJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startGigJob>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startGigJob>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getStartGigJobMutationOptions(options));
+    }
+
+export const getCompleteGigJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/gigs/jobs/${id}/complete`
+}
+
+/**
+ * @summary Hirer confirms job is complete (auto-calculates duration)
+ */
+export const completeGigJob = async (id: number, options?: RequestInit): Promise<GigJob> => {
+
+  return customFetch<GigJob>(getCompleteGigJobUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCompleteGigJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeGigJob>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeGigJob>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['completeGigJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeGigJob>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  completeGigJob(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteGigJobMutationResult = NonNullable<Awaited<ReturnType<typeof completeGigJob>>>
+
+    export type CompleteGigJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Hirer confirms job is complete (auto-calculates duration)
+ */
+export const useCompleteGigJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeGigJob>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeGigJob>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCompleteGigJobMutationOptions(options));
+    }
+
+export const getListGigMessagesUrl = (id: number,) => {
+
+
+
+
+  return `/api/gigs/jobs/${id}/messages`
+}
+
+/**
+ * @summary Get the message thread for a job (hirer or worker only)
+ */
+export const listGigMessages = async (id: number, options?: RequestInit): Promise<GigMessage[]> => {
+
+  return customFetch<GigMessage[]>(getListGigMessagesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGigMessagesQueryKey = (id: number,) => {
+    return [
+    `/api/gigs/jobs/${id}/messages`
+    ] as const;
+    }
+
+
+export const getListGigMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listGigMessages>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGigMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGigMessagesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGigMessages>>> = ({ signal }) => listGigMessages(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGigMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGigMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listGigMessages>>>
+export type ListGigMessagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the message thread for a job (hirer or worker only)
+ */
+
+export function useListGigMessages<TData = Awaited<ReturnType<typeof listGigMessages>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGigMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGigMessagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSendGigMessageUrl = (id: number,) => {
+
+
+
+
+  return `/api/gigs/jobs/${id}/messages`
+}
+
+/**
+ * @summary Send a message on a job thread (hirer or worker only)
+ */
+export const sendGigMessage = async (id: number,
+    gigMessageInput: GigMessageInput, options?: RequestInit): Promise<GigMessage> => {
+
+  return customFetch<GigMessage>(getSendGigMessageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      gigMessageInput,)
+  }
+);}
+
+
+
+
+export const getSendGigMessageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendGigMessage>>, TError,{id: number;data: BodyType<GigMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendGigMessage>>, TError,{id: number;data: BodyType<GigMessageInput>}, TContext> => {
+
+const mutationKey = ['sendGigMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendGigMessage>>, {id: number;data: BodyType<GigMessageInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendGigMessage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendGigMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendGigMessage>>>
+    export type SendGigMessageMutationBody = BodyType<GigMessageInput>
+    export type SendGigMessageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a message on a job thread (hirer or worker only)
+ */
+export const useSendGigMessage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendGigMessage>>, TError,{id: number;data: BodyType<GigMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendGigMessage>>,
+        TError,
+        {id: number;data: BodyType<GigMessageInput>},
+        TContext
+      > => {
+      return useMutation(getSendGigMessageMutationOptions(options));
+    }
+
+export const getListMyGigJobsUrl = () => {
+
+
+
+
+  return `/api/gigs/my-jobs`
+}
+
+/**
+ * @summary List jobs posted by the current user (auth required)
+ */
+export const listMyGigJobs = async ( options?: RequestInit): Promise<GigJob[]> => {
+
+  return customFetch<GigJob[]>(getListMyGigJobsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyGigJobsQueryKey = () => {
+    return [
+    `/api/gigs/my-jobs`
+    ] as const;
+    }
+
+
+export const getListMyGigJobsQueryOptions = <TData = Awaited<ReturnType<typeof listMyGigJobs>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyGigJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyGigJobsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyGigJobs>>> = ({ signal }) => listMyGigJobs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyGigJobs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyGigJobsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyGigJobs>>>
+export type ListMyGigJobsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List jobs posted by the current user (auth required)
+ */
+
+export function useListMyGigJobs<TData = Awaited<ReturnType<typeof listMyGigJobs>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyGigJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyGigJobsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListMyGigApplicationsUrl = () => {
+
+
+
+
+  return `/api/gigs/my-applications`
+}
+
+/**
+ * @summary List the current user's gig applications with job data (auth required)
+ */
+export const listMyGigApplications = async ( options?: RequestInit): Promise<GigApplicationWithJob[]> => {
+
+  return customFetch<GigApplicationWithJob[]>(getListMyGigApplicationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyGigApplicationsQueryKey = () => {
+    return [
+    `/api/gigs/my-applications`
+    ] as const;
+    }
+
+
+export const getListMyGigApplicationsQueryOptions = <TData = Awaited<ReturnType<typeof listMyGigApplications>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyGigApplications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyGigApplicationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyGigApplications>>> = ({ signal }) => listMyGigApplications({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyGigApplications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyGigApplicationsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyGigApplications>>>
+export type ListMyGigApplicationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's gig applications with job data (auth required)
+ */
+
+export function useListMyGigApplications<TData = Awaited<ReturnType<typeof listMyGigApplications>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyGigApplications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyGigApplicationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

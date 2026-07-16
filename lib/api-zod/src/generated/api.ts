@@ -1679,3 +1679,277 @@ export const DeleteMarketplaceListingParams = zod.object({
 })
 
 
+/**
+ * @summary List open gig jobs (paginated)
+ */
+export const listGigJobsQueryLimitDefault = 20;
+
+export const ListGigJobsQueryParams = zod.object({
+  "category": zod.coerce.string().nullish(),
+  "cursor": zod.coerce.number().nullish(),
+  "limit": zod.coerce.number().default(listGigJobsQueryLimitDefault)
+})
+
+export const ListGigJobsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "payType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "payAmountCents": zod.number(),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "durationMinutes": zod.number().nullish(),
+  "applicationCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})),
+  "nextCursor": zod.number().nullish()
+})
+
+
+/**
+ * @summary Post a new gig job (auth required)
+ */
+export const createGigJobBodyCityDefault = ``;
+export const createGigJobBodyStateCodeDefault = ``;
+
+export const CreateGigJobBody = zod.object({
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "payType": zod.string(),
+  "payAmountCents": zod.number(),
+  "city": zod.string().default(createGigJobBodyCityDefault),
+  "stateCode": zod.string().default(createGigJobBodyStateCodeDefault)
+})
+
+
+/**
+ * @summary Get a single gig job with its applications
+ */
+export const GetGigJobParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetGigJobResponse = zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "payType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "payAmountCents": zod.number(),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "durationMinutes": zod.number().nullish(),
+  "applicationCount": zod.number(),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "applications": zod.array(zod.object({
+  "id": zod.number(),
+  "jobId": zod.number(),
+  "workerId": zod.string(),
+  "workerName": zod.string(),
+  "workerAvatar": zod.string().nullish(),
+  "message": zod.string(),
+  "status": zod.string().describe('\"pending\" | \"accepted\" | \"rejected\"'),
+  "createdAt": zod.coerce.date()
+}))
+}))
+
+
+/**
+ * @summary Apply to a gig job as a worker (auth required)
+ */
+export const ApplyToGigJobParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ApplyToGigJobBody = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Accept an applicant (hirer only)
+ */
+export const AcceptGigApplicationParams = zod.object({
+  "id": zod.coerce.number(),
+  "appId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Hirer confirms job has started
+ */
+export const StartGigJobParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const StartGigJobResponse = zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "payType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "payAmountCents": zod.number(),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "durationMinutes": zod.number().nullish(),
+  "applicationCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Hirer confirms job is complete (auto-calculates duration)
+ */
+export const CompleteGigJobParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CompleteGigJobResponse = zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "payType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "payAmountCents": zod.number(),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "durationMinutes": zod.number().nullish(),
+  "applicationCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the message thread for a job (hirer or worker only)
+ */
+export const ListGigMessagesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListGigMessagesResponseItem = zod.object({
+  "id": zod.number(),
+  "jobId": zod.number(),
+  "senderId": zod.string(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListGigMessagesResponse = zod.array(ListGigMessagesResponseItem)
+
+
+/**
+ * @summary Send a message on a job thread (hirer or worker only)
+ */
+export const SendGigMessageParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SendGigMessageBody = zod.object({
+  "body": zod.string()
+})
+
+
+/**
+ * @summary List jobs posted by the current user (auth required)
+ */
+export const ListMyGigJobsResponseItem = zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "payType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "payAmountCents": zod.number(),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "durationMinutes": zod.number().nullish(),
+  "applicationCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListMyGigJobsResponse = zod.array(ListMyGigJobsResponseItem)
+
+
+/**
+ * @summary List the current user's gig applications with job data (auth required)
+ */
+export const ListMyGigApplicationsResponseItem = zod.object({
+  "id": zod.number(),
+  "jobId": zod.number(),
+  "workerId": zod.string(),
+  "workerName": zod.string(),
+  "workerAvatar": zod.string().nullish(),
+  "message": zod.string(),
+  "status": zod.string().describe('\"pending\" | \"accepted\" | \"rejected\"'),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "job": zod.object({
+  "id": zod.number(),
+  "hirerId": zod.string(),
+  "hirerName": zod.string(),
+  "hirerAvatar": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "payType": zod.string().describe('\"fixed\" or \"hourly\"'),
+  "payAmountCents": zod.number(),
+  "city": zod.string(),
+  "stateCode": zod.string(),
+  "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
+  "workerId": zod.string().nullish(),
+  "workerName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "durationMinutes": zod.number().nullish(),
+  "applicationCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+}))
+export const ListMyGigApplicationsResponse = zod.array(ListMyGigApplicationsResponseItem)
+
+

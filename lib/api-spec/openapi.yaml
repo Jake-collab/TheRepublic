@@ -1897,6 +1897,226 @@ paths:
         "204":
           description: Deleted
 
+  /gigs/jobs:
+    get:
+      operationId: listGigJobs
+      tags: [gigs]
+      summary: List open gig jobs (paginated)
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: cursor
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GigJobsPage"
+    post:
+      operationId: createGigJob
+      tags: [gigs]
+      summary: Post a new gig job (auth required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GigJobInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GigJob"
+
+  /gigs/jobs/{id}:
+    get:
+      operationId: getGigJob
+      tags: [gigs]
+      summary: Get a single gig job with its applications
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GigJobDetail"
+
+  /gigs/jobs/{id}/apply:
+    post:
+      operationId: applyToGigJob
+      tags: [gigs]
+      summary: Apply to a gig job as a worker (auth required)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GigApplyInput"
+      responses:
+        "201":
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GigApplication"
+
+  /gigs/jobs/{id}/accept/{appId}:
+    post:
+      operationId: acceptGigApplication
+      tags: [gigs]
+      summary: Accept an applicant (hirer only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Accepted
+
+  /gigs/jobs/{id}/start:
+    post:
+      operationId: startGigJob
+      tags: [gigs]
+      summary: Hirer confirms job has started
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GigJob"
+
+  /gigs/jobs/{id}/complete:
+    post:
+      operationId: completeGigJob
+      tags: [gigs]
+      summary: Hirer confirms job is complete (auto-calculates duration)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GigJob"
+
+  /gigs/jobs/{id}/messages:
+    get:
+      operationId: listGigMessages
+      tags: [gigs]
+      summary: Get the message thread for a job (hirer or worker only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GigMessage"
+    post:
+      operationId: sendGigMessage
+      tags: [gigs]
+      summary: Send a message on a job thread (hirer or worker only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GigMessageInput"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GigMessage"
+
+  /gigs/my-jobs:
+    get:
+      operationId: listMyGigJobs
+      tags: [gigs]
+      summary: List jobs posted by the current user (auth required)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GigJob"
+
+  /gigs/my-applications:
+    get:
+      operationId: listMyGigApplications
+      tags: [gigs]
+      summary: List the current user's gig applications with job data (auth required)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GigApplicationWithJob"
+
 components:
   schemas:
     HealthStatus:
@@ -3237,5 +3457,199 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MarketplaceListing"
+        nextCursor:
+          type: ["integer", "null"]
+
+    GigJob:
+      type: object
+      required:
+        - id
+        - hirerId
+        - hirerName
+        - title
+        - description
+        - category
+        - payType
+        - payAmountCents
+        - city
+        - stateCode
+        - status
+        - applicationCount
+        - createdAt
+      properties:
+        id:
+          type: integer
+        hirerId:
+          type: string
+        hirerName:
+          type: string
+        hirerAvatar:
+          type: ["string", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        payType:
+          type: string
+          description: '"fixed" or "hourly"'
+        payAmountCents:
+          type: integer
+        city:
+          type: string
+        stateCode:
+          type: string
+        status:
+          type: string
+          description: '"open" | "in_progress" | "completed" | "cancelled"'
+        workerId:
+          type: ["string", "null"]
+        workerName:
+          type: ["string", "null"]
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        durationMinutes:
+          type: ["integer", "null"]
+        applicationCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    GigJobDetail:
+      allOf:
+        - $ref: "#/components/schemas/GigJob"
+        - type: object
+          required: [applications]
+          properties:
+            applications:
+              type: array
+              items:
+                $ref: "#/components/schemas/GigApplication"
+
+    GigJobInput:
+      type: object
+      required:
+        - hirerId
+        - hirerName
+        - title
+        - description
+        - category
+        - payType
+        - payAmountCents
+      properties:
+        hirerId:
+          type: string
+        hirerName:
+          type: string
+        hirerAvatar:
+          type: ["string", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        payType:
+          type: string
+        payAmountCents:
+          type: integer
+        city:
+          type: string
+          default: ""
+        stateCode:
+          type: string
+          default: ""
+
+    GigApplication:
+      type: object
+      required:
+        - id
+        - jobId
+        - workerId
+        - workerName
+        - message
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        workerId:
+          type: string
+        workerName:
+          type: string
+        workerAvatar:
+          type: ["string", "null"]
+        message:
+          type: string
+        status:
+          type: string
+          description: '"pending" | "accepted" | "rejected"'
+        createdAt:
+          type: string
+          format: date-time
+
+    GigApplicationWithJob:
+      allOf:
+        - $ref: "#/components/schemas/GigApplication"
+        - type: object
+          required: [job]
+          properties:
+            job:
+              $ref: "#/components/schemas/GigJob"
+
+    GigApplyInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    GigMessage:
+      type: object
+      required:
+        - id
+        - jobId
+        - senderId
+        - senderName
+        - body
+        - createdAt
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        senderId:
+          type: string
+        senderName:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    GigMessageInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+
+    GigJobsPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/GigJob"
         nextCursor:
           type: ["integer", "null"]

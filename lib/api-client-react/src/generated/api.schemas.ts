@@ -893,6 +893,94 @@ export interface MarketplaceListingsPage {
   nextCursor?: number | null;
 }
 
+export interface GigJob {
+  id: number;
+  hirerId: string;
+  hirerName: string;
+  /** @nullable */
+  hirerAvatar?: string | null;
+  title: string;
+  description: string;
+  category: string;
+  /** "fixed" or "hourly" */
+  payType: string;
+  payAmountCents: number;
+  city: string;
+  stateCode: string;
+  /** "open" | "in_progress" | "completed" | "cancelled" */
+  status: string;
+  /** @nullable */
+  workerId?: string | null;
+  /** @nullable */
+  workerName?: string | null;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  durationMinutes?: number | null;
+  applicationCount: number;
+  createdAt: string;
+}
+
+export interface GigApplication {
+  id: number;
+  jobId: number;
+  workerId: string;
+  workerName: string;
+  /** @nullable */
+  workerAvatar?: string | null;
+  message: string;
+  /** "pending" | "accepted" | "rejected" */
+  status: string;
+  createdAt: string;
+}
+
+export type GigJobDetail = GigJob & {
+  applications: GigApplication[];
+};
+
+export interface GigJobInput {
+  hirerId: string;
+  hirerName: string;
+  /** @nullable */
+  hirerAvatar?: string | null;
+  title: string;
+  description: string;
+  category: string;
+  payType: string;
+  payAmountCents: number;
+  city?: string;
+  stateCode?: string;
+}
+
+export type GigApplicationWithJob = GigApplication & {
+  job: GigJob;
+};
+
+export interface GigApplyInput {
+  message: string;
+}
+
+export interface GigMessage {
+  id: number;
+  jobId: number;
+  senderId: string;
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface GigMessageInput {
+  body: string;
+}
+
+export interface GigJobsPage {
+  items: GigJob[];
+  /** @nullable */
+  nextCursor?: number | null;
+}
+
 export type ListWebsitesParams = {
 /**
  * @nullable
@@ -1054,6 +1142,18 @@ category?: string | null;
  * @nullable
  */
 search?: string | null;
+/**
+ * @nullable
+ */
+cursor?: number | null;
+limit?: number;
+};
+
+export type ListGigJobsParams = {
+/**
+ * @nullable
+ */
+category?: string | null;
 /**
  * @nullable
  */
