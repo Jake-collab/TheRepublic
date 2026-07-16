@@ -1,7 +1,30 @@
+/**
+ * BrowserScreen — main tab browser with a 3-slot LRU WebView pool.
+ *
+ * Pool architecture (POOL_SIZE = 3):
+ *   Slot 0 — active tab      (always rendered, full priority)
+ *   Slot 1 — most-recently-used tab (preserved, hidden)
+ *   Slot 2 — predicted next tab (loaded after active is visually ready)
+ *
+ * WebViewPanes outside the pool are NOT mounted. Evicted tabs save their
+ * navigated URL; re-entry loads from that URL — WKWebView's HTTP cache
+ * makes repeat visits nearly instant without keeping idle WebViews alive.
+ *
+ * No background tabs compete with the active tab for bandwidth or CPU.
+ * The single predicted tab only starts after onLoadEnd fires on the active.
+ */
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, memo, useCallback, useState, startTransition } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  memo,
+  useCallback,
+  useState,
+  useRef,
+  startTransition,
+} from "react";
 import {
   Image,
   Pressable,
@@ -21,12 +44,18 @@ import WebViewPane from "@/components/WebViewPane";
 import WebsiteTabBar from "@/components/WebsiteTabBar";
 import { useBrowser } from "@/contexts/BrowserContext";
 import { useColors } from "@/hooks/useColors";
-import { triggerTabPreload } from "@/utils/preloadRegistry";
 import {
   useListWebsites,
   useGetUserMembership,
   useUpdateUserProfile,
 } from "@workspace/api-client-react";
+
+// ─── Pool size ────────────────────────────────────────────────────────────────
+// 3 live WebViews: active + MRU + one predicted neighbor.
+// Increase to 4 on high-memory devices if needed in the future.
+const POOL_SIZE = 3;
+
+// ─── Header ──────────────────────────────────────────────────────────────────
 
 const BrowserHeader = memo(function BrowserHeader({
   topPad,
@@ -44,7 +73,11 @@ const BrowserHeader = memo(function BrowserHeader({
     <View
       style={[
         styles.header,
-        { backgroundColor: colors.background, borderBottomColor: colors.border, paddingTop: topPad },
+        {
+          backgroundColor: colors.background,
+          borderBottomColor: colors.border,
+          paddingTop: topPad,
+        },
       ]}
     >
       <View style={styles.logoArea}>
@@ -68,7 +101,10 @@ const BrowserHeader = memo(function BrowserHeader({
           <Feather name="maximize-2" size={18} color={colors.mutedForeground} />
         </Pressable>
         <Pressable
-          style={[styles.profileBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+          style={[
+            styles.profileBtn,
+            { backgroundColor: colors.secondary, borderColor: colors.border },
+          ]}
           onPress={() => router.push("/profile")}
         >
           <Feather name="user" size={16} color={colors.primary} />
@@ -77,6 +113,8 @@ const BrowserHeader = memo(function BrowserHeader({
     </View>
   );
 });
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function BrowserScreen() {
   const colors = useColors();
@@ -93,6 +131,23 @@ export default function BrowserScreen() {
   const [activeSection, setActiveSection] = useState<Section>("web");
   const [showTalks, setShowTalks] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+
+  // ── LRU pool ────────────────────────────────────────────────────────────
+  // Only tabs in this array have a WebViewPane mounted.
+  const [pool, setPool] = useState<string[]>([]);
+
+  // Tracks whether the current active tab has finished its initial load.
+  // Reset on every tab switch so the prediction only fires once per visit.
+  const activeReadyRef = useRef(false);
+
+  // Stable refs so WebView callbacks (which are captured closures) can
+  // read the latest values without being listed as effect deps.
+  const activeTabIdRef = useRef(activeTabId);
+  useEffect(() => { activeTabIdRef.current = activeTabId; }, [activeTabId]);
+
+  const webviewTabsRef = useRef<typeof webviewTabs>([]);
+
+  // ── Data loading ─────────────────────────────────────────────────────────
 
   const { data: websites } = useListWebsites({});
   const { data: membership } = useGetUserMembership();
@@ -111,33 +166,7 @@ export default function BrowserScreen() {
     }));
     setTabs(siteTabs);
     AsyncStorage.setItem("rq:websites", JSON.stringify(websites));
-
-    // ─── Aggressive preloading ──────────────────────────────────────────────
-    // Step 1: DNS + TCP prewarm (native only — web/Expo-Go is CORS-blocked).
-    // Step 2: Stagger-trigger actual WebView preloads so pages start loading
-    //   in the background while the splash overlay is still showing.
-    //   WebViewPanes are always mounted (no LRU mount filter), so every tab
-    //   has a registered preload callback by the time we call it.
-    //   First 8 tabs fire every 250 ms (well within the 2.2 s splash window).
-    //   Remaining tabs fire every 600 ms so the device isn't overwhelmed.
-    if (Platform.OS !== "web") {
-      const prewarmed = new Set<string>();
-      (websites as any[]).forEach((w: any) => {
-        try {
-          const { origin } = new URL(w.url as string);
-          if (prewarmed.has(origin)) return;
-          prewarmed.add(origin);
-          fetch(origin, { method: "HEAD", cache: "no-store" }).catch(() => {});
-        } catch {}
-      });
-    }
-
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    siteTabs.forEach((tab, i) => {
-      const delay = i < 8 ? 120 + i * 250 : 2200 + (i - 8) * 600;
-      timers.push(setTimeout(() => triggerTabPreload(tab.id), delay));
-    });
-    return () => timers.forEach(clearTimeout);
+    // No boot-time preloads — active tab gets exclusive bandwidth.
   }, [websites, setTabs]);
 
   useEffect(() => {
@@ -155,25 +184,62 @@ export default function BrowserScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  // ── Tab list ─────────────────────────────────────────────────────────────
 
-  const webviewTabs = useMemo(() => visibleTabs.filter((t) => !t.isCitizenVote), [visibleTabs]);
-
-  const activeIndex = useMemo(
-    () => webviewTabs.findIndex((t) => t.id === activeTabId),
-    [webviewTabs, activeTabId],
+  const webviewTabs = useMemo(
+    () => visibleTabs.filter((t) => !t.isCitizenVote),
+    [visibleTabs],
   );
 
-  // Preload both adjacent tabs after switching so they warm up invisibly.
-  // Next tab at 1.5s (most likely next press), previous at 3s.
+  // Keep ref in sync for stable callbacks
+  useEffect(() => { webviewTabsRef.current = webviewTabs; }, [webviewTabs]);
+
+  // ── Pool management ──────────────────────────────────────────────────────
+
+  // Promote active tab to pool head on every tab switch.
+  // Evicts the oldest non-active entry if pool is full.
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const nextTab = webviewTabs[activeIndex + 1];
-    const prevTab = webviewTabs[activeIndex - 1];
-    if (nextTab) timers.push(setTimeout(() => triggerTabPreload(nextTab.id), 1500));
-    if (prevTab) timers.push(setTimeout(() => triggerTabPreload(prevTab.id), 3000));
-    return () => timers.forEach(clearTimeout);
-  }, [activeIndex, webviewTabs]);
+    if (!activeTabId) return;
+    activeReadyRef.current = false;
+    setPool((prev) => {
+      const without = prev.filter((id) => id !== activeTabId);
+      return [activeTabId, ...without].slice(0, POOL_SIZE);
+    });
+  }, [activeTabId]);
+
+  // Called by active WebViewPane's onPageReady (onLoadEnd).
+  // Adds the right neighbor as a predicted tab — one background load at a time.
+  const handleActivePageReady = useCallback(() => {
+    if (activeReadyRef.current) return;
+    activeReadyRef.current = true;
+
+    // Dismiss splash as soon as real content is ready
+    setShowSplash(false);
+
+    // Predict: prefer right neighbor, fall back to left
+    const tabs = webviewTabsRef.current;
+    const idx = tabs.findIndex((t) => t.id === activeTabIdRef.current);
+    const neighbor = tabs[idx + 1] ?? tabs[idx - 1];
+    if (!neighbor) return;
+
+    setPool((prev) => {
+      if (prev.includes(neighbor.id)) return prev; // already pooled
+      // Add neighbor at the end (lowest LRU priority).
+      // Slice to POOL_SIZE, but active tab is always at index 0 so it's safe.
+      return [...prev, neighbor.id].slice(0, POOL_SIZE);
+    });
+  }, []);
+
+  // Fallback: dismiss splash after 1.5 s even if onLoadEnd never fires
+  // (e.g. web/Expo Go where iframe onLoad timing is unreliable).
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1500);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ── UI helpers ───────────────────────────────────────────────────────────
+
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const handleMinimize = useCallback(() => {
     Haptics.selectionAsync();
@@ -190,42 +256,56 @@ export default function BrowserScreen() {
   const webHidden = activeSection !== "web";
   const talksHidden = activeSection !== "talks";
 
+  // ── Render ───────────────────────────────────────────────────────────────
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Web section — always mounted so WebViews stay alive */}
+      {/* Web section — always mounted so pool WebViews stay alive */}
       <View
         style={[styles.section, webHidden && styles.sectionInvisible]}
         pointerEvents={webHidden ? "none" : "auto"}
       >
-        <BrowserHeader topPad={topPad} isFullscreen={isFullscreen} setIsFullscreen={setIsFullscreen} />
+        <BrowserHeader
+          topPad={topPad}
+          isFullscreen={isFullscreen}
+          setIsFullscreen={setIsFullscreen}
+        />
         {!isFullscreen && <WebsiteTabBar isPro={isPro} />}
-        {/* content is the stacking context — all WebViewPanes are position:absolute inside */}
+
+        {/* WebView pool — only pool members are mounted */}
         <View style={styles.content}>
           {webviewTabs
-            // All tabs are always mounted — mounting a WebViewPane is cheap
-            // (just a hidden <View> until preloaded). Real WebView content only
-            // renders once triggerTabPreload fires or the tab becomes visible.
-            // This means staggered boot preloads actually reach every tab.
-            .map((tab) => (
-              <WebViewPane
-                key={tab.id}
-                tabId={tab.id}
-                url={tab.url}
-                initialUrl={getInitialUrlForTab(tab.id, tab.url)}
-                isVisible={activeTabId === tab.id && !webHidden}
-              />
-            ))}
-          {/* Minimize button rendered INSIDE content, AFTER WebViews so it
-              paints on top of them and captures touches correctly. */}
+            .filter((tab) => pool.includes(tab.id))
+            .map((tab) => {
+              const isActive = tab.id === activeTabId;
+              return (
+                <WebViewPane
+                  key={tab.id}
+                  tabId={tab.id}
+                  url={tab.url}
+                  initialUrl={getInitialUrlForTab(tab.id, tab.url)}
+                  isVisible={isActive && !webHidden}
+                  // Only wire onPageReady for the active tab so background
+                  // loads don't accidentally trigger pool expansion.
+                  onPageReady={isActive ? handleActivePageReady : undefined}
+                />
+              );
+            })}
+
+          {/* Minimize button — after WebViews in JSX so it paints on top */}
           {isFullscreen && (
             <Pressable
-              style={[styles.minimizeBtn, { backgroundColor: colors.card, top: insets.top + 8 }]}
+              style={[
+                styles.minimizeBtn,
+                { backgroundColor: colors.card, top: insets.top + 8 },
+              ]}
               onPress={handleMinimize}
             >
               <Feather name="minimize-2" size={18} color={colors.foreground} />
             </Pressable>
           )}
         </View>
+
         <UpgradeModal />
       </View>
 
@@ -243,8 +323,8 @@ export default function BrowserScreen() {
         <BottomNav activeSection={activeSection} onChange={handleSectionChange} />
       )}
 
-      {/* Branded boot splash — sits above everything for ~2 s while DNS
-          prewarming and data loading happen silently in the background. */}
+      {/* Branded boot splash — dismissed as soon as active page is ready,
+          or after 1.5 s fallback timer, whichever is first. */}
       {showSplash && <SplashOverlay onDone={() => setShowSplash(false)} />}
     </View>
   );
@@ -271,7 +351,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   logoArea: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logoMark: { width: 28, height: 28, borderRadius: 7, justifyContent: "center", alignItems: "center", overflow: "hidden" },
+  logoMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
   logoImage: { width: 22, height: 22 },
   logoText: { fontSize: 15, fontWeight: "700", letterSpacing: 0.5 },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -284,7 +371,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
   },
-  // flex:1 so absolute-fill children naturally cover it
   content: { flex: 1, overflow: "hidden" },
   minimizeBtn: {
     position: "absolute",

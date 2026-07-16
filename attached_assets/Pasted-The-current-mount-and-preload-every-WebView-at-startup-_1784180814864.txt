@@ -1,0 +1,104 @@
+The current “mount and preload every WebView at startup” implementation has made page loading slower. Replace it with a measured, resource-aware WebView architecture optimized for fastest perceived and actual tab opening.
+
+Do not simply add more timers or more concurrent preload requests.
+
+1. Audit the current implementation first
+- Determine whether WebViews are being remounted when tabs switch.
+- Check for changing React keys, recreated source objects, changing parent keys, conditional rendering, state resets, or navigation transitions that destroy loaded WebViews.
+- Add temporary logs for WebView mount, unmount, navigation start, first visible content, onLoad, onLoadEnd, and cache status.
+- Measure cold-load and repeat-load times for each website.
+- Report the findings before and after implementing the changes.
+
+2. Remove the current load-all-at-startup approach
+- Do not mount or navigate every website at boot.
+- Remove the startup HEAD request to every domain.
+- Do not allow hidden pages to compete with the active page for bandwidth, CPU, JavaScript execution, or memory.
+- The initially selected website must receive exclusive priority until useful page content becomes visible.
+
+3. Implement an intelligent WebView pool
+- Maintain no more than 3 live navigated WebViews by default:
+A. the active WebView,
+B. the most recently used WebView,
+C. one predicted/preloaded WebView.
+- Use an LRU eviction policy.
+- Preserve scroll position, navigation history, cookies, forms, and login state while a WebView remains in the pool.
+- When evicting a WebView, save its last URL and scroll position where technically possible.
+- Make the pool size configurable based on device memory; use 2 on low-memory devices and at most 3 or 4 on higher-memory devices.
+- Do not destroy the currently active WebView.
+
+4. Predictive preloading
+- Load the active tab immediately.
+- Only after the active page reaches a “visually ready” state, preload one likely next tab.
+- Predict the next tab using:
+A. the neighboring tab,
+B. the user’s most frequently selected tabs,
+C. the most recently selected tab.
+- Run only one background WebView navigation at a time.
+- Cancel or pause the background preload immediately when the user taps another tab.
+- Never preload all websites simultaneously.
+
+5. Persistent caching and website state
+- Set cacheEnabled=true.
+- Ensure incognito=false.
+- Ensure domStorageEnabled=true on Android.
+- Preserve cookies, local storage, IndexedDB, service-worker data, and normal WebView website data between tab switches and app launches.
+- Do not clear WebView cache or website data during startup, logout from the Republic account, tab changes, website-list refreshes, or app backgrounding.
+- On Android, A/B test LOAD_DEFAULT versus LOAD_CACHE_ELSE_NETWORK for repeat-load performance.
+- Use LOAD_CACHE_ELSE_NETWORK only if authentication and content freshness remain correct.
+- Do not use LOAD_NO_CACHE.
+- Verify that all WebViews share the normal persistent website data/cookie store where supported.
+
+6. Prevent unnecessary React rendering
+- Memoize WebView components with React.memo where appropriate.
+- Memoize source objects, styles, injected scripts, event handlers, and configuration objects.
+- Keep tab-chip state changes from rerendering or recreating every WebView.
+- Do not change a WebView key unless intentionally destroying that browser instance.
+- Separate the chips/header component from the WebView pool so chip scrolling and UI state updates do not rerender active web content.
+- Profile for repeated renders and state-update loops.
+
+7. Improve perceived loading
+- Keep a screenshot or lightweight visual snapshot of the most recently rendered page and display it instantly while a preserved WebView becomes visible.
+- Remove the snapshot as soon as the real WebView produces its first visible frame.
+- Show a thin progress bar rather than covering the entire page with a blank loading screen.
+- Consider the page visually ready based on DOMContentLoaded or a site-specific visible root element rather than waiting only for onLoadEnd.
+- Never display a blank white area if cached or previously rendered content is available.
+
+8. Native configuration
+- Verify Android hardware acceleration is enabled and has not been disabled in AndroidManifest.xml or the WebView activity.
+- Confirm the app is using the current Expo-compatible react-native-webview version.
+- Handle Android renderer termination and recreate only the affected WebView.
+- Give the visible WebView appropriate renderer importance and allow hidden/evictable WebViews to be reclaimed safely.
+- Do not use deprecated setRenderPriority APIs.
+- Avoid unsupported or placebo WebView flags.
+
+9. Startup scheduling
+- During app startup, prioritize in this order:
+A. render native Republic UI,
+B. start active WebView,
+C. complete only essential authentication/config requests,
+D. after active content is visible, perform analytics and optional API refreshes,
+E. finally preload one predicted tab.
+- Delay nonessential Supabase requests, analytics, image downloads, group-feed loading, and background synchronization until the active WebView is visually ready.
+- Do not block the active WebView on loading the full website catalog if a locally cached catalog exists.
+- Render the cached website list immediately and refresh it in the background.
+
+10. Testing
+- Do not judge performance only from Replit Canvas, browser preview, Expo web, or Expo Go.
+- Produce and test a release-mode native Android build and an iOS development/TestFlight build on a physical phone.
+- Compare:
+A. current implementation,
+B. active-only loading,
+C. three-WebView LRU pool,
+D. cache default versus cache-else-network.
+- Test cold starts, warm starts, repeat visits, low-memory conditions, Wi-Fi, and cellular.
+- Provide a table showing median and 90th-percentile time-to-visible-content for each approach.
+
+The primary performance goal is:
+- active website begins immediately,
+- repeat tabs appear nearly instantly,
+- no more than one background site loads at once,
+- no hidden mass loading,
+- no unnecessary WebView remounts,
+- no blank screen while reusable content exists.
+
+Implement the simplest architecture that wins based on measured release-build results, not assumptions
