@@ -1700,12 +1700,19 @@ export const CreateTalkCommentBody = zod.object({
  * @summary List marketplace listings (paginated, active only)
  */
 export const listMarketplaceListingsQueryLimitDefault = 24;
+export const listMarketplaceListingsQuerySortDefault = `new`;
 
 export const ListMarketplaceListingsQueryParams = zod.object({
   "category": zod.coerce.string().nullish(),
   "search": zod.coerce.string().nullish(),
   "cursor": zod.coerce.number().nullish(),
-  "limit": zod.coerce.number().default(listMarketplaceListingsQueryLimitDefault)
+  "limit": zod.coerce.number().default(listMarketplaceListingsQueryLimitDefault),
+  "lat": zod.coerce.number().nullish(),
+  "lon": zod.coerce.number().nullish(),
+  "radius": zod.coerce.number().nullish().describe('Radius in miles'),
+  "minPrice": zod.coerce.number().nullish().describe('Minimum price in cents'),
+  "maxPrice": zod.coerce.number().nullish().describe('Maximum price in cents'),
+  "sort": zod.enum(['new', 'price_asc', 'price_desc']).default(listMarketplaceListingsQuerySortDefault)
 })
 
 export const ListMarketplaceListingsResponse = zod.object({
@@ -1721,6 +1728,9 @@ export const ListMarketplaceListingsResponse = zod.object({
   "photos": zod.array(zod.string()),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.enum(['active', 'sold', 'removed']),
   "createdAt": zod.string()
 })),
@@ -1742,7 +1752,10 @@ export const CreateMarketplaceListingBody = zod.object({
   "category": zod.string(),
   "photos": zod.array(zod.string()).optional(),
   "city": zod.string().optional(),
-  "stateCode": zod.string().optional()
+  "stateCode": zod.string().optional(),
+  "locationText": zod.string().optional(),
+  "latitude": zod.string().optional(),
+  "longitude": zod.string().optional()
 })
 
 
@@ -1765,6 +1778,9 @@ export const GetMarketplaceListingResponse = zod.object({
   "photos": zod.array(zod.string()),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.enum(['active', 'sold', 'removed']),
   "createdAt": zod.string()
 })
@@ -1800,6 +1816,9 @@ export const UpdateMarketplaceListingResponse = zod.object({
   "photos": zod.array(zod.string()),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().nullish(),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.enum(['active', 'sold', 'removed']),
   "createdAt": zod.string()
 })

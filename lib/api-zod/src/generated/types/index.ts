@@ -95,6 +95,7 @@ export * from './listCitizenVotePostsSort';
 export * from './listFreelanceProjectsParams';
 export * from './listGigJobsParams';
 export * from './listMarketplaceListingsParams';
+export * from './listMarketplaceListingsSort';
 export * from './listTalkPostsParams';
 export * from './listTalkPostsSort';
 export * from './listWebsitesParams';

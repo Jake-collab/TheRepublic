@@ -867,6 +867,12 @@ export interface MarketplaceListing {
   photos: string[];
   city: string;
   stateCode: string;
+  /** @nullable */
+  locationText?: string | null;
+  /** @nullable */
+  latitude?: string | null;
+  /** @nullable */
+  longitude?: string | null;
   status: MarketplaceListingStatus;
   createdAt: string;
 }
@@ -881,6 +887,9 @@ export interface MarketplaceListingInput {
   photos?: string[];
   city?: string;
   stateCode?: string;
+  locationText?: string;
+  latitude?: string;
+  longitude?: string;
 }
 
 export type MarketplaceListingUpdateStatus = typeof MarketplaceListingUpdateStatus[keyof typeof MarketplaceListingUpdateStatus];
@@ -1400,7 +1409,40 @@ search?: string | null;
  */
 cursor?: number | null;
 limit?: number;
+/**
+ * @nullable
+ */
+lat?: number | null;
+/**
+ * @nullable
+ */
+lon?: number | null;
+/**
+ * Radius in miles
+ * @nullable
+ */
+radius?: number | null;
+/**
+ * Minimum price in cents
+ * @nullable
+ */
+minPrice?: number | null;
+/**
+ * Maximum price in cents
+ * @nullable
+ */
+maxPrice?: number | null;
+sort?: ListMarketplaceListingsSort;
 };
+
+export type ListMarketplaceListingsSort = typeof ListMarketplaceListingsSort[keyof typeof ListMarketplaceListingsSort];
+
+
+export const ListMarketplaceListingsSort = {
+  new: 'new',
+  price_asc: 'price_asc',
+  price_desc: 'price_desc',
+} as const;
 
 export type ListGigJobsParams = {
 /**

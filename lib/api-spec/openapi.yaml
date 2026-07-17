@@ -1968,6 +1968,35 @@ paths:
           schema:
             type: integer
             default: 24
+        - name: lat
+          in: query
+          schema:
+            type: ["number", "null"]
+        - name: lon
+          in: query
+          schema:
+            type: ["number", "null"]
+        - name: radius
+          in: query
+          description: Radius in miles
+          schema:
+            type: ["number", "null"]
+        - name: minPrice
+          in: query
+          description: Minimum price in cents
+          schema:
+            type: ["integer", "null"]
+        - name: maxPrice
+          in: query
+          description: Maximum price in cents
+          schema:
+            type: ["integer", "null"]
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [new, price_asc, price_desc]
+            default: new
       responses:
         "200":
           description: OK
@@ -3873,6 +3902,12 @@ components:
           type: string
         stateCode:
           type: string
+        locationText:
+          type: ["string", "null"]
+        latitude:
+          type: ["string", "null"]
+        longitude:
+          type: ["string", "null"]
         status:
           type: string
           enum: [active, sold, removed]
@@ -3900,6 +3935,12 @@ components:
         city:
           type: string
         stateCode:
+          type: string
+        locationText:
+          type: string
+        latitude:
+          type: string
+        longitude:
           type: string
 
     MarketplaceListingUpdate:

@@ -193,6 +193,7 @@ function JobDetailModal({
   const { getToken } = useAuth();
   const [view, setView] = useState<"detail" | "apply">("detail");
   const [coverLetter, setCoverLetter] = useState("");
+  const [resumeUrl, setResumeUrl] = useState("");
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [startingChat, setStartingChat] = useState(false);
@@ -211,6 +212,7 @@ function JobDetailModal({
           applicantId: meId,
           applicantName: meName,
           coverLetter: coverLetter.trim(),
+          ...(resumeUrl.trim() ? { resumeUrl: resumeUrl.trim() } : {}),
         }),
       });
       if (res.ok) {
@@ -339,6 +341,18 @@ function JobDetailModal({
               multiline
               textAlignVertical="top"
               autoFocus
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Resume URL (optional)</Text>
+            <TextInput
+              style={[styles.fieldInput, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
+              value={resumeUrl}
+              onChangeText={setResumeUrl}
+              placeholder="https://drive.google.com/… or LinkedIn URL"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
 
             <Pressable
@@ -698,6 +712,7 @@ export default function JobsScreen({
   const [myApps, setMyApps] = useState<JobApplication[]>([]);
   const [detailJob, setDetailJob] = useState<JobListing | null>(null);
   const [showPost, setShowPost] = useState(false);
+  const [deletingJobId, setDeletingJobId] = useState<number | null>(null);
 
   const meId = user?.id ?? "";
   const meName = user?.fullName ?? user?.firstName ?? "User";
@@ -761,6 +776,24 @@ export default function JobsScreen({
   useEffect(() => {
     if (mode === "hire") loadMyData();
   }, [mode, loadMyData]);
+
+  const handleDeleteJob = useCallback((jobId: number) => {
+    Alert.alert("Delete Listing", "Remove this job posting permanently?", [
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          setDeletingJobId(jobId);
+          try {
+            await fetch(`/api/jobs/listings/${jobId}`, { method: "DELETE" });
+            setMyListings((prev) => prev.filter((j) => j.id !== jobId));
+          } catch {}
+          setDeletingJobId(null);
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }, []);
 
   const handleCat = useCallback((id: string) => {
     Haptics.selectionAsync();
@@ -874,7 +907,7 @@ export default function JobsScreen({
       )}
 
       {/* ── Hire mode ── */}
-      {mode === "hire" && (
+      {mode === "hire" && !showPost && (
         <ScrollView contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}>
           {/* My posted listings */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>My Posted Jobs</Text>
@@ -894,7 +927,23 @@ export default function JobsScreen({
             </View>
           ) : (
             myListings.map((job) => (
-              <JobCard key={job.id} job={job} onPress={setDetailJob} />
+              <View key={job.id}>
+                <JobCard job={job} onPress={setDetailJob} />
+                <Pressable
+                  style={[styles.deleteJobBtn, { borderColor: colors.border }]}
+                  onPress={() => handleDeleteJob(job.id)}
+                  disabled={deletingJobId === job.id}
+                >
+                  {deletingJobId === job.id ? (
+                    <ActivityIndicator size="small" color="#dc2626" />
+                  ) : (
+                    <>
+                      <Feather name="trash-2" size={13} color="#dc2626" />
+                      <Text style={styles.deleteJobBtnText}>Remove Listing</Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
             ))
           )}
 
@@ -919,6 +968,19 @@ export default function JobsScreen({
         </ScrollView>
       )}
 
+      {/* ── Hire mode: Inline post form ── */}
+      {mode === "hire" && showPost && (
+        <PostJobForm
+          meId={meId}
+          meName={meName}
+          onClose={() => setShowPost(false)}
+          onPosted={() => {
+            setShowPost(false);
+            loadMyData();
+          }}
+        />
+      )}
+
       {/* ── Job detail modal ── */}
       <Modal visible={detailJob !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDetailJob(null)}>
         {detailJob !== null && (
@@ -929,19 +991,6 @@ export default function JobsScreen({
             onClose={() => setDetailJob(null)}
           />
         )}
-      </Modal>
-
-      {/* ── Post job modal ── */}
-      <Modal visible={showPost} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPost(false)}>
-        <PostJobForm
-          meId={meId}
-          meName={meName}
-          onClose={() => setShowPost(false)}
-          onPosted={() => {
-            setShowPost(false);
-            loadMyData();
-          }}
-        />
       </Modal>
     </View>
   );
@@ -1061,6 +1110,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   hirePostBtnText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  deleteJobBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginHorizontal: 16,
+    marginTop: -6,
+    marginBottom: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: "dashed",
+  } as const,
+  deleteJobBtnText: { fontSize: 12, fontWeight: "600", color: "#dc2626" },
 
   // Application card
   appCard: {
@@ -1112,6 +1175,13 @@ const styles = StyleSheet.create({
   applyTitle: { fontSize: 18, fontWeight: "700" },
   applyCompany: { fontSize: 14 },
   fieldLabel: { fontSize: 13, fontWeight: "500", marginBottom: 6 },
+  fieldInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+  },
   textArea: {
     borderWidth: 1,
     borderRadius: 12,

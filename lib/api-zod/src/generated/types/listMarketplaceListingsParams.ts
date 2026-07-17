@@ -5,6 +5,7 @@
  * The Republic API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListMarketplaceListingsSort } from './listMarketplaceListingsSort';
 
 export type ListMarketplaceListingsParams = {
 /**
@@ -20,4 +21,28 @@ search?: string | null;
  */
 cursor?: number | null;
 limit?: number;
+/**
+ * @nullable
+ */
+lat?: number | null;
+/**
+ * @nullable
+ */
+lon?: number | null;
+/**
+ * Radius in miles
+ * @nullable
+ */
+radius?: number | null;
+/**
+ * Minimum price in cents
+ * @nullable
+ */
+minPrice?: number | null;
+/**
+ * Maximum price in cents
+ * @nullable
+ */
+maxPrice?: number | null;
+sort?: ListMarketplaceListingsSort;
 };

@@ -11,6 +11,7 @@
  */
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import React, {
@@ -541,6 +542,9 @@ function SellView({ onCreated }: { onCreated: () => void }) {
   const [priceText, setPriceText]   = useState("");
   const [city, setCity]             = useState("");
   const [stateCode, setStateCode]   = useState("");
+  const [sellLat, setSellLat]       = useState<string | null>(null);
+  const [sellLon, setSellLon]       = useState<string | null>(null);
+  const [detectingLoc, setDetectingLoc] = useState(false);
 
   const priceCents = useMemo(() => {
     const n = parseFloat(priceText.replace(/[^0-9.]/g, ""));
@@ -550,6 +554,32 @@ function SellView({ onCreated }: { onCreated: () => void }) {
   const canStep1 = !!category;
   const canStep2 = title.trim().length >= 3 && description.trim().length >= 10 && priceCents >= 1;
   const canSubmit = canStep1 && canStep2 && city.trim().length > 0;
+
+  // Auto-detect location when seller reaches step 3
+  useEffect(() => {
+    if (step !== 3) return;
+    let cancelled = false;
+    (async () => {
+      setDetectingLoc(true);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted" || cancelled) return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (cancelled) return;
+        setSellLat(String(pos.coords.latitude));
+        setSellLon(String(pos.coords.longitude));
+        if (!city) {
+          const [geo] = await Location.reverseGeocodeAsync(pos.coords);
+          if (!cancelled && geo) {
+            if (geo.city && !city) setCity(geo.city);
+            if (geo.region && !stateCode) setStateCode(geo.region.slice(0, 2).toUpperCase());
+          }
+        }
+      } catch {}
+      finally { if (!cancelled) setDetectingLoc(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = () => {
     if (!canSubmit || createMutation.isPending) return;
@@ -564,6 +594,7 @@ function SellView({ onCreated }: { onCreated: () => void }) {
           photos: [],
           city: city.trim(),
           stateCode: stateCode.trim().toUpperCase().slice(0, 2),
+          ...(sellLat && sellLon ? { latitude: sellLat, longitude: sellLon, locationText: `${city.trim()}, ${stateCode.trim().toUpperCase()}` } : {}),
         },
       },
       {
@@ -711,6 +742,19 @@ function SellView({ onCreated }: { onCreated: () => void }) {
           <>
             <Text style={[styles.stepTitle, { color: colors.foreground }]}>Where are you located?</Text>
 
+            {detectingLoc && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Detecting location…</Text>
+              </View>
+            )}
+            {sellLat && !detectingLoc && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Feather name="map-pin" size={13} color="#16a34a" />
+                <Text style={{ fontSize: 13, color: "#16a34a" }}>Location detected — buyers near you will find this listing</Text>
+              </View>
+            )}
+
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>City</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground }]}
@@ -833,14 +877,28 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
   const [sellSuccess, setSellSuccess]   = useState(false);
   const [viewAllCat, setViewAllCat]     = useState<string | null>(null);
   const [showFilter, setShowFilter]     = useState(false);
-  const [filterCats, setFilterCats]     = useState<string[]>([]);
+  const [filterCat, setFilterCat]       = useState<string | null>(null);
   const [filterRadius, setFilterRadius] = useState<number | null>(null);
+  const [filterMinPrice, setFilterMinPrice] = useState("");
+  const [filterMaxPrice, setFilterMaxPrice] = useState("");
+  const [filterSort, setFilterSort]     = useState<"new" | "price_asc" | "price_desc">("new");
+  const [userLat, setUserLat]           = useState<number | null>(null);
+  const [userLon, setUserLon]           = useState<number | null>(null);
 
-  const hasFilter = filterCats.length > 0 || filterRadius !== null;
+  const hasFilter =
+    !!filterCat || filterRadius !== null || !!filterMinPrice || !!filterMaxPrice || filterSort !== "new";
 
-  const toggleFilterCat = useCallback((id: string) => {
-    Haptics.selectionAsync();
-    setFilterCats((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
+  // Silently try to get device location for radius filtering
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserLat(pos.coords.latitude);
+        setUserLon(pos.coords.longitude);
+      } catch {}
+    })();
   }, []);
 
   // Debounce search
@@ -865,17 +923,25 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
   // effectiveCat = viewAllCat when drilling into a category, else selectedCat filter
   const effectiveCat = viewAllCat ?? selectedCat;
 
-  // Reset on filter change
+  const minPriceCents = filterMinPrice ? Math.round(parseFloat(filterMinPrice) * 100) : undefined;
+  const maxPriceCents = filterMaxPrice ? Math.round(parseFloat(filterMaxPrice) * 100) : undefined;
+  const canUseRadius = filterRadius !== null && userLat !== null && userLon !== null;
+
+  // Reset on filter/search change
   useEffect(() => {
     setAllListings([]);
     setCursor(undefined);
-  }, [effectiveCat, debouncedSearch]);
+  }, [effectiveCat, debouncedSearch, filterCat, filterRadius, filterMinPrice, filterMaxPrice, filterSort]);
 
   const { data, isLoading, refetch, isRefetching } = useListMarketplaceListings({
-    category: effectiveCat ?? undefined,
+    category: effectiveCat ?? filterCat ?? undefined,
     search: debouncedSearch || undefined,
     limit: 24,
-  });
+    ...(canUseRadius ? { lat: userLat!, lon: userLon!, radius: filterRadius! } : {}),
+    ...(minPriceCents ? { minPrice: minPriceCents } : {}),
+    ...(maxPriceCents ? { maxPrice: maxPriceCents } : {}),
+    sort: filterSort,
+  } as Parameters<typeof useListMarketplaceListings>[0]);
 
   const page = data as { items: MarketplaceListing[]; nextCursor: number | null } | undefined;
 
@@ -897,11 +963,15 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
     setLoadingMore(true);
     try {
       const res = await listMarketplaceListings({
-        category: selectedCat ?? undefined,
+        category: effectiveCat ?? filterCat ?? undefined,
         search: debouncedSearch || undefined,
         cursor,
         limit: 24,
-      }) as { items: MarketplaceListing[]; nextCursor: number | null };
+        ...(canUseRadius ? { lat: userLat!, lon: userLon!, radius: filterRadius! } : {}),
+        ...(minPriceCents ? { minPrice: minPriceCents } : {}),
+        ...(maxPriceCents ? { maxPrice: maxPriceCents } : {}),
+        sort: filterSort,
+      } as Parameters<typeof listMarketplaceListings>[0]) as { items: MarketplaceListing[]; nextCursor: number | null };
       if (res?.items) {
         setAllListings((prev) => [...prev, ...res.items]);
         setCursor(res.nextCursor ?? undefined);
@@ -1186,17 +1256,77 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
           <View style={[filterStyles.handle, { backgroundColor: colors.border }]} />
           <View style={[filterStyles.topRow, { borderBottomColor: colors.border }]}>
             <Text style={[filterStyles.title, { color: colors.foreground }]}>Filter Listings</Text>
-            <Pressable onPress={() => { setFilterCats([]); setFilterRadius(null); }} hitSlop={8}>
+            <Pressable
+              onPress={() => {
+                setFilterCat(null);
+                setFilterRadius(null);
+                setFilterMinPrice("");
+                setFilterMaxPrice("");
+                setFilterSort("new");
+              }}
+              hitSlop={8}
+            >
               <Text style={[filterStyles.clearAll, { color: colors.primary }]}>Clear All</Text>
             </Pressable>
           </View>
 
           <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
-            {/* Category section */}
+            {/* Sort section */}
+            <Text style={[filterStyles.sectionLabel, { color: colors.mutedForeground }]}>Sort By</Text>
+            <View style={filterStyles.radiusRow}>
+              {([
+                { id: "new" as const, label: "Newest" },
+                { id: "price_asc" as const, label: "Price ↑" },
+                { id: "price_desc" as const, label: "Price ↓" },
+              ]).map((s) => (
+                <Pressable
+                  key={s.id}
+                  style={[
+                    filterStyles.radiusChip,
+                    { backgroundColor: filterSort === s.id ? colors.primary + "18" : colors.secondary, borderColor: filterSort === s.id ? colors.primary : colors.border },
+                  ]}
+                  onPress={() => { Haptics.selectionAsync(); setFilterSort(s.id); }}
+                >
+                  <Text style={[filterStyles.radiusChipText, { color: filterSort === s.id ? colors.primary : colors.foreground }]}>
+                    {s.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Price range section */}
+            <Text style={[filterStyles.sectionLabel, { color: colors.mutedForeground }]}>Price Range</Text>
+            <View style={filterStyles.priceRow}>
+              <View style={[filterStyles.priceInputWrap, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Text style={[filterStyles.priceCurrency, { color: colors.mutedForeground }]}>$</Text>
+                <TextInput
+                  style={[filterStyles.priceInput, { color: colors.foreground }]}
+                  placeholder="Min"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={filterMinPrice}
+                  onChangeText={setFilterMinPrice}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <Text style={[filterStyles.priceSep, { color: colors.mutedForeground }]}>—</Text>
+              <View style={[filterStyles.priceInputWrap, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Text style={[filterStyles.priceCurrency, { color: colors.mutedForeground }]}>$</Text>
+                <TextInput
+                  style={[filterStyles.priceInput, { color: colors.foreground }]}
+                  placeholder="Max"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={filterMaxPrice}
+                  onChangeText={setFilterMaxPrice}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+
+            {/* Category section — single select */}
             <Text style={[filterStyles.sectionLabel, { color: colors.mutedForeground }]}>Category</Text>
             <View style={filterStyles.chipGrid}>
               {CATEGORIES.map((cat) => {
-                const active = filterCats.includes(cat.id);
+                const active = filterCat === cat.id;
                 return (
                   <Pressable
                     key={cat.id}
@@ -1204,7 +1334,7 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
                       filterStyles.catChip,
                       { backgroundColor: active ? colors.primary + "18" : colors.secondary, borderColor: active ? colors.primary : colors.border },
                     ]}
-                    onPress={() => toggleFilterCat(cat.id)}
+                    onPress={() => { Haptics.selectionAsync(); setFilterCat((prev) => prev === cat.id ? null : cat.id); }}
                   >
                     <Text style={filterStyles.catChipEmoji}>{cat.emoji}</Text>
                     <Text style={[filterStyles.catChipLabel, { color: active ? colors.primary : colors.foreground }]}>{cat.label}</Text>
@@ -1214,16 +1344,18 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
             </View>
 
             {/* Radius section */}
-            <Text style={[filterStyles.sectionLabel, { color: colors.mutedForeground }]}>Search Radius</Text>
+            <Text style={[filterStyles.sectionLabel, { color: colors.mutedForeground }]}>
+              Search Radius{!userLat ? "  (location not available)" : ""}
+            </Text>
             <View style={filterStyles.radiusRow}>
               {([10, 25, 50, 100, 250] as const).map((mi) => (
                 <Pressable
                   key={mi}
                   style={[
                     filterStyles.radiusChip,
-                    { backgroundColor: filterRadius === mi ? colors.primary + "18" : colors.secondary, borderColor: filterRadius === mi ? colors.primary : colors.border },
+                    { backgroundColor: filterRadius === mi ? colors.primary + "18" : colors.secondary, borderColor: filterRadius === mi ? colors.primary : colors.border, opacity: !userLat ? 0.4 : 1 },
                   ]}
-                  onPress={() => { Haptics.selectionAsync(); setFilterRadius((prev) => prev === mi ? null : mi); }}
+                  onPress={() => { if (!userLat) return; Haptics.selectionAsync(); setFilterRadius((prev) => prev === mi ? null : mi); }}
                 >
                   <Text style={[filterStyles.radiusChipText, { color: filterRadius === mi ? colors.primary : colors.foreground }]}>
                     {mi} mi
@@ -1545,6 +1677,14 @@ const filterStyles = StyleSheet.create({
   radiusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   radiusChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   radiusChipText: { fontSize: 14, fontWeight: "600" },
+  priceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  priceInputWrap: {
+    flex: 1, flexDirection: "row", alignItems: "center", gap: 4,
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  priceCurrency: { fontSize: 15, fontWeight: "600" },
+  priceInput: { flex: 1, fontSize: 15, padding: 0 },
+  priceSep: { fontSize: 16, fontWeight: "600" },
   bottomRow: { padding: 20, borderTopWidth: StyleSheet.hairlineWidth },
   applyBtn: { paddingVertical: 15, borderRadius: 14, alignItems: "center" },
   applyBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },

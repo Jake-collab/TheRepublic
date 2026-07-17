@@ -29,6 +29,7 @@ import {
   useDeleteTalkComment,
   type FlagInputReason,
 } from "@workspace/api-client-react";
+import { useUser } from "@clerk/expo";
 
 type Comment = {
   id: number;
@@ -86,6 +87,9 @@ export default function TalkPostScreen() {
   const displayName = params.displayName ?? "Anonymous";
   const avatarUrl = params.avatarUrl || null;
   const createdAt = params.createdAt ?? new Date().toISOString();
+  const postUserId = (params as any).postUserId ?? "";
+
+  const isPostOwner = !!userId && !!postUserId && userId === postUserId;
 
   const [upvotes, setUpvotes] = useState(Number(params.upvotes ?? 0));
   const [hasVoted, setHasVoted] = useState(params.hasVoted === "true");
@@ -112,6 +116,31 @@ export default function TalkPostScreen() {
   const flagPostMutation = useFlagTalkPost();
   const flagCommentMutation = useFlagTalkComment();
   const deleteCommentMutation = useDeleteTalkComment();
+  const { getToken } = useUser() as any;
+  const [deletingPost, setDeletingPost] = useState(false);
+
+  const handleDeletePost = useCallback(() => {
+    Alert.alert("Delete Post", "Are you sure you want to delete this post? This cannot be undone.", [
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          setDeletingPost(true);
+          try {
+            const token = typeof getToken === "function" ? await getToken() : null;
+            const headers: Record<string, string> = {};
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+            const res = await fetch(`/api/talks/posts/${postId}`, { method: "DELETE", headers });
+            if (res.ok || res.status === 404) { router.back(); return; }
+            Alert.alert("Error", "Could not delete the post. Please try again.");
+          } catch {
+            Alert.alert("Error", "Could not delete the post. Please try again.");
+          } finally { setDeletingPost(false); }
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }, [postId, getToken, router]);
 
   const handleVote = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -348,6 +377,20 @@ export default function TalkPostScreen() {
         <Text style={[styles.navTitle, { color: colors.foreground }]} numberOfLines={1}>
           {title}
         </Text>
+        {isPostOwner && (
+          <Pressable
+            onPress={handleDeletePost}
+            style={[styles.backBtn, { backgroundColor: "#dc262620" }]}
+            hitSlop={8}
+            disabled={deletingPost}
+          >
+            {deletingPost ? (
+              <ActivityIndicator size="small" color="#dc2626" />
+            ) : (
+              <Feather name="trash-2" size={16} color="#dc2626" />
+            )}
+          </Pressable>
+        )}
       </View>
 
       <KeyboardAvoidingView

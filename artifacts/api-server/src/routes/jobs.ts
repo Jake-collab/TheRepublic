@@ -273,4 +273,20 @@ router.post("/listings/:id/messages", requireAuth, ensureUser, async (req, res) 
   return;
 });
 
+// ── DELETE /jobs/listings/:id ─────────────────────────────────────────────────
+// Auth. Poster can delete their own listing.
+router.delete("/listings/:id", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const rows = await db.select().from(jobListingsTable).where(eq(jobListingsTable.id, id)).limit(1);
+  if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
+  if (rows[0].posterId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  await db.delete(jobListingsTable).where(eq(jobListingsTable.id, id));
+  res.status(204).end();
+  return;
+});
+
 export default router;

@@ -7,14 +7,36 @@ import {
   usersTable,
 } from "@workspace/db";
 import { requireAuth, ensureUser } from "../middlewares/requireAuth";
-import { eq, desc, and, ilike, or, lt } from "drizzle-orm";
+import { eq, desc, asc, and, ilike, or, lt, gte, lte } from "drizzle-orm";
+
+/** Haversine distance in miles between two lat/lon points */
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3958.8;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 const router = Router();
 
 // ── GET /marketplace/listings ────────────────────────────────────────────────
 router.get("/listings", async (req, res) => {
-  const { category, search, cursor, limit = "24" } = req.query;
-  const take = Math.min(Number(limit), 50) + 1;
+  const {
+    category, search, cursor, limit = "24",
+    lat, lon, radius,
+    minPrice, maxPrice,
+    sort = "new",
+  } = req.query;
+
+  const useLocation = lat && lon && radius &&
+    !isNaN(Number(lat)) && !isNaN(Number(lon)) && !isNaN(Number(radius));
+  // When filtering by radius we fetch a larger set then apply Haversine post-fetch
+  const take = useLocation ? 500 : Math.min(Number(limit), 50) + 1;
 
   const conditions: ReturnType<typeof eq>[] = [
     eq(marketplaceListingsTable.status, "active"),
@@ -22,10 +44,14 @@ router.get("/listings", async (req, res) => {
   if (category && typeof category === "string") {
     conditions.push(eq(marketplaceListingsTable.category, category));
   }
-  if (cursor) {
-    conditions.push(
-      lt(marketplaceListingsTable.id, Number(cursor)) as ReturnType<typeof eq>,
-    );
+  if (!useLocation && cursor) {
+    conditions.push(lt(marketplaceListingsTable.id, Number(cursor)) as ReturnType<typeof eq>);
+  }
+  if (minPrice && !isNaN(Number(minPrice))) {
+    conditions.push(gte(marketplaceListingsTable.priceCents, Number(minPrice)) as ReturnType<typeof eq>);
+  }
+  if (maxPrice && !isNaN(Number(maxPrice))) {
+    conditions.push(lte(marketplaceListingsTable.priceCents, Number(maxPrice)) as ReturnType<typeof eq>);
   }
 
   let searchClause: ReturnType<typeof or> | undefined;
@@ -37,17 +63,47 @@ router.get("/listings", async (req, res) => {
     );
   }
 
-  const where = and(
-    ...conditions,
-    ...(searchClause ? [searchClause] : []),
-  );
+  const where = and(...conditions, ...(searchClause ? [searchClause] : []));
 
-  const rows = await db
+  const orderBy =
+    sort === "price_asc"  ? [asc(marketplaceListingsTable.priceCents)]  :
+    sort === "price_desc" ? [desc(marketplaceListingsTable.priceCents)] :
+    [desc(marketplaceListingsTable.createdAt)];
+
+  let rows = await db
     .select()
     .from(marketplaceListingsTable)
     .where(where)
-    .orderBy(desc(marketplaceListingsTable.createdAt))
+    .orderBy(...orderBy)
     .limit(take);
+
+  // ── Haversine filter ──────────────────────────────────────────────────────
+  if (useLocation) {
+    const buyerLat = Number(lat);
+    const buyerLon = Number(lon);
+    const maxMiles = Number(radius);
+    rows = rows.filter((r) => {
+      if (!r.latitude || !r.longitude) return false;
+      const sLat = parseFloat(r.latitude);
+      const sLon = parseFloat(r.longitude);
+      if (isNaN(sLat) || isNaN(sLon)) return false;
+      return haversineMiles(buyerLat, buyerLon, sLat, sLon) <= maxMiles;
+    });
+    // Re-apply pagination on the filtered set
+    const pageSize = Math.min(Number(limit) || 24, 50);
+    const cursorId = cursor ? Number(cursor) : null;
+    let startIdx = 0;
+    if (cursorId) {
+      const idx = rows.findIndex((r) => r.id === cursorId);
+      if (idx !== -1) startIdx = idx + 1;
+    }
+    const page = rows.slice(startIdx, startIdx + pageSize + 1);
+    const hasMore = page.length === pageSize + 1;
+    const items = hasMore ? page.slice(0, -1) : page;
+    const nextCursor = hasMore ? items[items.length - 1]!.id : null;
+    res.json({ items, nextCursor });
+    return;
+  }
 
   const hasMore = rows.length === take;
   const items = hasMore ? rows.slice(0, -1) : rows;

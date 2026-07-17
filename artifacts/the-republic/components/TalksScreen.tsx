@@ -473,6 +473,7 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
           commentCount: String(post.commentCount),
           hasVoted: String(post.hasVoted),
           createdAt: post.createdAt,
+          postUserId: post.userId ?? "",
         },
       });
     },

@@ -20,6 +20,12 @@ export interface MarketplaceListing {
   photos: string[];
   city: string;
   stateCode: string;
+  /** @nullable */
+  locationText?: string | null;
+  /** @nullable */
+  latitude?: string | null;
+  /** @nullable */
+  longitude?: string | null;
   status: MarketplaceListingStatus;
   createdAt: string;
 }

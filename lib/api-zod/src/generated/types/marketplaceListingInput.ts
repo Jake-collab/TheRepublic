@@ -16,4 +16,7 @@ export interface MarketplaceListingInput {
   photos?: string[];
   city?: string;
   stateCode?: string;
+  locationText?: string;
+  latitude?: string;
+  longitude?: string;
 }
