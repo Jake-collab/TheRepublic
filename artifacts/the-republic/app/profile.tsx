@@ -339,30 +339,48 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Marketplace</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>General</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
-          <SettingRow icon="shopping-bag" label="Items Listed" onPress={() => {}} />
-          <SettingRow icon="star" label="My Reviews" onPress={() => {}} />
+          <SettingRow icon="message-square" label="Messages" onPress={() => router.push("/messages" as never)} />
+          <SettingRow icon="credit-card" label="Manage Payment Information" onPress={() => router.push("/payment-info" as never)} />
+          <SettingRow icon="edit-3" label="Discussion Posts" onPress={() => router.push("/my-discussion-posts" as never)} />
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Buy / Sell</Text>
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <SettingRow icon="shopping-bag" label="Items Listed" onPress={() => router.push("/my-listings" as never)} />
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Gigs</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
-          <SettingRow icon="briefcase" label="My Posted Gigs" onPress={() => {}} />
-          <SettingRow icon="check-square" label="My Applications" onPress={() => {}} />
+          <Text style={[styles.subSectionLabel, { color: colors.mutedForeground, borderBottomColor: colors.border }]}>Hiring</Text>
+          <SettingRow icon="briefcase" label="Active Gig Work Requests" onPress={() => router.push("/my-gig-requests" as never)} />
+          <Text style={[styles.subSectionLabel, { color: colors.mutedForeground, borderBottomColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>Worker</Text>
+          <SettingRow icon="check-square" label="Gig Work Accepted" onPress={() => router.push("/my-gig-accepted" as never)} />
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Freelance</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
-          <SettingRow icon="layers" label="My Projects" onPress={() => {}} />
-          <SettingRow icon="send" label="My Bids" onPress={() => {}} />
-          <SettingRow icon="award" label="Active Skill Posts" onPress={() => {}} />
+          <Text style={[styles.subSectionLabel, { color: colors.mutedForeground, borderBottomColor: colors.border }]}>Freelancer</Text>
+          <SettingRow icon="award" label="Active Skill Posts" onPress={() => router.push("/my-skill-posts" as never)} />
+          <SettingRow icon="heart" label="Freelance Jobs Interested In" onPress={() => router.push("/my-freelance-interests" as never)} />
+          <SettingRow icon="zap" label="Active Freelance Work" onPress={() => router.push("/my-freelance-work" as never)} />
+          <Text style={[styles.subSectionLabel, { color: colors.mutedForeground, borderBottomColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}>Client / Hirer</Text>
+          <SettingRow icon="layers" label="Active Freelance Requests" onPress={() => router.push("/my-freelance-requests" as never)} />
+          <SettingRow icon="users" label="Active Freelance Hire" onPress={() => router.push("/my-freelance-hire" as never)} />
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Jobs</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
-          <SettingRow icon="file-text" label="Resume" onPress={() => {}} />
-          <SettingRow icon="inbox" label="Jobs Applied" onPress={() => {}} />
-          <SettingRow icon="list" label="Jobs Listed" onPress={() => {}} />
+          <SettingRow icon="file-text" label="Upload Resume" onPress={() => router.push("/my-resume" as never)} />
+          <SettingRow icon="inbox" label="Jobs Applied To" onPress={() => router.push("/my-job-applications" as never)} />
+          <SettingRow icon="list" label="Jobs Listed" onPress={() => router.push("/my-jobs-listed" as never)} />
+          <SettingRow icon="mail" label="Job Requests" onPress={() => router.push("/my-job-requests" as never)} />
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Reviews / Reputation</Text>
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <SettingRow icon="star" label="Reviews" onPress={() => router.push("/my-reviews" as never)} />
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Account</Text>
@@ -373,8 +391,6 @@ export default function ProfileScreen() {
             badge={unreadCount}
             onPress={() => router.push("/notifications")}
           />
-          <SettingRow icon="message-square" label="Messages" onPress={() => {}} />
-          <SettingRow icon="credit-card" label="Payment Method" onPress={() => {}} />
           <SettingRow
             icon="help-circle"
             label="Support"
@@ -499,6 +515,10 @@ const styles = StyleSheet.create({
   upgradeTitle: { fontSize: 15, fontWeight: "600" },
   upgradeSub: { fontSize: 12, marginTop: 2 },
   sectionLabel: { fontSize: 12, fontWeight: "600", letterSpacing: 0.5, marginTop: 8 },
+  subSectionLabel: {
+    fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase",
+    paddingHorizontal: 14, paddingVertical: 7, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   section: {
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
