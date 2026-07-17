@@ -136,6 +136,49 @@ router.post("/projects/:id/bid", requireAuth, ensureUser, async (req, res) => {
   res.status(201).json(bid);
 });
 
+// ── POST /freelance/projects/:id/bid/withdraw ─────────────────────────────────
+// Worker withdraws their own pending bid.
+router.post("/projects/:id/bid/withdraw", requireAuth, async (req, res) => {
+  const userId    = (req as any).userId as string;
+  const projectId = Number(req.params.id);
+
+  const existing = await db.select().from(freelanceBidsTable)
+    .where(and(eq(freelanceBidsTable.projectId, projectId), eq(freelanceBidsTable.workerId, userId)))
+    .limit(1);
+  if (!existing[0]) { res.status(404).json({ error: "Bid not found" }); return; }
+  if (existing[0].status !== "pending") { res.status(400).json({ error: "Only pending bids can be withdrawn" }); return; }
+
+  await db.update(freelanceBidsTable)
+    .set({ status: "withdrawn" })
+    .where(eq(freelanceBidsTable.id, existing[0].id));
+
+  await db.update(freelanceProjectsTable)
+    .set({ bidCount: sql`GREATEST(0, ${freelanceProjectsTable.bidCount} - 1)` })
+    .where(eq(freelanceProjectsTable.id, projectId));
+
+  res.json({ success: true });
+});
+
+// ── POST /freelance/projects/:id/cancel ───────────────────────────────────────
+// Hirer cancels their own project (open or in_progress).
+router.post("/projects/:id/cancel", requireAuth, async (req, res) => {
+  const userId    = (req as any).userId as string;
+  const projectId = Number(req.params.id);
+
+  const projects = await db.select().from(freelanceProjectsTable).where(eq(freelanceProjectsTable.id, projectId)).limit(1);
+  if (!projects[0]) { res.status(404).json({ error: "Project not found" }); return; }
+  if (projects[0].hirerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  if (projects[0].status === "completed" || projects[0].status === "cancelled") {
+    res.status(400).json({ error: "Project cannot be cancelled" }); return;
+  }
+
+  await db.update(freelanceProjectsTable)
+    .set({ status: "cancelled" })
+    .where(eq(freelanceProjectsTable.id, projectId));
+
+  res.json({ success: true });
+});
+
 // ── POST /freelance/projects/:id/accept/:bidId ────────────────────────────────
 router.post("/projects/:id/accept/:bidId", requireAuth, async (req, res) => {
   const userId    = (req as any).userId as string;

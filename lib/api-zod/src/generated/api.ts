@@ -2237,6 +2237,22 @@ export const SubmitFreelanceBidBody = zod.object({
 
 
 /**
+ * @summary Withdraw your own pending bid (worker only)
+ */
+export const WithdrawFreelanceBidParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Cancel a project (hirer only)
+ */
+export const CancelFreelanceProjectParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Accept a bid (hirer only)
  */
 export const AcceptFreelanceBidParams = zod.object({

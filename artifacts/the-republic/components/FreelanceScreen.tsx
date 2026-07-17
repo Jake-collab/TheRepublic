@@ -42,6 +42,8 @@ import {
   useCreateFreelanceProject,
   useSubmitFreelanceBid,
   useAcceptFreelanceBid,
+  useWithdrawFreelanceBid,
+  useCancelFreelanceProject,
   useCreateFreelanceMilestone,
   useUpdateFreelanceMilestone,
   useSendFreelanceMessage,
@@ -516,6 +518,7 @@ function ProjectDetailModal({
 
   const { data: project, isLoading } = useGetFreelanceProject(projectId);
   const { mutateAsync: submitBid, isPending: bidding } = useSubmitFreelanceBid();
+  const { mutateAsync: withdraw, isPending: withdrawing } = useWithdrawFreelanceBid();
   const { mutateAsync: advanceMilestone } = useUpdateFreelanceMilestone();
 
   const bids: FreelanceBid[] = (project as any)?.bids ?? [];
@@ -530,6 +533,26 @@ function ProjectDetailModal({
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getGetFreelanceProjectQueryKey(projectId) });
     qc.invalidateQueries({ queryKey: getListMyFreelanceBidsQueryKey() });
+    qc.invalidateQueries({ queryKey: getListFreelanceProjectsQueryKey() });
+  };
+
+  const handleWithdraw = () => {
+    Alert.alert("Withdraw Bid", "Are you sure you want to withdraw your bid?", [
+      { text: "Keep Bid", style: "cancel" },
+      {
+        text: "Withdraw",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await withdraw({ id: projectId });
+            invalidate();
+            Alert.alert("Bid withdrawn", "Your bid has been withdrawn.");
+          } catch {
+            Alert.alert("Error", "Could not withdraw bid.");
+          }
+        },
+      },
+    ]);
   };
 
   const handleBid = async () => {
@@ -741,6 +764,19 @@ function ProjectDetailModal({
             </Pressable>
           )}
 
+          {myBid?.status === "pending" && project.status === "open" && (
+            <Pressable
+              style={[styles.secondaryBtn, { borderColor: "#ef444466", opacity: withdrawing ? 0.6 : 1 }]}
+              onPress={handleWithdraw}
+              disabled={withdrawing}
+            >
+              <Feather name="x-circle" size={16} color="#ef4444" />
+              <Text style={[styles.secondaryBtnText, { color: "#ef4444" }]}>
+                {withdrawing ? "Withdrawing…" : "Withdraw Bid"}
+              </Text>
+            </Pressable>
+          )}
+
           {isWorker && project.status === "in_progress" && (
             <Pressable
               style={[styles.secondaryBtn, { borderColor: colors.border, opacity: startingChat ? 0.7 : 1 }]}
@@ -802,6 +838,7 @@ function MyProjectModal({
 
   const { data: project, isLoading } = useGetFreelanceProject(projectId);
   const { mutateAsync: accept, isPending: accepting } = useAcceptFreelanceBid();
+  const { mutateAsync: cancelProject, isPending: cancelling } = useCancelFreelanceProject();
   const { mutateAsync: addMs, isPending: addingMs } = useCreateFreelanceMilestone();
   const { mutateAsync: advanceMilestone } = useUpdateFreelanceMilestone();
 
@@ -823,6 +860,30 @@ function MyProjectModal({
     } catch {
       Alert.alert("Error", "Could not accept bid.");
     }
+  };
+
+  const handleCancel = () => {
+    Alert.alert(
+      "Cancel Project",
+      "Are you sure? This will close the project and notify all bidders.",
+      [
+        { text: "Keep Project", style: "cancel" },
+        {
+          text: "Cancel Project",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await cancelProject({ id: projectId });
+              invalidate();
+              onClose();
+              Alert.alert("Project cancelled", "Your project has been closed.");
+            } catch {
+              Alert.alert("Error", "Could not cancel the project.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleAddMilestone = async () => {
@@ -1102,6 +1163,19 @@ function MyProjectModal({
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
               No bids yet — freelancers can browse and submit proposals.
             </Text>
+          )}
+
+          {(project.status === "open" || project.status === "in_progress") && (
+            <Pressable
+              style={[styles.secondaryBtn, { borderColor: "#ef444444", opacity: cancelling ? 0.6 : 1 }]}
+              onPress={handleCancel}
+              disabled={cancelling}
+            >
+              <Feather name="slash" size={15} color="#ef4444" />
+              <Text style={[styles.secondaryBtnText, { color: "#ef4444" }]}>
+                {cancelling ? "Cancelling…" : "Cancel Project"}
+              </Text>
+            </Pressable>
           )}
 
           <Pressable onPress={onClose} style={[styles.closeBtn, { borderColor: colors.border }]}>
@@ -1417,20 +1491,27 @@ export default function FreelanceScreen({ onOpenDrawer, externalMode }: { onOpen
   const [skillRate, setSkillRate] = useState("");
   const [skillPosting, setSkillPosting] = useState(false);
 
+  const { getToken: getSkillToken } = useAuth();
+
   const handlePostSkill = useCallback(async () => {
     if (!skillTitle.trim() || !skillDesc.trim()) return;
     setSkillPosting(true);
     try {
-      await fetch("/api/skill-posts", {
+      const token = await getSkillToken();
+      const res = await fetch("/api/skill-posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           title: skillTitle.trim(),
           description: skillDesc.trim(),
-          category: activeCat,
+          category: activeCat || FL_CATS[0].id,
           hourlyRateCents: skillRate ? Math.round(parseFloat(skillRate) * 100) : null,
         }),
       });
+      if (!res.ok) { Alert.alert("Error", "Could not post skill. Please try again."); return; }
       setSkillTitle("");
       setSkillDesc("");
       setSkillRate("");
@@ -1440,7 +1521,7 @@ export default function FreelanceScreen({ onOpenDrawer, externalMode }: { onOpen
     } finally {
       setSkillPosting(false);
     }
-  }, [skillTitle, skillDesc, skillRate, activeCat]);
+  }, [skillTitle, skillDesc, skillRate, activeCat, getSkillToken]);
 
   // work-mode pagination
   const [workCursor, setWorkCursor] = useState<number | undefined>(undefined);

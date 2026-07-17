@@ -9161,6 +9161,146 @@ export const useSubmitFreelanceBid = <TError = ErrorType<unknown>,
       return useMutation(getSubmitFreelanceBidMutationOptions(options));
     }
 
+export const getWithdrawFreelanceBidUrl = (id: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/bid/withdraw`
+}
+
+/**
+ * @summary Withdraw your own pending bid (worker only)
+ */
+export const withdrawFreelanceBid = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getWithdrawFreelanceBidUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getWithdrawFreelanceBidMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawFreelanceBid>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof withdrawFreelanceBid>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['withdrawFreelanceBid'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof withdrawFreelanceBid>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  withdrawFreelanceBid(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type WithdrawFreelanceBidMutationResult = NonNullable<Awaited<ReturnType<typeof withdrawFreelanceBid>>>
+
+    export type WithdrawFreelanceBidMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Withdraw your own pending bid (worker only)
+ */
+export const useWithdrawFreelanceBid = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawFreelanceBid>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof withdrawFreelanceBid>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getWithdrawFreelanceBidMutationOptions(options));
+    }
+
+export const getCancelFreelanceProjectUrl = (id: number,) => {
+
+
+
+
+  return `/api/freelance/projects/${id}/cancel`
+}
+
+/**
+ * @summary Cancel a project (hirer only)
+ */
+export const cancelFreelanceProject = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getCancelFreelanceProjectUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCancelFreelanceProjectMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelFreelanceProject>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelFreelanceProject>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['cancelFreelanceProject'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelFreelanceProject>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelFreelanceProject(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelFreelanceProjectMutationResult = NonNullable<Awaited<ReturnType<typeof cancelFreelanceProject>>>
+
+    export type CancelFreelanceProjectMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Cancel a project (hirer only)
+ */
+export const useCancelFreelanceProject = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelFreelanceProject>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelFreelanceProject>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCancelFreelanceProjectMutationOptions(options));
+    }
+
 export const getAcceptFreelanceBidUrl = (id: number,
     bidId: number,) => {
 
