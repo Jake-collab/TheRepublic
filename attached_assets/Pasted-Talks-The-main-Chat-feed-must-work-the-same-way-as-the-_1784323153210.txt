@@ -1,0 +1,239 @@
+Talks
+
+* The main Chat feed must work the same way as the other discussion sections, including reporting/flagging behavior.
+* The relationship between New/Top sorting and the selected button state should be explicitly tested.
+* The original specifically says the comment icon must appear on each post.
+* Reporting a post and reporting a user are separate functions and should both be tested.
+
+Buy / Sell
+
+* The category filter must support:
+    * one category,
+    * multiple categories combined,
+    * or all categories.
+* The seller’s manually entered location must specifically be used to calculate whether the listing falls inside the buyer’s selected radius.
+* “Items Listed” should correlate only to items the user personally posted for sale.
+* Marking an item sold must remove it from the Buy feed without necessarily deleting the listing from the seller’s account history.
+
+Gig posting and discovery
+
+* The Gig screen should open directly into Post a Gig, with no close/exit option or underlying landing screen.
+* The location entered in Post a Gig is not simply a general radius. It is the job location used to calculate mileage from workers’ detected locations.
+* The Work-side distance control should be a draggable mileage-radius control in the upper-right area.
+* The “All” tab should display every gig category while still respecting the chosen maximum distance.
+
+Active Gig Work Requests
+
+The checklist did not fully preserve the account presentation when a worker accepts:
+
+* The hiring user should see the accepting worker’s account/profile below the gig post.
+* It should display the text “Coordinate Work.”
+* It should include a direct Message button.
+* The post should show Pending once a worker accepts.
+* The hirer should only gain the option to deny/reopen the request after 24 hours, not immediately.
+* The hirer should receive a notification explaining when the 24-hour denial option becomes available.
+
+Gig Work Accepted
+
+* The worker’s accepted-job section must also display “Coordinate Work” beside the Message button.
+* These conversations must later appear in the central Messages section as previous/active chats.
+
+Gig availability and acceptance limits
+
+* Once accepted, the gig must disappear from the public job list immediately.
+* If the hirer denies the accepted request after 24 hours, the same gig must return to the public list.
+* The worker may not accept more than four gig jobs in any rolling 24-hour period.
+* The app needs a specific notification explaining that the four-job limit has been reached.
+
+Gig progress workflow
+
+Several exact state rules were compressed:
+
+1. On the Way
+    * Sends: “username is on the way.”
+2. On Scene
+    * The hirer receives: “Is the person on scene right now?”
+    * Hirer must choose Accept or Deny.
+    * This confirmation should open in the appropriate Gig account section.
+3. Finished Task
+    * Hirer receives a completion confirmation.
+    * Hirer chooses Accept or Dispute.
+4. Dispute
+    * Choices:
+        * User did not complete task
+        * Other
+    * Either choice should open a message/email flow to support.
+
+Gig payments
+
+The checklist oversimplified payment timing:
+
+* Fixed-total gigs should require the funds to be uploaded before the work request is finalized.
+* Hourly gigs cannot be fully prepaid because the final amount is unknown.
+* Hourly payment must be calculated from:
+    * the confirmed On Scene timestamp,
+    * through the Finished Task timestamp,
+    * including partial hours/minutes.
+* Before approving hourly completion, the hirer must see:
+    * total time,
+    * hourly rate,
+    * final payment total.
+* The card should be charged for the final hourly amount at completion approval.
+* For fixed-total work, the hirer should see the agreed amount when approving the completed task.
+* Workers should see both:
+    * Amount to Be Paid
+    * Amount Paid
+* Completed work/history was implied in the original and should remain visible rather than disappearing after payment.
+
+Freelance navigation
+
+* The original distinguishes a Freelance side and a Work side for freelance.
+* The Freelance side should have Post Project in the upper-right.
+* The Work side should default to Post Skill.
+* The checklist should make clear that Post Skill causes the user’s account/profile to appear under the selected skill category—not just create a generic listing.
+
+Active Freelance Requests
+
+Several proposal states were omitted:
+
+* The project owner should see Pending when someone submits interest.
+* The owner may edit the project while interest is pending.
+* Editing must lock only after a freelancer’s work request is approved.
+* A freelancer may:
+    * click a basic Interested action, or
+    * submit a custom price proposal.
+* The project owner receives an inbox message containing Approve and Deny controls.
+
+Freelance Jobs Interested In
+
+* This section should show every project for which the freelancer submitted interest.
+* From it, the freelancer can send a new or revised work request.
+* That request must allow pricing to be changed between:
+    * payment by completion,
+    * payment by time.
+* Submitting the revised request must create a new message for the hiring user to approve or deny.
+
+Direct freelancer hiring
+
+The checklist did not fully distinguish direct hire:
+
+* Every freelancer/skill post must have:
+    * Hire
+    * Message
+* A user may hire:
+    * directly without prior messaging, or
+    * after messaging.
+* A direct or approved hire creates:
+    * Active Freelance Hire for the client,
+    * Active Freelance Work for the freelancer.
+
+Online freelance work submission
+
+* The formal Submit Work requirement applies specifically to work categorized as an online job.
+* Submit Work should initiate the client approval/payment-release workflow.
+* The client should receive a notification inside Active Freelance Hire.
+* The client should be able to:
+    * open the message thread,
+    * review the submitted work,
+    * approve it,
+    * release funds.
+
+Show Work Update
+
+The checklist included the button but omitted its precise behavior:
+
+* The freelancer clicks Show Work Update from the applicable hired job.
+* They attach a file.
+* That file is delivered into the shared message thread.
+* This is different from final Submit Work.
+* Messages generally must also support file attachments from either user.
+
+Additional work requirements
+
+* Immediately after a freelancer is hired, the hiring user should be prompted—optionally—to upload additional work requirements.
+* It is not merely a permanent upload option somewhere in the project.
+
+Payment funding flow
+
+* The original says users must upload/provide funds when:
+    * hiring a freelancer, and
+    * submitting a request for a gig worker.
+* This should be a required step in the transaction flow, not merely “connect a card.”
+* The system should distinguish:
+    * saved payment method,
+    * authorization/funding,
+    * held funds,
+    * final release.
+
+Jobs
+
+* The Upload Resume section should provide the resume that employers see when the user applies.
+* “Job Requests” means applicants who submitted their resume to one of the user’s job listings.
+* Clicking an applicant/request should show:
+    * the applicant’s account,
+    * their resume,
+    * Hire,
+    * Message.
+* If Hire or Message is selected, the applicant must be notified that the relevant company contacted them.
+* The “job hire button” wording likely means the button used to create/list a job should open a full job-listing form. The checklist should label this more clearly as Post/List a Job, rather than assuming it hires an applicant.
+
+Editing and deletion restrictions
+
+The original deletion rule was broader:
+
+* Work requests and job listings may be deleted only when no active work arrangement is in progress.
+* This should also cover any related gig/freelance post whose deletion would break an accepted or funded transaction.
+* Deleted posts must be removed from:
+    * public feeds,
+    * category feeds,
+    * search/filter results,
+    * profile/account listings where appropriate.
+* Talks posts can always be deleted by their author, but transaction records associated with completed or disputed work may need to remain archived.
+
+Reviews
+
+The checklist omitted some placement and triggering details:
+
+* Reviews apply to both sides:
+    * worker/freelancer/employee,
+    * hirer/client/employer.
+* The rating must display beside the user’s name and profile picture.
+* Clicking the stars opens the full review list.
+* After a completed task, the review prompt should automatically appear.
+* The written description is optional.
+* The original says all account types should have ratings, not only people currently participating in a job.
+
+Payments and payouts
+
+The wording “Connect card before working” is not enough:
+
+* Hirers need a payment method for charges.
+* Workers/freelancers need a payout method/account to receive funds.
+* The final required step should appear in the appropriate hire/work onboarding flow.
+* Manage Payment Information should let users update the payment method connected to their account.
+* Depending on the payment processor, payment cards and payout accounts may need separate controls.
+
+Messaging
+
+The original establishes a specific discovery rule:
+
+* Users cannot arbitrarily search the entire user base to start a conversation.
+* First contact begins only from an applicable profile, listing, project, gig, job, or marketplace page that contains a Message button.
+* After first contact, the conversation becomes available in Account → Messages.
+* Messages should show all active and previous established conversations.
+* Every incoming message must trigger a user notification.
+* File attachments must be supported.
+
+User reporting and admin moderation
+
+* Every user account must be reportable regardless of which feature/profile/listing the reporter is viewing.
+* The report must allow a descriptive reason.
+* The Admin panel must display:
+    * reported account,
+    * reporter/report context,
+    * written description.
+* Admin actions:
+    * pause account,
+    * disable account,
+    * notify affected user.
+* “Pause” and “Disable” should be treated as distinct statuses/actions
