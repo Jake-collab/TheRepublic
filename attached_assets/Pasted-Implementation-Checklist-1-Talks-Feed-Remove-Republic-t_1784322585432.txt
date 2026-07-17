@@ -1,0 +1,259 @@
+Implementation Checklist
+
+1. Talks
+Feed
+☐ Remove “Republic” title from the top of the Talks screen.
+☐ Feed supports Top and New sorting.
+☐ Sorting buttons correctly correlate with displayed posts.
+☐ Upvotes are tallied.
+☐ Comment icon displayed on every post.
+☐ Users can open posts and comment.
+☐ Comment upvotes are tallied.
+☐ Comments display newest → oldest.
+☐ Posts can be reported/flagged.
+User Posts
+☐ Users can delete their own discussion posts.
+Account Integration
+☐ Account → Discussion Posts
+newest → oldest
+view comments
+delete posts
+2. Buy / Sell
+Buy Screen
+☐ Remove Buy icon from top right.
+☐ Add Filter button.
+☐ Categories open full-screen selector.
+☐ Multiple categories selectable.
+☐ Radius filter.
+☐ Request device location.
+☐ Radius controls visible listings.
+☐ Clicking listing opens Message Seller button.
+Sell Screen
+☐ Remove Sell icon.
+☐ Manual location entry.
+☐ Location correlates to Buy radius search.
+Account Integration
+Items Listed
+☐ View listings
+☐ Edit
+☐ Delete
+☐ Mark Sold
+☐ Sold items removed from marketplace
+3. Gig Marketplace
+Post Gig
+☐ Default screen is Post Gig.
+☐ Remove unnecessary landing screen.
+☐ Step 2 Continue button works.
+☐ Location entry.
+☐ Radius stored.
+Work
+☐ Remove upper-right Gig/Work icon.
+☐ Distance slider.
+☐ Distance filters jobs.
+☐ “All” category tab.
+☐ All tab respects radius filter.
+Gig Account Sections
+Active Gig Work Requests (Hiring)
+Displays:
+
+☐ Gig posts created
+☐ Edit
+☐ Pending emblem
+☐ Cannot edit after acceptance
+☐ Full post information
+☐ Message button
+☐ Coordinate Work button
+☐ Deny accepted worker after 24 hours
+☐ Notification for denial availability
+Gig Work Accepted (Worker)
+Displays:
+
+☐ Accepted jobs
+☐ Message button
+☐ Coordinate Work button
+Gig Workflow
+Acceptance
+
+☐ Accepted jobs disappear from marketplace.
+☐ Reappear if denied after 24 hours.
+☐ Worker limit:
+max 4 accepted jobs per 24 hours
+☐ Notification shown when limit reached.
+Work Progress
+
+Worker buttons:
+
+☐ On the Way
+☐ On Scene
+☐ Finished Task
+Notifications
+
+Hiring user receives:
+
+☐ Worker on the way
+☐ Confirm On Scene
+Accept
+Deny
+☐ Finished Task
+Accept
+Dispute
+Dispute
+
+☐ Did not complete
+☐ Other
+☐ Opens support email
+Payments
+
+☐ Fixed-price payment released after approval.
+☐ Hourly jobs calculate:
+hours
+minutes
+☐ Customer shown payment total.
+☐ Worker shown:
+amount due
+amount paid
+4. Freelance
+Hiring Screen
+☐ Remove Hire icon.
+☐ Replace with Post Project button.
+Work Screen
+☐ Default screen is Post Skill.
+Post Skill
+
+☐ Form
+☐ Skill category assignment
+☐ Appears in Freelance listings
+Freelance Account Sections
+Active Skill Posts
+☐ View
+☐ Edit
+☐ Delete
+Active Freelance Requests
+Displays:
+
+☐ Posted projects
+☐ Pending requests
+☐ Edit until worker approved
+Freelance Jobs Interested In
+Displays:
+
+☐ Submitted requests
+☐ Modify proposal
+☐ Submit new proposal
+Active Freelance Hire
+Displays:
+
+☐ Active freelancers hired
+☐ Message
+☐ Approve work
+☐ Release payment
+Active Freelance Work
+Displays:
+
+☐ Jobs hired for
+☐ Submit Work
+☐ Show Work Update
+☐ Upload files
+☐ Amount due
+☐ Amount paid
+Freelance Messaging
+Project page
+
+☐ Message button
+☐ Hire button
+Worker proposal
+
+☐ Interested
+☐ Custom proposal
+Customer receives
+
+☐ Approve
+☐ Deny
+Optional
+
+☐ Upload additional work requirements after hiring
+Files
+
+☐ File uploads supported in chat
+Payments
+
+☐ Funds uploaded before hiring
+☐ Funds released after approval
+5. Jobs
+Hire
+☐ Hire button opens Create Job page.
+Jobs Account Sections
+Upload Resume
+☐ Resume upload
+Jobs Applied To
+☐ List applications
+Jobs Listed
+☐ Edit listings
+☐ Delete listings
+☐ Cannot delete active jobs
+Job Requests
+Displays
+
+☐ Applicants
+☐ Resume
+☐ Hire button
+☐ Message button
+Notifications
+
+☐ Applicant notified when contacted
+6. Messaging
+Conversation starts from:
+
+☐ Marketplace listing
+☐ Gig listing
+☐ Freelance listing
+☐ Job listing
+Account
+
+Messages
+☐ All conversations
+☐ Continue chats
+☐ File uploads
+Notifications
+
+☐ Notify every new message
+7. Reviews
+Every account
+
+☐ Worker reviews
+☐ Hirer reviews
+☐ 5-star system
+☐ Optional description
+☐ Stars beside profile picture
+☐ Clicking stars opens review history
+☐ Prompt users after completed jobs
+8. Payments
+User Flow
+
+☐ Connect payment card before hiring.
+☐ Connect card before working.
+Account
+
+Manage Payment Information
+☐ Update payment card
+9. Moderation
+Reporting
+
+☐ Report any user from anywhere.
+☐ Description required.
+Admin
+
+☐ Reported Accounts page
+☐ Pause account
+☐ Disable account
+☐ Notify user
+10. Global Behavior
+☐ Deleted posts disappear from every feed.
+☐ Deleted listings disappear from every feed.
+☐ Active posts can only be deleted if not currently in progress.
+☐ Account sections organized under:
+Buy/Sell
+Gigs
+Freelance
+Jobs
+Discussion
