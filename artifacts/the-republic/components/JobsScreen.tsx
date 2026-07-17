@@ -38,6 +38,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import LeaveReviewModal from "@/components/LeaveReviewModal";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -403,6 +404,7 @@ function ApplicantsModal({
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{ id: string; name: string; appId: number } | null>(null);
 
   const loadApplicants = useCallback(async () => {
     setLoading(true);
@@ -463,6 +465,7 @@ function ApplicantsModal({
         </View>
       ) : selectedApp ? (
         /* ── Applicant detail ── */
+        <>
         <ScrollView contentContainerStyle={[styles.modalBody, { paddingBottom: insets.bottom + 24 }]}>
           {/* Applicant info */}
           <View style={[styles.applicantHero, { backgroundColor: colors.secondary }]}>
@@ -550,7 +553,28 @@ function ApplicantsModal({
               <Text style={[styles.actionBtnText, { color: colors.foreground }]}>Message Applicant</Text>
             </Pressable>
           )}
+          {selectedApp.status === "accepted" && !!selectedApp.applicantId && meId !== selectedApp.applicantId && (
+            <Pressable
+              style={[styles.actionBtn, { backgroundColor: "#f59e0b20", borderWidth: 1, borderColor: "#f59e0b" }]}
+              onPress={() => setReviewTarget({ id: selectedApp.applicantId!, name: selectedApp.applicantName, appId: selectedApp.id })}
+            >
+              <Feather name="star" size={16} color="#f59e0b" />
+              <Text style={[styles.actionBtnText, { color: "#f59e0b" }]}>Leave a Review</Text>
+            </Pressable>
+          )}
         </ScrollView>
+        {reviewTarget && (
+          <LeaveReviewModal
+            visible={!!reviewTarget}
+            revieweeId={reviewTarget.id}
+            revieweeName={reviewTarget.name}
+            contextType="job_listing"
+            contextId={job.id}
+            onClose={() => setReviewTarget(null)}
+            onSubmitted={() => setReviewTarget(null)}
+          />
+        )}
+      </>
       ) : (
         /* ── Applicant list ── */
         <FlatList

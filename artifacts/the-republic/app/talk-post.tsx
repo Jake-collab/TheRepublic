@@ -19,6 +19,7 @@ import { useAuth } from "@clerk/expo";
 
 import { useColors } from "@/hooks/useColors";
 import { Avatar } from "@/components/TalksPostCard";
+import ReportUserModal from "@/components/ReportUserModal";
 import {
   useListTalkComments,
   useCreateTalkComment,
@@ -94,6 +95,7 @@ export default function TalkPostScreen() {
   const [upvotes, setUpvotes] = useState(Number(params.upvotes ?? 0));
   const [hasVoted, setHasVoted] = useState(params.hasVoted === "true");
   const [postFlagged, setPostFlagged] = useState(false);
+  const [reportUserVisible, setReportUserVisible] = useState(false);
 
   const [commentText, setCommentText] = useState("");
   const inputRef = useRef<TextInput>(null);
@@ -360,6 +362,15 @@ export default function TalkPostScreen() {
           >
             <Feather name="flag" size={13} color={postFlagged ? colors.primary : colors.mutedForeground} />
           </Pressable>
+          {!!postUserId && postUserId !== userId && (
+            <Pressable
+              style={[styles.voteBtn, { backgroundColor: colors.secondary }]}
+              onPress={() => setReportUserVisible(true)}
+              hitSlop={6}
+            >
+              <Feather name="user-x" size={13} color={colors.mutedForeground} />
+            </Pressable>
+          )}
         </View>
       </View>
       <Text style={[styles.commentsLabel, { color: colors.mutedForeground }]}>
@@ -451,6 +462,15 @@ export default function TalkPostScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {!!postUserId && postUserId !== userId && (
+        <ReportUserModal
+          visible={reportUserVisible}
+          reportedUserId={postUserId}
+          reportedUserName={displayName}
+          onClose={() => setReportUserVisible(false)}
+        />
+      )}
     </View>
   );
 }

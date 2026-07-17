@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import { useColors } from "@/hooks/useColors";
 import {
+  useCreateCheckoutSession,
   useCreatePortalSession,
   useGetMembershipPricing,
   useGetUserMembership,
@@ -88,10 +89,12 @@ export default function ProfileScreen() {
   const { data: pricing } = useGetMembershipPricing();
   const updateProfile = useUpdateUserProfile();
   const { mutateAsync: createPortal } = useCreatePortalSession();
+  const { mutateAsync: createCheckout } = useCreateCheckoutSession();
 
   const membershipPlan = membership?.plan ?? "free";
   const isPro = membershipPlan !== "free" && (membership as any)?.status === "active";
   const [portalLoading, setPortalLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const storedDisplayName = (profile as any)?.displayName ?? (membership as any)?.displayName ?? "";
   const storedAvatarUrl = (profile as any)?.avatarUrl ?? (membership as any)?.avatarUrl ?? "";
@@ -103,6 +106,19 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [usernameError, setUsernameError] = useState("");
   const [pickingPhoto, setPickingPhoto] = useState(false);
+
+  const handleUpgrade = async (tier: "pro" | "web") => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setCheckoutLoading(true);
+    try {
+      const result = await createCheckout({ data: { tier } });
+      if (result.url) await WebBrowser.openBrowserAsync(result.url);
+    } catch {
+      Alert.alert("Upgrade Unavailable", "Payments are not configured yet. Please try again later.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   const handleManageSubscription = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -310,7 +326,7 @@ export default function ProfileScreen() {
         {!isPro && (
           <Pressable
             style={[styles.upgradeCard, { backgroundColor: colors.card, borderColor: colors.primary }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.back(); }}
+            onPress={() => handleUpgrade("pro")}
           >
             <View style={[styles.upgradeIcon, { backgroundColor: colors.primary }]}>
               <Feather name="star" size={18} color="#ffffff" />
@@ -404,9 +420,9 @@ export default function ProfileScreen() {
           {membership?.tier === "free" ? (
             <SettingRow
               icon="star"
-              label="Upgrade Plan"
-              value={pricing ? `Web $${(pricing.webMonthlyCents / 100).toFixed(2)}/mo` : "from $2.99/mo"}
-              onPress={() => router.back()}
+              label={checkoutLoading ? "Opening checkout…" : "Upgrade Plan"}
+              value={pricing ? `Pro $${(pricing.proMonthlyCents / 100).toFixed(2)}/mo` : "from $4.99/mo"}
+              onPress={() => handleUpgrade("pro")}
             />
           ) : (
             <SettingRow

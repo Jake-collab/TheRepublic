@@ -78,6 +78,7 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
   talk_post: "Talks Post",
   talk_comment: "Talks Comment",
   citizen_vote: "Citizen Vote",
+  user: "User Report",
 };
 
 function statusBadge(status: string) {
