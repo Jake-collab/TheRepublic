@@ -283,6 +283,29 @@ router.post("/posts/:id/flag", requireAuth, ensureUser, async (req, res) => {
   res.status(201).json({ ok: true });
 });
 
+// ── Delete own comment ────────────────────────────────────────────────────────
+router.delete("/comments/:id", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const commentId = Number(req.params.id);
+  if (isNaN(commentId)) { res.status(400).json({ error: "Invalid comment id" }); return; }
+
+  const rows = await db
+    .select({ userId: talkCommentsTable.userId, postId: talkCommentsTable.postId })
+    .from(talkCommentsTable)
+    .where(eq(talkCommentsTable.id, commentId))
+    .limit(1);
+  if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
+  if (rows[0].userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  await db.delete(talkCommentVotesTable).where(eq(talkCommentVotesTable.commentId, commentId));
+  await db.delete(talkCommentsTable).where(eq(talkCommentsTable.id, commentId));
+  await db
+    .update(talkPostsTable)
+    .set({ commentCount: sql`GREATEST(${talkPostsTable.commentCount} - 1, 0)` })
+    .where(eq(talkPostsTable.id, rows[0].postId));
+  res.status(204).send();
+});
+
 // ── Flag comment ──────────────────────────────────────────────────────────────
 router.post("/comments/:id/flag", requireAuth, ensureUser, async (req, res) => {
   const userId = (req as any).userId as string;

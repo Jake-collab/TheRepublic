@@ -7515,6 +7515,76 @@ export const useFlagTalkComment = <TError = ErrorType<unknown>,
       return useMutation(getFlagTalkCommentMutationOptions(options));
     }
 
+export const getDeleteTalkCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/talks/comments/${id}`
+}
+
+/**
+ * @summary Delete own talk comment
+ */
+export const deleteTalkComment = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTalkCommentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTalkCommentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTalkComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTalkComment>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteTalkComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTalkComment>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTalkComment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTalkCommentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTalkComment>>>
+
+    export type DeleteTalkCommentMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete own talk comment
+ */
+export const useDeleteTalkComment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTalkComment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTalkComment>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTalkCommentMutationOptions(options));
+    }
+
 export const getListTalkCommentsUrl = (id: number,) => {
 
 

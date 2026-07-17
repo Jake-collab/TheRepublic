@@ -1656,6 +1656,14 @@ export const FlagTalkCommentBody = zod.object({
 
 
 /**
+ * @summary Delete own talk comment
+ */
+export const DeleteTalkCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List comments on a post
  */
 export const ListTalkCommentsParams = zod.object({

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState, useCallback, useRef } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@clerk/expo";
 
 import { useColors } from "@/hooks/useColors";
 import { Avatar } from "@/components/TalksPostCard";
@@ -22,6 +24,10 @@ import {
   useCreateTalkComment,
   useVoteTalkPost,
   useVoteTalkComment,
+  useFlagTalkPost,
+  useFlagTalkComment,
+  useDeleteTalkComment,
+  type FlagInputReason,
 } from "@workspace/api-client-react";
 
 type Comment = {
@@ -47,12 +53,21 @@ function timeAgo(iso: string): string {
   return `${days}d`;
 }
 
+const FLAG_REASONS = [
+  { label: "Spam", value: "spam" },
+  { label: "Harassment", value: "harassment" },
+  { label: "Misinformation", value: "misinformation" },
+  { label: "Hate Speech", value: "hate_speech" },
+  { label: "Other", value: "other" },
+];
+
 const commentKeyExtractor = (item: Comment) => String(item.id);
 
 export default function TalkPostScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { userId } = useAuth();
   const params = useLocalSearchParams<{
     id: string;
     title?: string;
@@ -64,25 +79,26 @@ export default function TalkPostScreen() {
     hasVoted?: string;
     createdAt?: string;
   }>();
+
   const postId = Number(params.id);
+  const title = params.title ?? "";
+  const body = params.body ?? "";
+  const displayName = params.displayName ?? "Anonymous";
+  const avatarUrl = params.avatarUrl || null;
+  const createdAt = params.createdAt ?? new Date().toISOString();
+
+  const [upvotes, setUpvotes] = useState(Number(params.upvotes ?? 0));
+  const [hasVoted, setHasVoted] = useState(params.hasVoted === "true");
+  const [postFlagged, setPostFlagged] = useState(false);
 
   const [commentText, setCommentText] = useState("");
   const inputRef = useRef<TextInput>(null);
 
-  const title = decodeURIComponent(params.title ?? "");
-  const body = decodeURIComponent(params.body ?? "");
-  const displayName = decodeURIComponent(params.displayName ?? "Anonymous");
-  const avatarUrl = params.avatarUrl ? decodeURIComponent(params.avatarUrl) : null;
-  const createdAt = decodeURIComponent(params.createdAt ?? new Date().toISOString());
-
-  const [upvotes, setUpvotes] = useState(Number(params.upvotes ?? 0));
-  const [hasVoted, setHasVoted] = useState(params.hasVoted === "true");
   const [comments, setComments] = useState<Comment[]>([]);
   const [initialized, setInitialized] = useState(false);
 
   const { data: commentsData, isLoading: commentsLoading } = useListTalkComments(postId);
 
-  // Seed comments from server on first load only (preserve optimistic new comments after)
   React.useEffect(() => {
     if (!initialized && commentsData) {
       setComments(commentsData as unknown as Comment[]);
@@ -93,6 +109,9 @@ export default function TalkPostScreen() {
   const voteMutation = useVoteTalkPost();
   const commentMutation = useCreateTalkComment();
   const commentVoteMutation = useVoteTalkComment();
+  const flagPostMutation = useFlagTalkPost();
+  const flagCommentMutation = useFlagTalkComment();
+  const deleteCommentMutation = useDeleteTalkComment();
 
   const handleVote = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -111,9 +130,30 @@ export default function TalkPostScreen() {
     });
   }, [hasVoted, postId, voteMutation]);
 
+  const handleReportPost = useCallback(() => {
+    if (postFlagged) {
+      Alert.alert("Already Reported", "You have already reported this post.");
+      return;
+    }
+    Alert.alert(
+      "Report Post",
+      "Why are you reporting this post?",
+      [
+        ...FLAG_REASONS.map((r) => ({
+          text: r.label,
+          onPress: () => {
+            setPostFlagged(true);
+            flagPostMutation.mutate({ id: postId, data: { reason: r.value as FlagInputReason } });
+            Alert.alert("Reported", "Thanks for keeping the community safe.");
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+    );
+  }, [postFlagged, postId, flagPostMutation]);
+
   const handleCommentVote = useCallback((commentId: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Optimistic update
     setComments((prev) =>
       prev.map((c) =>
         c.id === commentId
@@ -132,7 +172,6 @@ export default function TalkPostScreen() {
         );
       },
       onError: () => {
-        // Revert
         setComments((prev) =>
           prev.map((c) =>
             c.id === commentId
@@ -143,6 +182,62 @@ export default function TalkPostScreen() {
       },
     });
   }, [commentVoteMutation]);
+
+  const handleCommentMenu = useCallback((comment: Comment) => {
+    const isOwn = !!userId && comment.userId === userId;
+    const reportOption = {
+      text: "Report",
+      onPress: () => {
+        Alert.alert(
+          "Report Comment",
+          "Why are you reporting this comment?",
+          [
+            ...FLAG_REASONS.map((r) => ({
+              text: r.label,
+              onPress: () => {
+                flagCommentMutation.mutate({ id: comment.id, data: { reason: r.value as FlagInputReason } });
+                Alert.alert("Reported", "Thanks for keeping the community safe.");
+              },
+            })),
+            { text: "Cancel", style: "cancel" as const },
+          ],
+        );
+      },
+    };
+    const deleteOption = {
+      text: "Delete",
+      style: "destructive" as const,
+      onPress: () => {
+        Alert.alert("Delete Comment", "Are you sure you want to delete this comment?", [
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              deleteCommentMutation.mutate({ id: comment.id }, {
+                onSuccess: () => {
+                  setComments((prev) => prev.filter((c) => c.id !== comment.id));
+                },
+                onError: () => {
+                  Alert.alert("Error", "Could not delete comment. Please try again.");
+                },
+              });
+            },
+          },
+          { text: "Cancel", style: "cancel" },
+        ]);
+      },
+    };
+
+    Alert.alert(
+      "Comment",
+      undefined,
+      [
+        ...(isOwn ? [deleteOption] : []),
+        reportOption,
+        { text: "Cancel", style: "cancel" as const },
+      ],
+    );
+  }, [userId, flagCommentMutation, deleteCommentMutation]);
 
   const handleAddComment = useCallback(() => {
     const text = commentText.trim();
@@ -158,7 +253,6 @@ export default function TalkPostScreen() {
             upvotes: (res as any).upvotes ?? 0,
             hasVoted: false,
           };
-          // Prepend (newest first)
           setComments((prev) => [newComment, ...prev]);
         },
       },
@@ -174,35 +268,42 @@ export default function TalkPostScreen() {
           <Text style={[styles.commentTime, { color: colors.mutedForeground }]}>{timeAgo(item.createdAt)}</Text>
         </View>
         <Text style={[styles.commentBody, { color: colors.foreground }]}>{item.body}</Text>
-        {/* Comment upvote */}
-        <Pressable
-          style={[
-            styles.commentUpvoteBtn,
-            { backgroundColor: item.hasVoted ? colors.primary + "22" : colors.secondary },
-          ]}
-          onPress={() => handleCommentVote(item.id)}
-          hitSlop={6}
-        >
-          <Feather
-            name="arrow-up"
-            size={12}
-            color={item.hasVoted ? colors.primary : colors.mutedForeground}
-          />
-          <Text style={[styles.commentUpvoteCount, { color: item.hasVoted ? colors.primary : colors.mutedForeground }]}>
-            {item.upvotes}
-          </Text>
-        </Pressable>
+        <View style={styles.commentActions}>
+          <Pressable
+            style={[
+              styles.commentUpvoteBtn,
+              { backgroundColor: item.hasVoted ? colors.primary + "22" : colors.secondary },
+            ]}
+            onPress={() => handleCommentVote(item.id)}
+            hitSlop={6}
+          >
+            <Feather
+              name="arrow-up"
+              size={12}
+              color={item.hasVoted ? colors.primary : colors.mutedForeground}
+            />
+            <Text style={[styles.commentUpvoteCount, { color: item.hasVoted ? colors.primary : colors.mutedForeground }]}>
+              {item.upvotes}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleCommentMenu(item)}
+            hitSlop={8}
+            style={styles.commentMenuBtn}
+          >
+            <Feather name="more-horizontal" size={15} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
       </View>
     </View>
-  ), [colors, handleCommentVote]);
+  ), [colors, handleCommentVote, handleCommentMenu]);
 
   const ListHeader = (
     <View>
-      {/* Full post content */}
       <View style={[styles.postContainer, { borderBottomColor: colors.border }]}>
         <View style={styles.postAuthorRow}>
           <Avatar name={displayName} url={avatarUrl} />
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.postAuthor, { color: colors.foreground }]}>{displayName}</Text>
             <Text style={[styles.postTime, { color: colors.mutedForeground }]}>{timeAgo(createdAt)}</Text>
           </View>
@@ -223,6 +324,13 @@ export default function TalkPostScreen() {
             <Feather name="message-circle" size={15} color={colors.mutedForeground} />
             <Text style={[styles.voteBtnText, { color: colors.mutedForeground }]}>{comments.length}</Text>
           </View>
+          <Pressable
+            style={[styles.voteBtn, { backgroundColor: postFlagged ? colors.primary + "18" : colors.secondary, marginLeft: "auto" }]}
+            onPress={handleReportPost}
+            hitSlop={6}
+          >
+            <Feather name="flag" size={13} color={postFlagged ? colors.primary : colors.mutedForeground} />
+          </Pressable>
         </View>
       </View>
       <Text style={[styles.commentsLabel, { color: colors.mutedForeground }]}>
@@ -233,7 +341,6 @@ export default function TalkPostScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={[styles.navHeader, { paddingTop: Platform.OS === "web" ? 67 : insets.top, borderBottomColor: colors.border }]}>
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.secondary }]}>
           <Feather name="arrow-left" size={18} color={colors.foreground} />
@@ -271,7 +378,6 @@ export default function TalkPostScreen() {
           />
         )}
 
-        {/* Comment input */}
         <View
           style={[
             styles.inputBar,
@@ -334,7 +440,7 @@ const styles = StyleSheet.create({
   postTime: { fontSize: 12, marginTop: 1 },
   postTitle: { fontSize: 20, fontWeight: "700", lineHeight: 27 },
   postBody: { fontSize: 15, lineHeight: 22 },
-  voteRow: { flexDirection: "row", gap: 8, marginTop: 4 },
+  voteRow: { flexDirection: "row", gap: 8, marginTop: 4, alignItems: "center" },
   voteBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -357,17 +463,17 @@ const styles = StyleSheet.create({
   commentAuthor: { fontSize: 13, fontWeight: "600" },
   commentTime: { fontSize: 11 },
   commentBody: { fontSize: 14, lineHeight: 20 },
+  commentActions: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
   commentUpvoteBtn: {
-    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 12,
-    marginTop: 2,
   },
   commentUpvoteCount: { fontSize: 12, fontWeight: "600" },
+  commentMenuBtn: { padding: 4 },
   emptyComments: { padding: 32, alignItems: "center" },
   emptyCommentsText: { fontSize: 14, textAlign: "center" },
   inputBar: {

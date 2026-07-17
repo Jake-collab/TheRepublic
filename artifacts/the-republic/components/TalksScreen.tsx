@@ -27,6 +27,8 @@ import {
   listTalkPosts,
   useCreateTalkPost,
   useVoteTalkPost,
+  useFlagTalkPost,
+  type FlagInputReason,
 } from "@workspace/api-client-react";
 
 type TalkCategory = { id: number; name: string; emoji: string; sortOrder: number; isActive: boolean };
@@ -413,6 +415,14 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
   }, [cursor, loadingMore, talksCatId, sort, debouncedSearch]);
 
   const voteMutation = useVoteTalkPost();
+  const flagPostMutation = useFlagTalkPost();
+
+  const handleFlag = useCallback(
+    (id: number, reason: string) => {
+      flagPostMutation.mutate({ id, data: { reason: reason as FlagInputReason } });
+    },
+    [flagPostMutation],
+  );
 
   const handleVote = useCallback(
     (id: number) => {
@@ -496,9 +506,9 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
 
   const renderPost = useCallback(
     ({ item }: { item: TalkPost }) => (
-      <TalksPostCard post={item} onVote={handleVote} onPress={handlePostPress} />
+      <TalksPostCard post={item} onVote={handleVote} onPress={handlePostPress} onFlag={handleFlag} />
     ),
-    [handleVote, handlePostPress],
+    [handleVote, handlePostPress, handleFlag],
   );
 
   // ── Category pills bar (shared) ────────────────────────────────────────────

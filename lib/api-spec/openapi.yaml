@@ -1882,6 +1882,25 @@ paths:
         "201":
           description: Flagged
 
+  /talks/comments/{id}:
+    delete:
+      operationId: deleteTalkComment
+      tags: [talks]
+      summary: Delete own talk comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Forbidden
+
   /talks/posts/{id}/comments:
     get:
       operationId: listTalkComments
