@@ -2048,6 +2048,21 @@ paths:
           schema:
             type: integer
             default: 20
+        - name: lat
+          in: query
+          description: Worker latitude for radius filtering
+          schema:
+            type: ["number", "null"]
+        - name: lon
+          in: query
+          description: Worker longitude for radius filtering
+          schema:
+            type: ["number", "null"]
+        - name: radius
+          in: query
+          description: Radius in miles
+          schema:
+            type: ["integer", "null"]
       responses:
         "200":
           description: OK
@@ -3912,6 +3927,13 @@ components:
           type: string
         stateCode:
           type: string
+        locationText:
+          type: string
+          default: ""
+        latitude:
+          type: ["string", "null"]
+        longitude:
+          type: ["string", "null"]
         status:
           type: string
           description: '"open" | "in_progress" | "completed" | "cancelled"'
@@ -3977,6 +3999,13 @@ components:
         stateCode:
           type: string
           default: ""
+        locationText:
+          type: string
+          default: ""
+        latitude:
+          type: ["string", "null"]
+        longitude:
+          type: ["string", "null"]
 
     GigApplication:
       type: object

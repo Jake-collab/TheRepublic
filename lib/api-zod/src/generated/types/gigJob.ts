@@ -20,6 +20,11 @@ export interface GigJob {
   payAmountCents: number;
   city: string;
   stateCode: string;
+  locationText?: string;
+  /** @nullable */
+  latitude?: string | null;
+  /** @nullable */
+  longitude?: string | null;
   /** "open" | "in_progress" | "completed" | "cancelled" */
   status: string;
   /** @nullable */

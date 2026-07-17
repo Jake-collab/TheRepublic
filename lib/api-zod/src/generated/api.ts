@@ -1813,8 +1813,13 @@ export const listGigJobsQueryLimitDefault = 20;
 export const ListGigJobsQueryParams = zod.object({
   "category": zod.coerce.string().nullish(),
   "cursor": zod.coerce.number().nullish(),
-  "limit": zod.coerce.number().default(listGigJobsQueryLimitDefault)
+  "limit": zod.coerce.number().default(listGigJobsQueryLimitDefault),
+  "lat": zod.coerce.number().nullish().describe('Worker latitude for radius filtering'),
+  "lon": zod.coerce.number().nullish().describe('Worker longitude for radius filtering'),
+  "radius": zod.coerce.number().nullish().describe('Radius in miles')
 })
+
+export const listGigJobsResponseItemsItemLocationTextDefault = ``;
 
 export const ListGigJobsResponse = zod.object({
   "items": zod.array(zod.object({
@@ -1829,6 +1834,9 @@ export const ListGigJobsResponse = zod.object({
   "payAmountCents": zod.number(),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().default(listGigJobsResponseItemsItemLocationTextDefault),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
   "workerId": zod.string().nullish(),
   "workerName": zod.string().nullish(),
@@ -1847,6 +1855,7 @@ export const ListGigJobsResponse = zod.object({
  */
 export const createGigJobBodyCityDefault = ``;
 export const createGigJobBodyStateCodeDefault = ``;
+export const createGigJobBodyLocationTextDefault = ``;
 
 export const CreateGigJobBody = zod.object({
   "hirerId": zod.string(),
@@ -1858,7 +1867,10 @@ export const CreateGigJobBody = zod.object({
   "payType": zod.string(),
   "payAmountCents": zod.number(),
   "city": zod.string().default(createGigJobBodyCityDefault),
-  "stateCode": zod.string().default(createGigJobBodyStateCodeDefault)
+  "stateCode": zod.string().default(createGigJobBodyStateCodeDefault),
+  "locationText": zod.string().default(createGigJobBodyLocationTextDefault),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish()
 })
 
 
@@ -1868,6 +1880,8 @@ export const CreateGigJobBody = zod.object({
 export const GetGigJobParams = zod.object({
   "id": zod.coerce.number()
 })
+
+export const getGigJobResponseOneLocationTextDefault = ``;
 
 export const GetGigJobResponse = zod.object({
   "id": zod.number(),
@@ -1881,6 +1895,9 @@ export const GetGigJobResponse = zod.object({
   "payAmountCents": zod.number(),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().default(getGigJobResponseOneLocationTextDefault),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
   "workerId": zod.string().nullish(),
   "workerName": zod.string().nullish(),
@@ -1931,6 +1948,8 @@ export const StartGigJobParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const startGigJobResponseLocationTextDefault = ``;
+
 export const StartGigJobResponse = zod.object({
   "id": zod.number(),
   "hirerId": zod.string(),
@@ -1943,6 +1962,9 @@ export const StartGigJobResponse = zod.object({
   "payAmountCents": zod.number(),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().default(startGigJobResponseLocationTextDefault),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
   "workerId": zod.string().nullish(),
   "workerName": zod.string().nullish(),
@@ -1961,6 +1983,8 @@ export const CompleteGigJobParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const completeGigJobResponseLocationTextDefault = ``;
+
 export const CompleteGigJobResponse = zod.object({
   "id": zod.number(),
   "hirerId": zod.string(),
@@ -1973,6 +1997,9 @@ export const CompleteGigJobResponse = zod.object({
   "payAmountCents": zod.number(),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().default(completeGigJobResponseLocationTextDefault),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
   "workerId": zod.string().nullish(),
   "workerName": zod.string().nullish(),
@@ -2017,6 +2044,8 @@ export const SendGigMessageBody = zod.object({
 /**
  * @summary List jobs posted by the current user (auth required)
  */
+export const listMyGigJobsResponseLocationTextDefault = ``;
+
 export const ListMyGigJobsResponseItem = zod.object({
   "id": zod.number(),
   "hirerId": zod.string(),
@@ -2029,6 +2058,9 @@ export const ListMyGigJobsResponseItem = zod.object({
   "payAmountCents": zod.number(),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().default(listMyGigJobsResponseLocationTextDefault),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
   "workerId": zod.string().nullish(),
   "workerName": zod.string().nullish(),
@@ -2044,6 +2076,8 @@ export const ListMyGigJobsResponse = zod.array(ListMyGigJobsResponseItem)
 /**
  * @summary List the current user's gig applications with job data (auth required)
  */
+export const listMyGigApplicationsResponseTwoJobLocationTextDefault = ``;
+
 export const ListMyGigApplicationsResponseItem = zod.object({
   "id": zod.number(),
   "jobId": zod.number(),
@@ -2066,6 +2100,9 @@ export const ListMyGigApplicationsResponseItem = zod.object({
   "payAmountCents": zod.number(),
   "city": zod.string(),
   "stateCode": zod.string(),
+  "locationText": zod.string().default(listMyGigApplicationsResponseTwoJobLocationTextDefault),
+  "latitude": zod.string().nullish(),
+  "longitude": zod.string().nullish(),
   "status": zod.string().describe('\"open\" | \"in_progress\" | \"completed\" | \"cancelled\"'),
   "workerId": zod.string().nullish(),
   "workerName": zod.string().nullish(),

@@ -11,11 +11,31 @@ import { eq, desc, and, asc, lt, sql, ne } from "drizzle-orm";
 
 const router = Router();
 
+// ── Haversine distance (miles) ────────────────────────────────────────────────
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3958.8;
+  const toRad = (d: number) => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // ── GET /gigs/jobs ────────────────────────────────────────────────────────────
-// Public. Returns open jobs with optional category + cursor filters.
+// Public. Returns open jobs with optional category + cursor + radius filters.
 router.get("/jobs", async (req, res) => {
-  const { category, cursor, limit = "20" } = req.query;
-  const take = Math.min(Number(limit), 50) + 1;
+  const { category, cursor, limit = "20", lat, lon, radius } = req.query;
+
+  const workerLat = lat && typeof lat === "string" ? parseFloat(lat) : null;
+  const workerLon = lon && typeof lon === "string" ? parseFloat(lon) : null;
+  const radiusMi  = radius && typeof radius === "string" ? parseInt(radius, 10) : null;
+  const useRadius = workerLat !== null && workerLon !== null && radiusMi !== null
+    && !isNaN(workerLat) && !isNaN(workerLon) && !isNaN(radiusMi);
+
+  // Fetch a larger pool when radius filtering so we can trim after distance check
+  const take = useRadius ? 200 : Math.min(Number(limit), 50) + 1;
+  const pageSize = Math.min(Number(limit), 50);
 
   const conditions: ReturnType<typeof eq>[] = [
     eq(gigJobsTable.status, "open"),
@@ -36,8 +56,20 @@ router.get("/jobs", async (req, res) => {
     .orderBy(desc(gigJobsTable.createdAt))
     .limit(take);
 
-  const hasMore = rows.length === take;
-  const items   = hasMore ? rows.slice(0, -1) : rows;
+  let filtered = rows;
+  if (useRadius) {
+    filtered = rows.filter((job) => {
+      if (!job.latitude || !job.longitude) return true; // include jobs without coords
+      const dist = haversineMiles(
+        workerLat!, workerLon!,
+        parseFloat(job.latitude), parseFloat(job.longitude),
+      );
+      return dist <= radiusMi!;
+    }).slice(0, pageSize + 1);
+  }
+
+  const hasMore = filtered.length === pageSize + 1;
+  const items   = hasMore ? filtered.slice(0, -1) : filtered;
   const nextCursor = hasMore ? items[items.length - 1]!.id : null;
 
   res.json({ items, nextCursor });
@@ -51,7 +83,7 @@ router.post("/jobs", requireAuth, ensureUser, async (req, res) => {
   if (!users[0]) { res.status(401).json({ error: "User not found" }); return; }
   const user = users[0];
 
-  const { title, description, category, payType, payAmountCents, city = "", stateCode = "" } =
+  const { title, description, category, payType, payAmountCents, city = "", stateCode = "", locationText = "", latitude, longitude } =
     req.body as {
       title?: string;
       description?: string;
@@ -60,6 +92,9 @@ router.post("/jobs", requireAuth, ensureUser, async (req, res) => {
       payAmountCents?: number;
       city?: string;
       stateCode?: string;
+      locationText?: string;
+      latitude?: string | null;
+      longitude?: string | null;
     };
 
   if (!title?.trim() || !description?.trim() || !category || !payAmountCents) {
@@ -77,6 +112,9 @@ router.post("/jobs", requireAuth, ensureUser, async (req, res) => {
     payAmountCents: Number(payAmountCents),
     city:           String(city).trim(),
     stateCode:      String(stateCode).trim().toUpperCase().slice(0, 2),
+    locationText:   String(locationText || "").trim(),
+    latitude:       latitude ?? null,
+    longitude:      longitude ?? null,
     status:         "open",
   }).returning();
 

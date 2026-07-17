@@ -923,6 +923,11 @@ export interface GigJob {
   payAmountCents: number;
   city: string;
   stateCode: string;
+  locationText?: string;
+  /** @nullable */
+  latitude?: string | null;
+  /** @nullable */
+  longitude?: string | null;
   /** "open" | "in_progress" | "completed" | "cancelled" */
   status: string;
   /** @nullable */
@@ -968,6 +973,11 @@ export interface GigJobInput {
   payAmountCents: number;
   city?: string;
   stateCode?: string;
+  locationText?: string;
+  /** @nullable */
+  latitude?: string | null;
+  /** @nullable */
+  longitude?: string | null;
 }
 
 export type GigApplicationWithJob = GigApplication & {
@@ -1402,6 +1412,21 @@ category?: string | null;
  */
 cursor?: number | null;
 limit?: number;
+/**
+ * Worker latitude for radius filtering
+ * @nullable
+ */
+lat?: number | null;
+/**
+ * Worker longitude for radius filtering
+ * @nullable
+ */
+lon?: number | null;
+/**
+ * Radius in miles
+ * @nullable
+ */
+radius?: number | null;
 };
 
 export type ListFreelanceProjectsParams = {

@@ -18,4 +18,9 @@ export interface GigJobInput {
   payAmountCents: number;
   city?: string;
   stateCode?: string;
+  locationText?: string;
+  /** @nullable */
+  latitude?: string | null;
+  /** @nullable */
+  longitude?: string | null;
 }

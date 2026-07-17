@@ -16,4 +16,19 @@ category?: string | null;
  */
 cursor?: number | null;
 limit?: number;
+/**
+ * Worker latitude for radius filtering
+ * @nullable
+ */
+lat?: number | null;
+/**
+ * Worker longitude for radius filtering
+ * @nullable
+ */
+lon?: number | null;
+/**
+ * Radius in miles
+ * @nullable
+ */
+radius?: number | null;
 };

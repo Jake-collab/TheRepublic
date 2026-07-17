@@ -329,11 +329,11 @@ function GigJobCard({
               {cat.label}
             </Text>
           </View>
-          {job.city ? (
+          {(job.locationText || job.city) ? (
             <View style={styles.locRow}>
               <Feather name="map-pin" size={10} color={colors.mutedForeground} />
               <Text style={[styles.locText, { color: colors.mutedForeground }]}>
-                {job.city}{job.stateCode ? `, ${job.stateCode}` : ""}
+                {job.locationText || `${job.city}${job.stateCode ? `, ${job.stateCode}` : ""}`}
               </Text>
             </View>
           ) : null}
@@ -1166,6 +1166,8 @@ function PostGigModal({
   const [stateCode, setStateCode] = useState("");
   const [locationText, setLocationText] = useState("");
   const [detectingLoc, setDetectingLoc] = useState(false);
+  const [postLat, setPostLat] = useState<string | null>(null);
+  const [postLon, setPostLon] = useState<string | null>(null);
 
   const { mutateAsync: create, isPending: posting } = useCreateGigJob();
 
@@ -1197,11 +1199,14 @@ function PostGigModal({
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") { Alert.alert("Permission denied", "Enable location to auto-fill."); return; }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setPostLat(String(pos.coords.latitude));
+      setPostLon(String(pos.coords.longitude));
       const [geo] = await Location.reverseGeocodeAsync(pos.coords);
       if (geo) {
         if (geo.city) setCity(geo.city);
         if (geo.region) setStateCode(geo.region.slice(0, 2).toUpperCase());
         if (geo.street) setLocationText(geo.street);
+        else if (geo.city && geo.region) setLocationText(`${geo.city}, ${geo.region}`);
       }
     } catch { Alert.alert("Could not detect location"); }
     finally { setDetectingLoc(false); }
@@ -1221,6 +1226,9 @@ function PostGigModal({
           payAmountCents: pay,
           city: city.trim(),
           stateCode: stateCode.trim().toUpperCase().slice(0, 2),
+          locationText: locationText.trim() || undefined,
+          latitude: postLat ?? undefined,
+          longitude: postLon ?? undefined,
         },
       });
       qc.invalidateQueries({ queryKey: getListMyGigJobsQueryKey() });
@@ -1478,6 +1486,8 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [locationLabel, setLocationLabel] = useState<string>("Detecting location…");
   const [workRadius, setWorkRadius] = useState<number | null>(null);
+  const [workerLat, setWorkerLat] = useState<number | null>(null);
+  const [workerLon, setWorkerLon] = useState<number | null>(null);
 
   const handleModeChange = useCallback(
     (m: Mode) => {
@@ -1517,6 +1527,8 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") { setLocationLabel("Location off"); return; }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setWorkerLat(loc.coords.latitude);
+      setWorkerLon(loc.coords.longitude);
       const [place] = await Location.reverseGeocodeAsync({
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
@@ -1530,7 +1542,13 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
   }, [mode]);
 
   // ── Work-mode job list ───────────────────────────────────────────────────────
-  const workParams = { category: activeCat ?? undefined, limit: 20 };
+  const workParams = {
+    category: activeCat ?? undefined,
+    limit: 20,
+    ...(workRadius && workerLat !== null && workerLon !== null
+      ? { lat: workerLat, lon: workerLon, radius: workRadius }
+      : {}),
+  };
   const { data: workPage, isLoading: workLoading } = useListGigJobs(workParams);
 
   useEffect(() => {
@@ -1545,17 +1563,27 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
     setWorkCursor(undefined);
   }, [activeCat]);
 
+  useEffect(() => {
+    setWorkJobs([]);
+    setWorkCursor(undefined);
+  }, [workRadius]);
+
   const handleLoadMore = useCallback(async () => {
     if (!workCursor || loadingMore) return;
     setLoadingMore(true);
     try {
-      const res = await (await fetch(`/api/gigs/jobs?cursor=${workCursor}&limit=20${activeCat ? `&category=${activeCat}` : ""}`)).json() as { items: GigJob[]; nextCursor: number | null };
+      let url = `/api/gigs/jobs?cursor=${workCursor}&limit=20`;
+      if (activeCat) url += `&category=${activeCat}`;
+      if (workRadius && workerLat !== null && workerLon !== null) {
+        url += `&lat=${workerLat}&lon=${workerLon}&radius=${workRadius}`;
+      }
+      const res = await (await fetch(url)).json() as { items: GigJob[]; nextCursor: number | null };
       setWorkJobs((prev) => [...prev, ...res.items]);
       setWorkCursor(res.nextCursor ?? undefined);
     } finally {
       setLoadingMore(false);
     }
-  }, [workCursor, loadingMore, activeCat]);
+  }, [workCursor, loadingMore, activeCat, workRadius, workerLat, workerLon]);
 
   // ── My posted jobs (Hire mode) ───────────────────────────────────────────────
   const { data: myJobs = [], isLoading: myJobsLoading, refetch: refetchMyJobs } = useListMyGigJobs();
