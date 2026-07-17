@@ -10,6 +10,7 @@
  * Falls back to direct fetch() for operations not yet in the spec.
  */
 import { Feather } from "@expo/vector-icons";
+import { useAuth, useUser } from "@clerk/expo";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, {
@@ -36,7 +37,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useUser } from "@clerk/expo";
 import { useColors } from "@/hooks/useColors";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -189,10 +189,13 @@ function JobDetailModal({
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { getToken } = useAuth();
   const [view, setView] = useState<"detail" | "apply">("detail");
   const [coverLetter, setCoverLetter] = useState("");
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   const handleApply = useCallback(async () => {
     if (!coverLetter.trim()) {
@@ -281,18 +284,38 @@ function JobDetailModal({
           )}
 
           {/* Apply / external link */}
-          {!applied && (
-            job.applicationUrl ? (
-              <Pressable style={[styles.applyBtn, { backgroundColor: colors.primary }]} onPress={() => setView("apply")}>
-                <Feather name="send" size={16} color="#ffffff" />
-                <Text style={styles.applyBtnText}>Apply Now</Text>
-              </Pressable>
-            ) : (
-              <Pressable style={[styles.applyBtn, { backgroundColor: colors.primary }]} onPress={() => setView("apply")}>
-                <Feather name="send" size={16} color="#ffffff" />
-                <Text style={styles.applyBtnText}>Apply Now</Text>
-              </Pressable>
-            )
+          {!applied && meId !== job.posterId && (
+            <Pressable style={[styles.applyBtn, { backgroundColor: colors.primary }]} onPress={() => setView("apply")}>
+              <Feather name="send" size={16} color="#ffffff" />
+              <Text style={styles.applyBtnText}>Apply Now</Text>
+            </Pressable>
+          )}
+
+          {/* Message poster */}
+          {meId && meId !== job.posterId && (
+            <Pressable
+              style={[styles.applyBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.border, marginTop: 8 }]}
+              onPress={async () => {
+                setStartingChat(true);
+                try {
+                  const token = await getToken();
+                  const res = await fetch("/api/messages/conversations/start", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ contextType: "job", contextId: job.id, contextTitle: job.title, otherUserId: job.posterId }),
+                  });
+                  if (res.ok) {
+                    const conv = await res.json();
+                    router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(job.posterName ?? "Poster")}` as never);
+                  }
+                } catch {}
+                setStartingChat(false);
+              }}
+              disabled={startingChat}
+            >
+              <Feather name="message-circle" size={16} color={colors.foreground} />
+              <Text style={[styles.applyBtnText, { color: colors.foreground }]}>{startingChat ? "Opening…" : "Message Poster"}</Text>
+            </Pressable>
           )}
         </ScrollView>
       ) : (

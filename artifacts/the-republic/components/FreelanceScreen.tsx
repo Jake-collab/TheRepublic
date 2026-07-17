@@ -7,7 +7,7 @@
  *              letter, track your active contracts through milestones.
  */
 import { Feather } from "@expo/vector-icons";
-import { useUser } from "@clerk/expo";
+import { useAuth, useUser } from "@clerk/expo";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, {
@@ -506,7 +506,10 @@ function ProjectDetailModal({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const [view, setView] = useState<"detail" | "bid" | "messages">("detail");
+  const router = useRouter();
+  const [view, setView] = useState<"detail" | "bid">("detail");
+  const [startingChat, setStartingChat] = useState(false);
+  const { getToken } = useAuth();
   const [proposedDollars, setProposedDollars] = useState("");
   const [deliveryDays, setDeliveryDays] = useState("7");
   const [coverLetter, setCoverLetter] = useState("");
@@ -590,11 +593,6 @@ function ProjectDetailModal({
             <Feather name="x" size={22} color={colors.mutedForeground} />
           </Pressable>
         </View>
-      )}
-
-      {/* ── Messages ── */}
-      {view === "messages" && (
-        <FreelanceMessageThread projectId={projectId} meId={meId} />
       )}
 
       {/* ── Bid form ── */}
@@ -745,11 +743,27 @@ function ProjectDetailModal({
 
           {isWorker && project.status === "in_progress" && (
             <Pressable
-              style={[styles.secondaryBtn, { borderColor: colors.border }]}
-              onPress={() => setView("messages")}
+              style={[styles.secondaryBtn, { borderColor: colors.border, opacity: startingChat ? 0.7 : 1 }]}
+              onPress={async () => {
+                setStartingChat(true);
+                try {
+                  const token = await getToken();
+                  const res = await fetch("/api/messages/conversations/start", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ contextType: "freelance", contextId: projectId, contextTitle: project.title, otherUserId: project.hirerId }),
+                  });
+                  if (res.ok) {
+                    const conv = await res.json();
+                    router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(project.hirerName ?? "Client")}` as never);
+                  }
+                } catch {}
+                setStartingChat(false);
+              }}
+              disabled={startingChat}
             >
               <Feather name="message-circle" size={17} color={colors.primary} />
-              <Text style={[styles.secondaryBtnText, { color: colors.foreground }]}>Open Project Chat</Text>
+              <Text style={[styles.secondaryBtnText, { color: colors.foreground }]}>{startingChat ? "Opening…" : "Open Project Chat"}</Text>
               <Feather name="chevron-right" size={15} color={colors.mutedForeground} />
             </Pressable>
           )}
@@ -777,7 +791,10 @@ function MyProjectModal({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const [view, setView] = useState<"detail" | "addMilestone" | "messages">("detail");
+  const router = useRouter();
+  const [view, setView] = useState<"detail" | "addMilestone">("detail");
+  const [startingChat2, setStartingChat2] = useState(false);
+  const { getToken: getToken2 } = useAuth();
   const [msTitle, setMsTitle] = useState("");
   const [msDesc, setMsDesc] = useState("");
   const [msDollars, setMsDollars] = useState("");
@@ -868,10 +885,6 @@ function MyProjectModal({
             <Feather name="x" size={22} color={colors.mutedForeground} />
           </Pressable>
         </View>
-      )}
-
-      {view === "messages" && (
-        <FreelanceMessageThread projectId={projectId} meId={meId} />
       )}
 
       {view === "addMilestone" && (
@@ -1002,13 +1015,29 @@ function MyProjectModal({
           )}
 
           {/* Chat CTA */}
-          {project.status === "in_progress" && (
+          {project.status === "in_progress" && project.workerId && (
             <Pressable
-              style={[styles.secondaryBtn, { borderColor: colors.border }]}
-              onPress={() => setView("messages")}
+              style={[styles.secondaryBtn, { borderColor: colors.border, opacity: startingChat2 ? 0.7 : 1 }]}
+              onPress={async () => {
+                setStartingChat2(true);
+                try {
+                  const token = await getToken2();
+                  const res = await fetch("/api/messages/conversations/start", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ contextType: "freelance", contextId: projectId, contextTitle: project.title, otherUserId: project.workerId }),
+                  });
+                  if (res.ok) {
+                    const conv = await res.json();
+                    router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(project.workerName ?? "Freelancer")}` as never);
+                  }
+                } catch {}
+                setStartingChat2(false);
+              }}
+              disabled={startingChat2}
             >
               <Feather name="message-circle" size={16} color={colors.primary} />
-              <Text style={[styles.secondaryBtnText, { color: colors.foreground }]}>Project Chat</Text>
+              <Text style={[styles.secondaryBtnText, { color: colors.foreground }]}>{startingChat2 ? "Opening…" : "Project Chat"}</Text>
               <Feather name="chevron-right" size={15} color={colors.mutedForeground} />
             </Pressable>
           )}

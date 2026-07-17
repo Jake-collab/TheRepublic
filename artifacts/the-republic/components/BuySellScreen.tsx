@@ -11,6 +11,7 @@
  */
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import React, {
   useState,
@@ -356,9 +357,36 @@ function ListingDetailModal({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const { getToken } = useAuth();
   const updateMutation = useUpdateMarketplaceListing();
   const cat = CATEGORIES.find((c) => c.id === listing?.category);
   const isOwn = listing?.sellerId === currentUserId;
+  const [startingConv, setStartingConv] = useState(false);
+
+  const handleMessageSeller = async () => {
+    if (!listing || !currentUserId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setStartingConv(true);
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/messages/conversations/start", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contextType: "marketplace",
+          contextId: listing.id,
+          contextTitle: listing.title,
+          otherUserId: listing.sellerId,
+        }),
+      });
+      if (res.ok) {
+        const conv = await res.json();
+        router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(listing.sellerName)}` as never);
+      }
+    } catch {}
+    setStartingConv(false);
+  };
 
   const handleMarkSold = () => {
     if (!listing) return;
@@ -483,11 +511,12 @@ function ListingDetailModal({
             )
           ) : (
             <Pressable
-              style={[styles.actionBtn, { backgroundColor: colors.primary }]}
-              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+              style={[styles.actionBtn, { backgroundColor: colors.primary, opacity: startingConv ? 0.7 : 1 }]}
+              onPress={handleMessageSeller}
+              disabled={startingConv}
             >
               <Feather name="message-circle" size={17} color="#ffffff" />
-              <Text style={styles.actionBtnText}>Message Seller</Text>
+              <Text style={styles.actionBtnText}>{startingConv ? "Opening…" : "Message Seller"}</Text>
             </Pressable>
           )}
         </ScrollView>

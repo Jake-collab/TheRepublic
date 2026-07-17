@@ -20,6 +20,7 @@ import identityRouter from "./identity";
 import storageRouter from "./storage";
 import reviewsRouter from "./reviews";
 import userReportsRouter from "./userReports";
+import messagesRouter from "./messages";
 import { getStripeConfig } from "../utils/stripeHelpers";
 
 const router: IRouter = Router();
@@ -44,6 +45,7 @@ router.use("/skill-posts", skillPostsRouter);
 router.use("/jobs", jobsRouter);
 router.use("/reviews", reviewsRouter);
 router.use("/user-reports", userReportsRouter);
+router.use("/messages", messagesRouter);
 router.use("/admin", adminRouter);
 
 router.get("/membership/pricing", async (_req, res) => {

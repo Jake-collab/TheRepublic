@@ -22,3 +22,4 @@ export * from "./skillPosts";
 export * from "./identityVerifications";
 export * from "./jobs";
 export * from "./reviews";
+export * from "./conversations";

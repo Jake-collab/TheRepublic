@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/expo";
+import { useAuth, useUser } from "@clerk/expo";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -14,14 +14,22 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
-type Message = {
+type Conv = {
   id: number;
-  listingId: number;
-  listingTitle: string;
-  senderId: string;
-  senderName: string;
-  message: string;
-  createdAt: string;
+  contextType: string;
+  contextTitle: string;
+  otherUserId: string;
+  otherUserName: string;
+  lastMessageText: string;
+  lastMessageSenderId: string | null;
+  lastMessageAt: string;
+};
+
+const CONTEXT_ICONS: Record<string, string> = {
+  marketplace: "shopping-bag",
+  gig: "briefcase",
+  freelance: "layers",
+  job: "list",
 };
 
 export default function MessagesScreen() {
@@ -29,29 +37,25 @@ export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { getToken } = useAuth();
+  const { user } = useUser();
+  const meId = user?.id ?? "";
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [convs, setConvs] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch("/api/marketplace/messages", {
+      const res = await fetch("/api/messages/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setMessages(Array.isArray(data) ? data : []);
-      } else {
-        setMessages([]);
+        setConvs(Array.isArray(data) ? data : []);
       }
-    } catch {
-      setMessages([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+    setLoading(false);
   }, [getToken]);
 
   useEffect(() => { load(); }, [load]);
@@ -59,10 +63,15 @@ export default function MessagesScreen() {
   const timeAgo = (iso: string) => {
     const diff = Date.now() - new Date(iso).getTime();
     const m = Math.floor(diff / 60000);
-    if (m < 60) return `${m}m ago`;
+    if (m < 1) return "now";
+    if (m < 60) return `${m}m`;
     const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h / 24)}d`;
+  };
+
+  const openConv = (conv: Conv) => {
+    router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(conv.otherUserName)}` as never);
   };
 
   return (
@@ -77,33 +86,54 @@ export default function MessagesScreen() {
 
       {loading ? (
         <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />
-      ) : messages.length === 0 ? (
+      ) : convs.length === 0 ? (
         <View style={styles.empty}>
           <Feather name="message-square" size={40} color={colors.mutedForeground} />
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No messages yet</Text>
           <Text style={[styles.emptySubText, { color: colors.mutedForeground }]}>
-            Messages from buyers on your listings will appear here
+            Start a conversation from any listing, gig, freelance project, or job.
           </Text>
         </View>
       ) : (
         <FlatList
-          data={messages}
-          keyExtractor={(m) => String(m.id)}
-          contentContainerStyle={{ padding: 16, gap: 10 }}
-          renderItem={({ item }) => (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.cardTop}>
-                <Text style={[styles.senderName, { color: colors.foreground }]}>{item.senderName}</Text>
-                <Text style={[styles.time, { color: colors.mutedForeground }]}>{timeAgo(item.createdAt)}</Text>
-              </View>
-              <Text style={[styles.listingRef, { color: colors.primary }]} numberOfLines={1}>
-                Re: {item.listingTitle}
-              </Text>
-              <Text style={[styles.messageText, { color: colors.foreground }]} numberOfLines={3}>
-                {item.message}
-              </Text>
-            </View>
-          )}
+          data={convs}
+          keyExtractor={(c) => String(c.id)}
+          onRefresh={load}
+          refreshing={loading}
+          renderItem={({ item: conv }) => {
+            const icon = CONTEXT_ICONS[conv.contextType] ?? "message-circle";
+            const isMine = conv.lastMessageSenderId === meId;
+            const preview = conv.lastMessageText
+              ? `${isMine ? "You: " : ""}${conv.lastMessageText}`
+              : "Tap to start the conversation";
+            return (
+              <Pressable
+                onPress={() => openConv(conv)}
+                style={[styles.convRow, { borderBottomColor: colors.border }]}
+              >
+                <View style={[styles.convIcon, { backgroundColor: colors.secondary }]}>
+                  <Feather name={icon as any} size={20} color={colors.primary} />
+                </View>
+                <View style={styles.convBody}>
+                  <View style={styles.convTop}>
+                    <Text style={[styles.convName, { color: colors.foreground }]} numberOfLines={1}>
+                      {conv.otherUserName}
+                    </Text>
+                    <Text style={[styles.convTime, { color: colors.mutedForeground }]}>
+                      {timeAgo(conv.lastMessageAt)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.convCtx, { color: colors.primary }]} numberOfLines={1}>
+                    {conv.contextTitle}
+                  </Text>
+                  <Text style={[styles.convPreview, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    {preview}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+              </Pressable>
+            );
+          }}
         />
       )}
     </View>
@@ -118,13 +148,19 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
   headerTitle: { fontSize: 17, fontWeight: "700" },
-  empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 10, padding: 32 },
+  empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, padding: 32 },
   emptyTitle: { fontSize: 17, fontWeight: "600" },
   emptySubText: { fontSize: 13, textAlign: "center", lineHeight: 18 },
-  card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14, gap: 4 },
-  cardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  senderName: { fontSize: 14, fontWeight: "600" },
-  time: { fontSize: 12 },
-  listingRef: { fontSize: 12, fontWeight: "600" },
-  messageText: { fontSize: 14, lineHeight: 20 },
+  convRow: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  convIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: "center", alignItems: "center" },
+  convBody: { flex: 1, gap: 2 },
+  convTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  convName: { fontSize: 15, fontWeight: "600" },
+  convTime: { fontSize: 12 },
+  convCtx: { fontSize: 11, fontWeight: "600" },
+  convPreview: { fontSize: 13 },
 });

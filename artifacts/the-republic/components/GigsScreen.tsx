@@ -5,7 +5,7 @@
  * Work mode  → browse open jobs, apply, track your applications, message hirer.
  */
 import { Feather } from "@expo/vector-icons";
-import { useUser } from "@clerk/expo";
+import { useAuth, useUser } from "@clerk/expo";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -496,9 +496,11 @@ function JobDetailModal({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const router = useRouter();
   const [applyMsg, setApplyMsg] = useState("");
   const [showApplyForm, setShowApplyForm] = useState(false);
-  const [showMessages, setShowMessages] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
+  const { getToken } = useAuth();
 
   const { data: job, isLoading } = useGetGigJob(jobId);
   const { mutateAsync: applyMut, isPending: applying } = useApplyToGigJob();
@@ -542,18 +544,7 @@ function JobDetailModal({
       {/* Handle */}
       <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
 
-      {showMessages && (isWorker || isMyJob) ? (
-        <>
-          <View style={[styles.sheetTopRow, { borderBottomColor: colors.border }]}>
-            <Pressable onPress={() => setShowMessages(false)} style={styles.sheetBack}>
-              <Feather name="chevron-left" size={22} color={colors.foreground} />
-              <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Messages</Text>
-            </Pressable>
-          </View>
-          <MessageThread jobId={jobId} meId={meId} />
-        </>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailContent}>
           {/* Cat badge + title */}
           <View style={styles.detailHeader}>
             <View style={[styles.detailCatBadge, { backgroundColor: cat.color + "22" }]}>
@@ -674,10 +665,26 @@ function JobDetailModal({
           {(isWorker && job.status === "in_progress") && (
             <Pressable
               style={[styles.msgCTA, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-              onPress={() => setShowMessages(true)}
+              onPress={async () => {
+                setStartingChat(true);
+                try {
+                  const token = await getToken();
+                  const res = await fetch("/api/messages/conversations/start", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ contextType: "gig", contextId: job.id, contextTitle: job.title, otherUserId: job.hirerId }),
+                  });
+                  if (res.ok) {
+                    const conv = await res.json();
+                    router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(job.hirerName ?? "Hirer")}` as never);
+                  }
+                } catch {}
+                setStartingChat(false);
+              }}
+              disabled={startingChat}
             >
               <Feather name="message-circle" size={18} color={colors.primary} />
-              <Text style={[styles.msgCTAText, { color: colors.foreground }]}>Open Job Chat</Text>
+              <Text style={[styles.msgCTAText, { color: colors.foreground }]}>{startingChat ? "Opening…" : "Open Job Chat"}</Text>
               <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
             </Pressable>
           )}
@@ -686,7 +693,6 @@ function JobDetailModal({
             <Text style={[styles.closeBtnText, { color: colors.foreground }]}>Close</Text>
           </Pressable>
         </ScrollView>
-      )}
     </View>
   );
 }
@@ -705,7 +711,9 @@ function MyJobModal({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const [showMessages, setShowMessages] = useState(false);
+  const router = useRouter();
+  const [startingChat, setStartingChat] = useState(false);
+  const { getToken } = useAuth();
 
   const { data: job, isLoading } = useGetGigJob(jobId);
   const { mutateAsync: accept, isPending: accepting } = useAcceptGigApplication();
@@ -780,18 +788,7 @@ function MyJobModal({
     >
       <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
 
-      {showMessages ? (
-        <>
-          <View style={[styles.sheetTopRow, { borderBottomColor: colors.border }]}>
-            <Pressable onPress={() => setShowMessages(false)} style={styles.sheetBack}>
-              <Feather name="chevron-left" size={22} color={colors.foreground} />
-              <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Job Chat</Text>
-            </Pressable>
-          </View>
-          <MessageThread jobId={jobId} meId={meId} />
-        </>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailContent}>
           {/* Header */}
           <View style={styles.detailHeader}>
             <View style={[styles.detailCatBadge, { backgroundColor: cat.color + "22" }]}>
@@ -892,11 +889,28 @@ function MyJobModal({
                 )}
               </Pressable>
               <Pressable
-                style={[styles.msgCTA, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-                onPress={() => setShowMessages(true)}
+                style={[styles.msgCTA, { backgroundColor: colors.secondary, borderColor: colors.border, opacity: startingChat ? 0.7 : 1 }]}
+                onPress={async () => {
+                  if (!job.workerId) return;
+                  setStartingChat(true);
+                  try {
+                    const token = await getToken();
+                    const res = await fetch("/api/messages/conversations/start", {
+                      method: "POST",
+                      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                      body: JSON.stringify({ contextType: "gig", contextId: job.id, contextTitle: job.title, otherUserId: job.workerId }),
+                    });
+                    if (res.ok) {
+                      const conv = await res.json();
+                      router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(job.workerName ?? "Worker")}` as never);
+                    }
+                  } catch {}
+                  setStartingChat(false);
+                }}
+                disabled={startingChat}
               >
                 <Feather name="message-circle" size={18} color={colors.primary} />
-                <Text style={[styles.msgCTAText, { color: colors.foreground }]}>Job Chat</Text>
+                <Text style={[styles.msgCTAText, { color: colors.foreground }]}>{startingChat ? "Opening…" : "Job Chat"}</Text>
                 <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
               </Pressable>
             </>
@@ -982,7 +996,6 @@ function MyJobModal({
             <Text style={[styles.closeBtnText, { color: colors.foreground }]}>Close</Text>
           </Pressable>
         </ScrollView>
-      )}
     </View>
   );
 }
