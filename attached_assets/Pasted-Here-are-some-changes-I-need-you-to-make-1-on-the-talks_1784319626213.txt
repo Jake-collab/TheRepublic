@@ -1,0 +1,71 @@
+Here are some changes I need you to make 
+
+
+1/ on the talks screen it doesn’t need to say ‘republic’ at the top 
+
+2/ does the main ‘chat’ feed work in the same way with tallied upvotes, a feed that properly correlates the feed to show ‘new’ & ‘top’ working in cohesion with the button for it, a comment icon on a post, the ability to comment on a post when clicked on, comments with upvotes that are tallied, comments that are ordered in newest to oldest from top to bottom, and the ability to report/flag a post just like the other sections? It needs all of that 
+
+
+3/ the buy/sell screens it doesn’t need a buy/sell icon in the top right corner 
+
+4/ for the buy screen is needs a filter button in the top right for the categories to show a full screen if clicked on or a combination of them if multiple are clicked and a radius button that should show items from that radius (it should also requests a users location for accuracy). The sell screen should also a user to manually leave a location that should correlate to the radius filter search for the buy screen.  
+
+
+5/ For the gig screen the default screen should just be on the post a gig page it shouldn’t be able to exit out of you can take the screen thst shows when it’s exited out of away because it’s unneccessary. 
+
+6/ for the post a gig screen, step 2 button doesn’t work for continue to go to the location screen, this should work to put in a radius location that should correlate for the work section for the mileage distance on the work side on the list of work opportunities that pops based on a users detected location. 
+
+7/ For the gig/work section the gig/work icon in the upper right hand corner is not needed as well. (Also in the work section for gigs in the upper right allow a user to drag a mile radius button to set max distance to filter options displayed only within the distance that is set).
+
+8/ for the work side for gigs can you have a tab for ‘All’ that should show a list of all the work opportunities for all categories (but applicable to the filter distance radius that is set — if any) 
+
+9/ for the freelance & work tab they don’t need a hire/work icon in the upper right hand either but you can replace it on the freelance side with the ‘post project’ button in that corner
+
+10/ for the work side for freelance the default first tab that it opens on should be ‘post skill’ which should be a fill out form for them to have their account pop up as under one of the skills on the list on the freelance side depending on the category 
+
+11/  The account tab should show a section for ‘active skill posts’ that should correlate to anything they submitted under the ‘post skill’ section. They should be able to go & edit/delete these listings at any time. 
+
+12/ The account tab should also have an ‘active freelance request’ button that should correlate to any posts set under the ‘post project’ section. It should show pending if a user submits a request to work for it from the find projects section although a user should still be able to edit unless they approve the work request (as in they shouldn’t be able to edit after a work request has been approved). —— Also notified within the messaging for this category if a freelancer submits interest in a project they should be able to enter their own proposal on price (unless they click interested) & the person who was notified for this project that they submitted should see an approve or deny for button in the message button. There should also be a ‘freelance job interested in section for freelancers who submit interest in a project to work for them and see the list of requests they sent. From here they should be able to send a new work request (able to modify price by completion or time) that if submitted give the freelance hire section a new message in their inbox to approve or deny a request. If a user goes and hires a freelancer without messaging them first from their post or after messaging them (each freelance post when clicked on should have a hire & message button) they should see in their account a section for active freelance hire & on the contrary if a freelancer is hired they should see a section for active freelance work which should show that post. For any category defined as an online job users hired should have to go to the section for active freelance work click on the post & click submit work’ the user who hired should be notified in the active freelance hire section to message which opens up their message inbox with them or approve the work request which should release the funds. Also when a user goes to hire for freelancing or submitting a request for a gig job they should be required to upload the funds first in the user flow. Please make sure you get all of the logic & user flow here correct without leaving anything out. 
+
+13/ The account tab should also have a ‘active gig work request’ that should show anything someone posts in the ‘post gig section’ if a worker approves a request it should show a emblem saying ‘pending’ when displayed. The post should have all information about the post when clicked on & allow a user to edit information (but not after a user accepted the post & it is pending). It should notify if pending if a user accepts the request & allow access to message the user through a button in that section. If a gig work job is accepted to put the most in pending the user should also be able to deny the request after 24 hours in case the job is not taken up & should show a notification message of this. If a user accepts their gig work and it’s in pending it should the user accounts below the account and say a message ‘coordinate work’ & a message button to message the account that accepted the work. (later also accessible in the main messaging button for previous chats). 
+
+14/ The account tab should have on the opposite side of when a active gig work request says pending have a section for ‘gig work accepted’ which should a list of the job posts of gig work they accepted & should have a message button that opens the message section for them (later also accessible in the main messaging button for previous chats) to message that account. It should also show a message for them aswell near the message button to ‘coordinate work’
+
+15/ once a user accepts a gig work request it should no longer pop-up on the list of gig work jobs but if after 24 hours gig work hirer deny the request it should go back on the list. users should not be able to accept more than 4 jobs within a 24 hour period to prevent them taking too many jobs they can’t fulfill & there should be notification 
+
+16/ under the proper section of gig work accepted, a user should have to click a confirmation message of 1/ on the way to job, which should notify the user who hired ‘x username is on the way’, 2/ the person working should have to then hit another button below that saying ‘On scene’ right away the person hired should have a notification sent asking ‘Is the person on scene right now that should be able to ‘accept or deny’ (opened in the correlating section for gig work on their account tab), 3/ below that button a user selects finished task (then same as that the user who hired should get a notifcation has task been complete they should be able to accept or dispute which if disputed should ask a) user did not complete task b) other which should both open a message to email support. If the user selects finished task & the other user accepts the payment should be released to the person who worked & they should be notified as such. If the task was by time it should calculate the amount to pay them by whatever was listed per hour (including minutes into an hour) & pay by the time on scene button being pressed to the completed task button request. If the user selected a pay by time request when they go to approve a finished task from the other they should see the time total + the payment total to be issued (if pay by time the amount would have to come from their card at that time as it wouldn’t be pre-paid), they should also see the payment total that they selected for a task if it’s a pay by total time when they go to accept a request that saids amount to be paid). Users working should also see an amount to be paid and amount paid in their jobs accepted/completed.
+
+
+15/ all the account stuff mentioned for work/hire posts or active should be properly organized under their respective subheadings for buy/sell, gigs, freelance or jobs. 
+
+16/ All account types should have reviews out of five starts with an option  & it should pop-up to review the other person after a task out of five stars & leave a description (optional) these list of reviews should be viewable if the stars are clicked on. The reviews should be for workers & hirers. The star reviews should show next to the users name and profile picture. 
+
+17/ for all hiring/work jobs should require connect card in the user flow at the end to make the payments & get paid. In the account section there should also be a ‘Manage payment information’ tab to change their card connected to their account. 
+
+18/ the way messaging should work is the first reach out for the account (to find the account to message) it should be for the applicable account pages thst have the message button. Once a conversation has been established it should be able to accessed through a ‘messages’ tab in the accounts. Users should be able to click on the messages tab and see any active conversations and message users from that tab. 
+
+19/ for freelance hires in the proper account tab for jobs that have been hired for users should be to submit work to show the user that hired them before it’s been completed. Through a ‘Show Work Update’ button that should allow them to add a file that goes to their messaging portal. Anyone should also be able to add a file in the messages if they want to.
+
+20/ For a freelance job, if someone is hired they should be promoted after hiring as optional to upload files for ‘submit additional work requirements’
+
+21/ in the accounts section under jobs should also be a section for upload resume which should be what the person who gets a job applied to sees, a  ‘Jobs applied to’ section which should show the list of jobs they applied to, & ‘jobs listed’ which should show a list of job post created (that can be edited by clicking on a post) & ‘job requests’ which should show a list of accounts that have submitted their resume (and show their resume by clicking on a post & with a hire button or message button)  if selected should notify the user they have been contacted by whatever company whether it’s a direct message or a hire approval) 
+
+
+22/ In the accounts tabs for the work requests, & jobs listed the posts should be able to be deleted from their account as long as their not an active work request in progress. 
+
+23/ There should be an option to report all users account regardless what feature it’s under and list a descriptive reason. The admin panel should have a section for reported accounts with their description to pause an account or disable and notify the user of such.  
+
+24/ All users should be notified whenever they receive a message 
+
+25/ The job hire button should open a page to directly make a job listing and ask for all the information that would be applicable for this 
+
+26/ The buy screen when clicking on a post should have a message user function that should allow a user to message the account selling 
+
+27/ There should also be an account tab for ‘Items Listed’ that should correlate to the posts that a user has made to list items for sell it should be able to be edited, deleted, or marked as sold. If marked a sold it should not pop up on the items for sale anymore. 
+
+28/ Anytime a post is deleted it should not pop up on any of the feeds anymore. 
+
+29/ Users should be able to delete any posts they make themselves in the talks section. 
+
+30/ There should also be a ‘Discussion Posts’ section that should show a list in order newest to oldest of all the posts a user has made in any category of the talks section to view (with the comments if clicked on) & delete from there if they want to. 
+———-

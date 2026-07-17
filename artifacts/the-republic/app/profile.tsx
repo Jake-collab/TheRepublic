@@ -339,6 +339,32 @@ export default function ProfileScreen() {
           />
         </View>
 
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Marketplace</Text>
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <SettingRow icon="shopping-bag" label="Items Listed" onPress={() => {}} />
+          <SettingRow icon="star" label="My Reviews" onPress={() => {}} />
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Gigs</Text>
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <SettingRow icon="briefcase" label="My Posted Gigs" onPress={() => {}} />
+          <SettingRow icon="check-square" label="My Applications" onPress={() => {}} />
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Freelance</Text>
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <SettingRow icon="layers" label="My Projects" onPress={() => {}} />
+          <SettingRow icon="send" label="My Bids" onPress={() => {}} />
+          <SettingRow icon="award" label="Active Skill Posts" onPress={() => {}} />
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Jobs</Text>
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <SettingRow icon="file-text" label="Resume" onPress={() => {}} />
+          <SettingRow icon="inbox" label="Jobs Applied" onPress={() => {}} />
+          <SettingRow icon="list" label="Jobs Listed" onPress={() => {}} />
+        </View>
+
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Account</Text>
         <View style={[styles.section, { borderColor: colors.border }]}>
           <SettingRow
@@ -347,12 +373,14 @@ export default function ProfileScreen() {
             badge={unreadCount}
             onPress={() => router.push("/notifications")}
           />
+          <SettingRow icon="message-square" label="Messages" onPress={() => {}} />
+          <SettingRow icon="credit-card" label="Payment Method" onPress={() => {}} />
           <SettingRow
             icon="help-circle"
             label="Support"
             onPress={() => router.push("/support")}
           />
-          <SettingRow icon="file-text" label="Terms & Privacy" onPress={() => {}} />
+          <SettingRow icon="shield" label="Terms & Privacy" onPress={() => {}} />
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Membership</Text>

@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -21,6 +21,15 @@ export const usersTable = pgTable("users", {
   acceptedPrivacyAt: timestamp("accepted_privacy_at"),
   sessionResetAt:   timestamp("session_reset_at"),
   forceRefreshAt:   timestamp("force_refresh_at"),
+  /** Resume file URL for job applications */
+  resumeUrl:        text("resume_url"),
+  /** Running average rating × 10 stored as integer (e.g. 45 = 4.5 stars) */
+  avgRatingX10:     integer("avg_rating_x10").notNull().default(0),
+  ratingCount:      integer("rating_count").notNull().default(0),
+  /** Last 4 digits of saved payment card for display */
+  paymentLast4:     text("payment_last4"),
+  /** Stripe payment method ID */
+  stripePaymentMethodId: text("stripe_payment_method_id"),
   createdAt:        timestamp("created_at").notNull().defaultNow(),
   updatedAt:        timestamp("updated_at").notNull().defaultNow(),
 });

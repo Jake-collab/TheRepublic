@@ -41,6 +41,12 @@ export const gigJobsTable = pgTable(
     payAmountCents:   integer("pay_amount_cents").notNull(),
     city:             text("city").notNull().default(""),
     stateCode:        text("state_code").notNull().default(""),
+    /** Freeform location from hirer's form entry */
+    locationText:     text("location_text").notNull().default(""),
+    latitude:         text("latitude"),
+    longitude:        text("longitude"),
+    /** Max radius in miles the hirer wants workers from */
+    radiusMiles:      integer("radius_miles").notNull().default(25),
     /** "open" | "in_progress" | "completed" | "cancelled" */
     status:           text("status").notNull().default("open"),
     workerId:         text("worker_id").references(() => usersTable.id),

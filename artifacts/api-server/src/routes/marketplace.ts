@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { marketplaceListingsTable, usersTable } from "@workspace/db";
+import {
+  marketplaceListingsTable,
+  marketplaceMessagesTable,
+  notificationsTable,
+  usersTable,
+} from "@workspace/db";
 import { requireAuth, ensureUser } from "../middlewares/requireAuth";
 import { eq, desc, and, ilike, or, lt } from "drizzle-orm";
 
@@ -51,6 +56,19 @@ router.get("/listings", async (req, res) => {
   res.json({ items, nextCursor });
 });
 
+// ── GET /marketplace/listings/my ─────────────────────────────────────────────
+router.get("/listings/my", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const rows = await db
+    .select()
+    .from(marketplaceListingsTable)
+    .where(and(
+      eq(marketplaceListingsTable.sellerId, userId),
+    ))
+    .orderBy(desc(marketplaceListingsTable.createdAt));
+  res.json(rows);
+});
+
 // ── POST /marketplace/listings ───────────────────────────────────────────────
 router.post("/listings", requireAuth, ensureUser, async (req, res) => {
   const userId = (req as any).userId as string;
@@ -63,7 +81,18 @@ router.post("/listings", requireAuth, ensureUser, async (req, res) => {
   if (!users[0]) { res.status(401).json({ error: "User not found" }); return; }
   const user = users[0];
 
-  const { title, description, priceCents, category, photos = [], city = "", stateCode = "" } = req.body as {
+  const {
+    title,
+    description,
+    priceCents,
+    category,
+    photos = [],
+    city = "",
+    stateCode = "",
+    locationText = "",
+    latitude,
+    longitude,
+  } = req.body as {
     title?: string;
     description?: string;
     priceCents?: number;
@@ -71,6 +100,9 @@ router.post("/listings", requireAuth, ensureUser, async (req, res) => {
     photos?: string[];
     city?: string;
     stateCode?: string;
+    locationText?: string;
+    latitude?: string;
+    longitude?: string;
   };
 
   if (!title?.trim() || !description?.trim() || !priceCents || !category) {
@@ -90,6 +122,9 @@ router.post("/listings", requireAuth, ensureUser, async (req, res) => {
       photos:       Array.isArray(photos) ? photos : [],
       city:         String(city).trim(),
       stateCode:    String(stateCode).trim().toUpperCase().slice(0, 2),
+      locationText: String(locationText).trim(),
+      latitude:     latitude ? String(latitude) : null,
+      longitude:    longitude ? String(longitude) : null,
       status:       "active",
     })
     .returning();
@@ -121,7 +156,7 @@ router.patch("/listings/:id", requireAuth, async (req, res) => {
   if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
   if (rows[0].sellerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
 
-  const { title, description, priceCents, category, photos, city, stateCode, status } =
+  const { title, description, priceCents, category, photos, city, stateCode, status, locationText, latitude, longitude } =
     req.body as {
       title?: string;
       description?: string;
@@ -131,16 +166,22 @@ router.patch("/listings/:id", requireAuth, async (req, res) => {
       city?: string;
       stateCode?: string;
       status?: string;
+      locationText?: string;
+      latitude?: string;
+      longitude?: string;
     };
 
   const updates: Record<string, unknown> = {};
-  if (title !== undefined)       updates.title       = String(title).trim();
-  if (description !== undefined) updates.description = String(description).trim();
-  if (priceCents !== undefined)  updates.priceCents  = Number(priceCents);
-  if (category !== undefined)    updates.category    = String(category);
-  if (photos !== undefined)      updates.photos      = Array.isArray(photos) ? photos : [];
-  if (city !== undefined)        updates.city        = String(city).trim();
-  if (stateCode !== undefined)   updates.stateCode   = String(stateCode).trim().toUpperCase().slice(0, 2);
+  if (title !== undefined)        updates.title        = String(title).trim();
+  if (description !== undefined)  updates.description  = String(description).trim();
+  if (priceCents !== undefined)   updates.priceCents   = Number(priceCents);
+  if (category !== undefined)     updates.category     = String(category);
+  if (photos !== undefined)       updates.photos       = Array.isArray(photos) ? photos : [];
+  if (city !== undefined)         updates.city         = String(city).trim();
+  if (stateCode !== undefined)    updates.stateCode    = String(stateCode).trim().toUpperCase().slice(0, 2);
+  if (locationText !== undefined) updates.locationText = String(locationText).trim();
+  if (latitude !== undefined)     updates.latitude     = latitude ? String(latitude) : null;
+  if (longitude !== undefined)    updates.longitude    = longitude ? String(longitude) : null;
   if (status !== undefined && ["active", "sold", "removed"].includes(status)) {
     updates.status = status;
   }
@@ -171,6 +212,73 @@ router.delete("/listings/:id", requireAuth, async (req, res) => {
     .delete(marketplaceListingsTable)
     .where(eq(marketplaceListingsTable.id, id));
   res.status(204).send();
+});
+
+// ── GET /marketplace/listings/:id/messages ───────────────────────────────────
+router.get("/listings/:id/messages", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const listingId = Number(req.params.id);
+
+  const listing = await db
+    .select()
+    .from(marketplaceListingsTable)
+    .where(eq(marketplaceListingsTable.id, listingId))
+    .limit(1);
+  if (!listing[0]) { res.status(404).json({ error: "Not found" }); return; }
+
+  const msgs = await db
+    .select()
+    .from(marketplaceMessagesTable)
+    .where(and(
+      eq(marketplaceMessagesTable.listingId, listingId),
+      or(
+        eq(marketplaceMessagesTable.senderId, userId),
+        eq(marketplaceMessagesTable.receiverId, userId),
+      ),
+    ))
+    .orderBy(desc(marketplaceMessagesTable.createdAt));
+
+  res.json(msgs.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() })));
+});
+
+// ── POST /marketplace/listings/:id/messages ──────────────────────────────────
+router.post("/listings/:id/messages", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const listingId = Number(req.params.id);
+
+  const listing = await db
+    .select()
+    .from(marketplaceListingsTable)
+    .where(eq(marketplaceListingsTable.id, listingId))
+    .limit(1);
+  if (!listing[0]) { res.status(404).json({ error: "Not found" }); return; }
+  if (listing[0].sellerId === userId) { res.status(400).json({ error: "Cannot message your own listing" }); return; }
+
+  const userRow = await db
+    .select({ displayName: usersTable.displayName })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+
+  const { body } = req.body;
+  if (!body?.trim()) { res.status(400).json({ error: "body is required" }); return; }
+
+  const [msg] = await db.insert(marketplaceMessagesTable).values({
+    listingId,
+    senderId:   userId,
+    senderName: userRow[0]?.displayName || "Anonymous",
+    receiverId: listing[0].sellerId,
+    body:       body.trim(),
+  }).returning();
+
+  // Notify the seller
+  await db.insert(notificationsTable).values({
+    userId:  listing[0].sellerId,
+    title:   "New Message",
+    message: `${userRow[0]?.displayName || "Someone"} messaged you about "${listing[0].title}"`,
+  });
+
+  res.status(201).json({ ...msg, createdAt: msg.createdAt.toISOString() });
 });
 
 export default router;

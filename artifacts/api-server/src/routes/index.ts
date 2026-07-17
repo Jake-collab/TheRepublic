@@ -12,10 +12,14 @@ import adminRouter from "./admin";
 import talksRouter from "./talks";
 import marketplaceRouter from "./marketplace";
 import gigsRouter from "./gigs";
+import gigTrackingRouter from "./gigTracking";
 import freelanceRouter from "./freelance";
+import skillPostsRouter from "./skillPosts";
 import jobsRouter from "./jobs";
 import identityRouter from "./identity";
 import storageRouter from "./storage";
+import reviewsRouter from "./reviews";
+import userReportsRouter from "./userReports";
 import { getStripeConfig } from "../utils/stripeHelpers";
 
 const router: IRouter = Router();
@@ -34,8 +38,12 @@ router.use("/storage", storageRouter);
 router.use("/talks", talksRouter);
 router.use("/marketplace", marketplaceRouter);
 router.use("/gigs", gigsRouter);
+router.use("/gig-tracking", gigTrackingRouter);
 router.use("/freelance", freelanceRouter);
+router.use("/skill-posts", skillPostsRouter);
 router.use("/jobs", jobsRouter);
+router.use("/reviews", reviewsRouter);
+router.use("/user-reports", userReportsRouter);
 router.use("/admin", adminRouter);
 
 router.get("/membership/pricing", async (_req, res) => {

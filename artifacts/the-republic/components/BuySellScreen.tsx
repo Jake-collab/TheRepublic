@@ -803,6 +803,16 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
   const [detailListing, setDetailListing] = useState<MarketplaceListing | null>(null);
   const [sellSuccess, setSellSuccess]   = useState(false);
   const [viewAllCat, setViewAllCat]     = useState<string | null>(null);
+  const [showFilter, setShowFilter]     = useState(false);
+  const [filterCats, setFilterCats]     = useState<string[]>([]);
+  const [filterRadius, setFilterRadius] = useState<number | null>(null);
+
+  const hasFilter = filterCats.length > 0 || filterRadius !== null;
+
+  const toggleFilterCat = useCallback((id: string) => {
+    Haptics.selectionAsync();
+    setFilterCats((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
+  }, []);
 
   // Debounce search
   useEffect(() => {
@@ -1013,7 +1023,26 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>
           {mode === "buy" ? "Buy" : "Sell"}
         </Text>
-        <ModeToggle mode={mode} onChange={(m) => { setMode(m); if (m === "buy") setSellSuccess(false); }} />
+        {mode === "buy" ? (
+          <Pressable
+            style={[
+              styles.filterBtn,
+              {
+                backgroundColor: hasFilter ? colors.primary + "18" : colors.secondary,
+                borderColor: hasFilter ? colors.primary : colors.border,
+              },
+            ]}
+            onPress={() => setShowFilter(true)}
+            hitSlop={8}
+          >
+            <Feather name="sliders" size={14} color={hasFilter ? colors.primary : colors.mutedForeground} />
+            <Text style={[styles.filterBtnText, { color: hasFilter ? colors.primary : colors.mutedForeground }]}>
+              Filter{hasFilter ? " •" : ""}
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
       </View>
 
       {/* ── Content ── */}
@@ -1121,6 +1150,70 @@ export default function BuySellScreen({ onOpenDrawer, externalMode }: { onOpenDr
         onClose={() => setDetailListing(null)}
         currentUserId={userId}
       />
+
+      {/* ── Filter sheet ── */}
+      <Modal visible={showFilter} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowFilter(false)}>
+        <View style={[filterStyles.container, { backgroundColor: colors.background }]}>
+          <View style={[filterStyles.handle, { backgroundColor: colors.border }]} />
+          <View style={[filterStyles.topRow, { borderBottomColor: colors.border }]}>
+            <Text style={[filterStyles.title, { color: colors.foreground }]}>Filter Listings</Text>
+            <Pressable onPress={() => { setFilterCats([]); setFilterRadius(null); }} hitSlop={8}>
+              <Text style={[filterStyles.clearAll, { color: colors.primary }]}>Clear All</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
+            {/* Category section */}
+            <Text style={[filterStyles.sectionLabel, { color: colors.mutedForeground }]}>Category</Text>
+            <View style={filterStyles.chipGrid}>
+              {CATEGORIES.map((cat) => {
+                const active = filterCats.includes(cat.id);
+                return (
+                  <Pressable
+                    key={cat.id}
+                    style={[
+                      filterStyles.catChip,
+                      { backgroundColor: active ? colors.primary + "18" : colors.secondary, borderColor: active ? colors.primary : colors.border },
+                    ]}
+                    onPress={() => toggleFilterCat(cat.id)}
+                  >
+                    <Text style={filterStyles.catChipEmoji}>{cat.emoji}</Text>
+                    <Text style={[filterStyles.catChipLabel, { color: active ? colors.primary : colors.foreground }]}>{cat.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Radius section */}
+            <Text style={[filterStyles.sectionLabel, { color: colors.mutedForeground }]}>Search Radius</Text>
+            <View style={filterStyles.radiusRow}>
+              {([10, 25, 50, 100, 250] as const).map((mi) => (
+                <Pressable
+                  key={mi}
+                  style={[
+                    filterStyles.radiusChip,
+                    { backgroundColor: filterRadius === mi ? colors.primary + "18" : colors.secondary, borderColor: filterRadius === mi ? colors.primary : colors.border },
+                  ]}
+                  onPress={() => { Haptics.selectionAsync(); setFilterRadius((prev) => prev === mi ? null : mi); }}
+                >
+                  <Text style={[filterStyles.radiusChipText, { color: filterRadius === mi ? colors.primary : colors.foreground }]}>
+                    {mi} mi
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+
+          <View style={[filterStyles.bottomRow, { borderTopColor: colors.border, paddingBottom: insets.bottom + 12 }]}>
+            <Pressable
+              style={[filterStyles.applyBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setShowFilter(false)}
+            >
+              <Text style={filterStyles.applyBtnText}>Apply Filters</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1395,4 +1488,35 @@ const styles = StyleSheet.create({
   backText: { fontSize: 14, fontWeight: "600" },
   backSep: { width: StyleSheet.hairlineWidth, height: 14, backgroundColor: "rgba(128,128,128,0.3)", marginHorizontal: 2 },
   backCatLabel: { fontSize: 14, fontWeight: "600", flex: 1 },
+
+  // Filter button in header
+  filterBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 11, paddingVertical: 7, borderRadius: 20, borderWidth: 1,
+  },
+  filterBtnText: { fontSize: 13, fontWeight: "600" },
+});
+
+// ── Filter sheet styles ────────────────────────────────────────────────────────
+
+const filterStyles = StyleSheet.create({
+  container: { flex: 1 },
+  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginTop: 10, marginBottom: 4 },
+  topRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  title: { fontSize: 17, fontWeight: "700" },
+  clearAll: { fontSize: 14, fontWeight: "600" },
+  sectionLabel: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 },
+  chipGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  catChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  catChipEmoji: { fontSize: 14 },
+  catChipLabel: { fontSize: 13, fontWeight: "500" },
+  radiusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  radiusChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  radiusChipText: { fontSize: 14, fontWeight: "600" },
+  bottomRow: { padding: 20, borderTopWidth: StyleSheet.hairlineWidth },
+  applyBtn: { paddingVertical: 15, borderRadius: 14, alignItems: "center" },
+  applyBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

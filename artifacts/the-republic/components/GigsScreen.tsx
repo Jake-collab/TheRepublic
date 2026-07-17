@@ -1084,9 +1084,7 @@ function PostGigModal({
         ) : (
           <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Post a Gig</Text>
         )}
-        <Pressable onPress={onClose}>
-          <Feather name="x" size={22} color={colors.mutedForeground} />
-        </Pressable>
+        <View style={{ width: 30 }} />
       </View>
 
       {/* Step pills */}
@@ -1289,6 +1287,7 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
   }, [externalMode]);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [locationLabel, setLocationLabel] = useState<string>("Detecting location…");
+  const [workRadius, setWorkRadius] = useState<number | null>(null);
 
   const handleModeChange = useCallback(
     (m: Mode) => {
@@ -1399,7 +1398,18 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>
           {mode === "hire" ? "Gigs" : "Find Work"}
         </Text>
-        <ModeToggle mode={mode} onChange={handleModeChange} />
+        {mode === "hire" ? (
+          <Pressable
+            style={[styles.headerPostBtn, { backgroundColor: colors.primary }]}
+            onPress={() => setShowPost(true)}
+            hitSlop={8}
+          >
+            <Feather name="plus" size={15} color="#fff" />
+            <Text style={styles.headerPostBtnText}>Post Gig</Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
       </View>
 
       {/* ── Category chips ── */}
@@ -1409,6 +1419,21 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
         style={[styles.catBar, { borderBottomColor: colors.border }]}
         contentContainerStyle={styles.catBarContent}
       >
+        {/* All chip */}
+        <Pressable
+          style={[
+            styles.catChip,
+            {
+              backgroundColor: activeCat === null ? colors.primary + "18" : colors.secondary,
+              borderColor: activeCat === null ? colors.primary : colors.border,
+            },
+          ]}
+          onPress={() => { Haptics.selectionAsync(); setActiveCat(null); }}
+        >
+          <Text style={[styles.catChipText, { color: activeCat === null ? colors.primary : colors.foreground, fontWeight: activeCat === null ? "700" : "500" }]}>
+            All
+          </Text>
+        </Pressable>
         {GIG_CATS.map((cat) => (
           <CategoryChip
             key={cat.id}
@@ -1516,17 +1541,39 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
           onEndReachedThreshold={0.3}
           ListHeaderComponent={
             <View style={styles.workHeader}>
-              {/* Location bar */}
-              <View
-                style={[
-                  styles.radiusBar,
-                  { backgroundColor: colors.secondary, borderColor: colors.border },
-                ]}
-              >
-                <Feather name="map-pin" size={14} color={colors.primary} />
-                <Text style={[styles.radiusLabel, { color: colors.foreground }]}>
-                  {locationLabel}
-                </Text>
+              {/* Location + radius bar */}
+              <View style={{ gap: 8 }}>
+                <View
+                  style={[
+                    styles.radiusBar,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                  ]}
+                >
+                  <Feather name="map-pin" size={14} color={colors.primary} />
+                  <Text style={[styles.radiusLabel, { color: colors.foreground, flex: 1 }]}>
+                    {locationLabel}
+                  </Text>
+                </View>
+                <View style={styles.radiusBtnRow}>
+                  <Text style={[styles.radiusBtnLabel, { color: colors.mutedForeground }]}>Within:</Text>
+                  {([10, 25, 50, 100] as const).map((mi) => (
+                    <Pressable
+                      key={mi}
+                      style={[
+                        styles.radiusBtn,
+                        {
+                          backgroundColor: workRadius === mi ? colors.primary + "18" : colors.secondary,
+                          borderColor: workRadius === mi ? colors.primary : colors.border,
+                        },
+                      ]}
+                      onPress={() => { Haptics.selectionAsync(); setWorkRadius((prev) => prev === mi ? null : mi); }}
+                    >
+                      <Text style={[styles.radiusBtnText, { color: workRadius === mi ? colors.primary : colors.foreground }]}>
+                        {mi}mi
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
 
               {/* Verification banner */}
@@ -1717,6 +1764,11 @@ const styles = StyleSheet.create({
   },
   hamburger: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
   headerTitle: { fontSize: 22, fontWeight: "700", flex: 1, letterSpacing: -0.4 },
+  headerPostBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+  },
+  headerPostBtnText: { color: "#fff", fontSize: 13, fontWeight: "600" },
 
   // mode toggle
   toggleWrap: {
@@ -1744,6 +1796,11 @@ const styles = StyleSheet.create({
   },
   catChipEmoji: { fontSize: 14 },
   catChipLabel: { fontSize: 13 },
+  catChipText: { fontSize: 13 },
+  radiusBtnRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  radiusBtnLabel: { fontSize: 12, fontWeight: "500", marginRight: 2 },
+  radiusBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1 },
+  radiusBtnText: { fontSize: 12, fontWeight: "600" },
 
   // list
   listContent: { padding: 16, gap: 0 },

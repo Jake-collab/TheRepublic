@@ -39,6 +39,11 @@ export const marketplaceListingsTable = pgTable(
     photos:       text("photos").array().notNull().default([]),
     city:         text("city").notNull().default(""),
     stateCode:    text("state_code").notNull().default(""),
+    /** Freeform location the seller types (used for radius matching) */
+    locationText: text("location_text").notNull().default(""),
+    /** Seller's lat/lng as text (stored when seller provides location) */
+    latitude:     text("latitude"),
+    longitude:    text("longitude"),
     /** "active" | "sold" | "removed" */
     status:       text("status").notNull().default("active"),
     createdAt:    timestamp("created_at").notNull().defaultNow(),

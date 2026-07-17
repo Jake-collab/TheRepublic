@@ -568,7 +568,7 @@ export default function TalksScreen({ onOpenDrawer }: { onOpenDrawer: () => void
                 <Feather name="menu" size={22} color={colors.foreground} />
               </Pressable>
               <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-                {isCVMode ? "Citizen Vote" : isAllMode ? "Republic" : (selectedCat?.name ?? "Talks")}
+                {isCVMode ? "Citizen Vote" : (selectedCat?.name ?? "Talks")}
               </Text>
             </View>
             <View style={styles.headerActions}>

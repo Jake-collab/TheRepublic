@@ -1380,6 +1380,38 @@ export default function FreelanceScreen({ onOpenDrawer, externalMode }: { onOpen
   const [showPost, setShowPost] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [myProjectId, setMyProjectId] = useState<number | null>(null);
+  const [workSubTab, setWorkSubTab] = useState<"post_skill" | "browse">("post_skill");
+
+  // Post Skill form state
+  const [skillTitle, setSkillTitle] = useState("");
+  const [skillDesc, setSkillDesc] = useState("");
+  const [skillRate, setSkillRate] = useState("");
+  const [skillPosting, setSkillPosting] = useState(false);
+
+  const handlePostSkill = useCallback(async () => {
+    if (!skillTitle.trim() || !skillDesc.trim()) return;
+    setSkillPosting(true);
+    try {
+      await fetch("/api/skill-posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: skillTitle.trim(),
+          description: skillDesc.trim(),
+          category: activeCat,
+          hourlyRateCents: skillRate ? Math.round(parseFloat(skillRate) * 100) : null,
+        }),
+      });
+      setSkillTitle("");
+      setSkillDesc("");
+      setSkillRate("");
+      Alert.alert("Skill Posted!", "Hirers browsing this category can now find you.");
+    } catch {
+      Alert.alert("Error", "Could not post skill. Please try again.");
+    } finally {
+      setSkillPosting(false);
+    }
+  }, [skillTitle, skillDesc, skillRate, activeCat]);
 
   // work-mode pagination
   const [workCursor, setWorkCursor] = useState<number | undefined>(undefined);
@@ -1442,7 +1474,18 @@ export default function FreelanceScreen({ onOpenDrawer, externalMode }: { onOpen
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>
           {mode === "hire" ? "Freelance" : "Find Projects"}
         </Text>
-        <ModeToggle mode={mode} onChange={handleModeChange} />
+        {mode === "hire" ? (
+          <Pressable
+            style={[styles.headerPostBtn, { backgroundColor: colors.primary }]}
+            onPress={() => setShowPost(true)}
+            hitSlop={8}
+          >
+            <Feather name="plus" size={15} color="#fff" />
+            <Text style={styles.headerPostBtnText}>Post Project</Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
       </View>
 
       {/* ── Category tabs (both modes) ── */}
@@ -1519,6 +1562,83 @@ export default function FreelanceScreen({ onOpenDrawer, externalMode }: { onOpen
         )
       ) : (
         /* ── Work mode ── */
+        <View style={{ flex: 1 }}>
+          {/* Work sub-tabs */}
+          <View style={[styles.workTabBar, { borderBottomColor: colors.border }]}>
+            {(["post_skill", "browse"] as const).map((tab) => (
+              <Pressable
+                key={tab}
+                style={[
+                  styles.workTab,
+                  { borderBottomColor: workSubTab === tab ? colors.primary : "transparent", borderBottomWidth: 2 },
+                ]}
+                onPress={() => { Haptics.selectionAsync(); setWorkSubTab(tab); }}
+              >
+                <Text style={[styles.workTabText, { color: workSubTab === tab ? colors.primary : colors.mutedForeground, fontWeight: workSubTab === tab ? "700" : "400" }]}>
+                  {tab === "post_skill" ? "Post Skill" : "Browse Projects"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {workSubTab === "post_skill" ? (
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+              <ScrollView contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
+                <View style={{ gap: 12 }}>
+                  <View style={[styles.feeBanner, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                    <Feather name="star" size={14} color={colors.primary} />
+                    <Text style={[styles.feeBannerText, { color: colors.foreground }]}>
+                      Post your skills so hirers can find and contact you directly
+                    </Text>
+                  </View>
+                  <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Skill Title *</Text>
+                  <TextInput
+                    style={[styles.skillInput, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground }]}
+                    placeholder="e.g. Expert React Native Developer"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={skillTitle}
+                    onChangeText={setSkillTitle}
+                    maxLength={80}
+                  />
+                  <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Description *</Text>
+                  <TextInput
+                    style={[styles.skillInput, styles.skillInputMulti, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground }]}
+                    placeholder="Describe your skills, experience, and what you can offer…"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={skillDesc}
+                    onChangeText={setSkillDesc}
+                    multiline
+                    numberOfLines={5}
+                    textAlignVertical="top"
+                    maxLength={1000}
+                  />
+                  <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Hourly Rate ($/hr) — optional</Text>
+                  <TextInput
+                    style={[styles.skillInput, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground }]}
+                    placeholder="e.g. 75"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={skillRate}
+                    onChangeText={setSkillRate}
+                    keyboardType="decimal-pad"
+                  />
+                  <Pressable
+                    style={[styles.skillPostBtn, { backgroundColor: (!skillTitle.trim() || !skillDesc.trim() || skillPosting) ? colors.primary + "60" : colors.primary }]}
+                    onPress={handlePostSkill}
+                    disabled={!skillTitle.trim() || !skillDesc.trim() || skillPosting}
+                  >
+                    {skillPosting ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <>
+                        <Feather name="send" size={16} color="#fff" />
+                        <Text style={styles.skillPostBtnText}>Post My Skill</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          ) : (
         <FlatList
           data={workProjects}
           keyExtractor={(p) => String(p.id)}
@@ -1590,6 +1710,8 @@ export default function FreelanceScreen({ onOpenDrawer, externalMode }: { onOpen
             )
           }
         />
+          )}
+        </View>
       )}
 
       {/* ── Post project modal ── */}
@@ -1626,6 +1748,11 @@ const styles = StyleSheet.create({
   },
   hamburger: { width: 36, height: 36, justifyContent: "center", alignItems: "center" },
   headerTitle: { fontSize: 22, fontWeight: "700", flex: 1, letterSpacing: -0.4 },
+  headerPostBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+  },
+  headerPostBtnText: { color: "#fff", fontSize: 13, fontWeight: "600" },
 
   toggleWrap: {
     flexDirection: "row", alignItems: "center", gap: 7,
@@ -1669,6 +1796,25 @@ const styles = StyleSheet.create({
   // skill tags
   skillTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   skillTagText: { fontSize: 11 },
+
+  // work mode sub-tabs
+  workTabBar: {
+    flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+  },
+  workTab: { paddingVertical: 12, marginRight: 20, paddingHorizontal: 2 },
+  workTabText: { fontSize: 14 },
+
+  // post skill form
+  skillInput: {
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15,
+  },
+  skillInputMulti: { minHeight: 110, textAlignVertical: "top" },
+  skillPostBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, paddingVertical: 15, borderRadius: 14, marginTop: 8,
+  },
+  skillPostBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 
   // milestone row
   msRow: {

@@ -237,6 +237,42 @@ router.post("/comments/:id/vote", requireAuth, ensureUser, async (req, res) => {
   res.json({ upvotes: updated?.upvotes ?? 0, hasVoted });
 });
 
+// ── Delete own post ───────────────────────────────────────────────────────────
+router.delete("/posts/:id", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const postId = Number(req.params.id);
+  if (isNaN(postId)) { res.status(400).json({ error: "Invalid post id" }); return; }
+
+  const rows = await db
+    .select({ userId: talkPostsTable.userId })
+    .from(talkPostsTable)
+    .where(eq(talkPostsTable.id, postId))
+    .limit(1);
+  if (!rows[0]) { res.status(404).json({ error: "Not found" }); return; }
+  if (rows[0].userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  // Delete comments first
+  await db.delete(talkCommentsTable).where(eq(talkCommentsTable.postId, postId));
+  await db.delete(talkVotesTable).where(eq(talkVotesTable.postId, postId));
+  await db.delete(talkPostsTable).where(eq(talkPostsTable.id, postId));
+  res.status(204).send();
+});
+
+// ── My posts (for Discussion Posts section in account) ────────────────────────
+router.get("/posts/my", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const posts = await db
+    .select()
+    .from(talkPostsTable)
+    .where(eq(talkPostsTable.userId, userId))
+    .orderBy(desc(talkPostsTable.createdAt));
+  res.json(posts.map((p) => ({
+    ...p,
+    createdAt: p.createdAt.toISOString(),
+    hasVoted:  false,
+  })));
+});
+
 // ── Flag post ─────────────────────────────────────────────────────────────────
 router.post("/posts/:id/flag", requireAuth, ensureUser, async (req, res) => {
   const userId = (req as any).userId as string;
