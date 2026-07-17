@@ -37,18 +37,15 @@ import {
   useListMyGigJobs,
   useListMyGigApplications,
   useGetGigJob,
-  useListGigMessages,
   useCreateGigJob,
   useApplyToGigJob,
   useAcceptGigApplication,
   useStartGigJob,
   useCompleteGigJob,
-  useSendGigMessage,
   getListGigJobsQueryKey,
   getListMyGigJobsQueryKey,
   getListMyGigApplicationsQueryKey,
   getGetGigJobQueryKey,
-  getListGigMessagesQueryKey,
   useGetUserIdentity,
   getGetUserIdentityQueryKey,
 } from "@workspace/api-client-react";
@@ -359,126 +356,276 @@ function GigJobCard({
   );
 }
 
-// ── MessageThread ─────────────────────────────────────────────────────────────
+// ── WorkDailyLimit ────────────────────────────────────────────────────────────
+// Small badge in the Work-mode header showing today's accepted gig count.
 
-function MessageThread({
-  jobId,
-  meId,
-}: {
-  jobId: number;
-  meId: string;
-}) {
+function WorkDailyLimit() {
   const colors = useColors();
-  const qc = useQueryClient();
-  const [msgText, setMsgText] = useState("");
-  const listRef = useRef<FlatList>(null);
+  const { getToken } = useAuth();
+  const [info, setInfo] = useState<{ count: number; remaining: number } | null>(null);
 
-  const { data: messages = [], isLoading } = useListGigMessages(jobId);
-  const { mutateAsync: send, isPending: sending } = useSendGigMessage();
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/gig-tracking/check-limit", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok && active) setInfo(await res.json());
+    })();
+    return () => { active = false; };
+  }, [getToken]);
 
-  const handleSend = async () => {
-    const body = msgText.trim();
-    if (!body || sending) return;
-    setMsgText("");
-    await send({ id: jobId, data: { body } });
-    qc.invalidateQueries({ queryKey: getListGigMessagesQueryKey(jobId) });
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-  };
+  if (!info) return <View style={{ width: 36 }} />;
+  const full = info.remaining === 0;
+  return (
+    <View style={[styles.dailyLimitBadge, { borderColor: full ? "#ef444444" : colors.border, backgroundColor: full ? "#ef444411" : colors.secondary }]}>
+      <Feather name="briefcase" size={12} color={full ? "#ef4444" : colors.mutedForeground} />
+      <Text style={[styles.dailyLimitText, { color: full ? "#ef4444" : colors.mutedForeground }]}>
+        {info.count}/4
+      </Text>
+    </View>
+  );
+}
 
-  if (isLoading) {
+// ── Tracking types & panels ───────────────────────────────────────────────────
+
+type TrackingRecord = {
+  id: number;
+  status: string;
+  sceneConfirmed: boolean;
+  completionConfirmed: boolean;
+};
+
+const TRACK_STEPS = ["on_way", "on_scene", "scene_confirmed", "completed"] as const;
+const TRACK_LABELS = ["On the Way", "On Scene", "Working", "Complete"];
+
+function GigWorkerTrackingPanel({ jobId, onRefresh }: { jobId: number; onRefresh: () => void }) {
+  const colors = useColors();
+  const { getToken } = useAuth();
+  const [tracking, setTracking] = useState<TrackingRecord | null>(null);
+  const [limit, setLimit] = useState<{ canAccept: boolean; remaining: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    const token = await getToken();
+    if (!token) return;
+    const [tRes, lRes] = await Promise.all([
+      fetch(`/api/gig-tracking/${jobId}`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch("/api/gig-tracking/check-limit", { method: "POST", headers: { Authorization: `Bearer ${token}` } }),
+    ]);
+    setTracking(tRes.ok ? await tRes.json() : null);
+    if (lRes.ok) setLimit(await lRes.json());
+    setLoading(false);
+  }, [jobId, getToken]);
+
+  useEffect(() => {
+    fetchData();
+    const id = setInterval(fetchData, 8000);
+    return () => clearInterval(id);
+  }, [fetchData]);
+
+  const post = useCallback(async (path: string, body?: object) => {
+    setActing(true);
+    try {
+      const token = await getToken();
+      await fetch(path, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      await fetchData();
+      onRefresh();
+    } finally { setActing(false); }
+  }, [getToken, fetchData, onRefresh]);
+
+  if (loading) return <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />;
+
+  if (!tracking) {
+    const canAccept = limit?.canAccept ?? true;
     return (
-      <View style={styles.msgLoading}>
-        <ActivityIndicator size="small" color={colors.mutedForeground} />
+      <View style={[styles.trackPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+        <Text style={[styles.trackTitle, { color: colors.foreground }]}>Start this gig</Text>
+        {limit && (
+          <Text style={[styles.trackSub, { color: colors.mutedForeground }]}>
+            {limit.remaining} of 4 daily gig slots remaining
+          </Text>
+        )}
+        <Pressable
+          style={[styles.trackActionBtn, { backgroundColor: canAccept ? colors.primary : colors.border, opacity: acting ? 0.6 : 1 }]}
+          onPress={() => post("/api/gig-tracking/accept", { jobId })}
+          disabled={acting || !canAccept}
+        >
+          {acting
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <><Feather name="navigation" size={16} color="#fff" /><Text style={styles.trackBtnText}>Accept & Head Out</Text></>}
+        </Pressable>
+        {!canAccept && (
+          <Text style={[styles.trackSub, { color: "#ef4444", marginTop: 4 }]}>Daily limit reached (4/4). Resets in 24 h.</Text>
+        )}
       </View>
     );
   }
 
+  const currentIdx = TRACK_STEPS.indexOf(tracking.status as (typeof TRACK_STEPS)[number]);
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.msgWrap}
-      keyboardVerticalOffset={100}
-    >
-      <FlatList
-        ref={listRef}
-        data={messages}
-        keyExtractor={(m) => String(m.id)}
-        style={styles.msgList}
-        contentContainerStyle={styles.msgListContent}
-        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-        ListEmptyComponent={
-          <Text style={[styles.msgEmpty, { color: colors.mutedForeground }]}>
-            No messages yet — say hello!
-          </Text>
-        }
-        renderItem={({ item: msg }) => {
-          const isMe = msg.senderId === meId;
-          return (
-            <View
-              style={[
-                styles.msgBubbleRow,
-                isMe ? styles.msgBubbleRowMe : styles.msgBubbleRowThem,
-              ]}
-            >
-              <View
-                style={[
-                  styles.msgBubble,
-                  {
-                    backgroundColor: isMe ? colors.primary : colors.secondary,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                {!isMe && (
-                  <Text style={[styles.msgSender, { color: colors.mutedForeground }]}>
-                    {msg.senderName}
-                  </Text>
-                )}
-                <Text
-                  style={[
-                    styles.msgBody,
-                    { color: isMe ? "#ffffff" : colors.foreground },
-                  ]}
-                >
-                  {msg.body}
-                </Text>
+    <View style={[styles.trackPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+      <Text style={[styles.trackTitle, { color: colors.foreground }]}>Live Tracking</Text>
+
+      <View style={styles.trackStepsRow}>
+        {TRACK_STEPS.map((s, i) => (
+          <React.Fragment key={s}>
+            <View style={styles.trackStepCol}>
+              <View style={[styles.trackStepDot, { backgroundColor: i <= currentIdx ? colors.primary : colors.border }]}>
+                {i < currentIdx
+                  ? <Feather name="check" size={10} color="#fff" />
+                  : <Text style={{ color: i === currentIdx ? "#fff" : colors.mutedForeground, fontSize: 9, fontWeight: "700" }}>{i + 1}</Text>}
               </View>
+              <Text style={[styles.trackStepLabel, { color: i <= currentIdx ? colors.foreground : colors.mutedForeground }]} numberOfLines={1}>
+                {TRACK_LABELS[i]}
+              </Text>
             </View>
-          );
-        }}
-      />
-      <View
-        style={[
-          styles.msgInputRow,
-          { borderTopColor: colors.border, backgroundColor: colors.background },
-        ]}
-      >
-        <TextInput
-          style={[
-            styles.msgInput,
-            {
-              backgroundColor: colors.secondary,
-              color: colors.foreground,
-              borderColor: colors.border,
-            },
-          ]}
-          value={msgText}
-          onChangeText={setMsgText}
-          placeholder="Message…"
-          placeholderTextColor={colors.mutedForeground}
-          returnKeyType="send"
-          onSubmitEditing={handleSend}
-          multiline
-        />
-        <Pressable
-          style={[styles.msgSendBtn, { backgroundColor: colors.primary, opacity: sending ? 0.5 : 1 }]}
-          onPress={handleSend}
-          disabled={sending}
-        >
-          <Feather name="send" size={16} color="#fff" />
-        </Pressable>
+            {i < TRACK_STEPS.length - 1 && (
+              <View style={[styles.trackStepConnector, { backgroundColor: i < currentIdx ? colors.primary : colors.border }]} />
+            )}
+          </React.Fragment>
+        ))}
       </View>
-    </KeyboardAvoidingView>
+
+      {tracking.status === "on_way" && (
+        <Pressable style={[styles.trackActionBtn, { backgroundColor: "#f59e0b", opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/on-scene`)} disabled={acting}>
+          {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="map-pin" size={16} color="#fff" /><Text style={styles.trackBtnText}>I'm On Scene</Text></>}
+        </Pressable>
+      )}
+      {tracking.status === "on_scene" && (
+        <View style={[styles.trackWaitRow, { backgroundColor: "#f59e0b18", borderColor: "#f59e0b44" }]}>
+          <Feather name="clock" size={15} color="#f59e0b" />
+          <Text style={[styles.trackWaitText, { color: colors.foreground }]}>Waiting for hirer to confirm you're on scene…</Text>
+        </View>
+      )}
+      {tracking.status === "scene_confirmed" && (
+        <Pressable style={[styles.trackActionBtn, { backgroundColor: "#22c55e", opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/complete`)} disabled={acting}>
+          {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="check-circle" size={16} color="#fff" /><Text style={styles.trackBtnText}>Mark Job Complete</Text></>}
+        </Pressable>
+      )}
+      {tracking.status === "completed" && (
+        <View style={[styles.trackWaitRow, { backgroundColor: "#22c55e18", borderColor: "#22c55e44" }]}>
+          <Feather name="clock" size={15} color="#22c55e" />
+          <Text style={[styles.trackWaitText, { color: colors.foreground }]}>Waiting for hirer to confirm completion…</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── GigHirerTrackingPanel ─────────────────────────────────────────────────────
+// Shows in MyJobModal (hire mode) for the hirer to confirm tracking steps.
+// Falls back to old Start/Complete buttons if tracking hasn't begun.
+
+function GigHirerTrackingPanel({
+  jobId,
+  jobStatus,
+  onRefresh,
+  onFallbackStart,
+  onFallbackComplete,
+  startDisabled,
+  completeDisabled,
+}: {
+  jobId: number;
+  jobStatus: string;
+  onRefresh: () => void;
+  onFallbackStart?: () => void;
+  onFallbackComplete?: () => void;
+  startDisabled?: boolean;
+  completeDisabled?: boolean;
+}) {
+  const colors = useColors();
+  const { getToken } = useAuth();
+  const [tracking, setTracking] = useState<TrackingRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    const token = await getToken();
+    if (!token) return;
+    const res = await fetch(`/api/gig-tracking/${jobId}`, { headers: { Authorization: `Bearer ${token}` } });
+    setTracking(res.ok ? await res.json() : null);
+    setLoading(false);
+  }, [jobId, getToken]);
+
+  useEffect(() => {
+    fetchData();
+    const id = setInterval(fetchData, 8000);
+    return () => clearInterval(id);
+  }, [fetchData]);
+
+  const post = useCallback(async (path: string) => {
+    setActing(true);
+    try {
+      const token = await getToken();
+      await fetch(path, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      await fetchData();
+      onRefresh();
+    } finally { setActing(false); }
+  }, [getToken, fetchData, onRefresh]);
+
+  if (loading) return null;
+
+  if (!tracking) {
+    return (
+      <>
+        {jobStatus === "open" && onFallbackStart && (
+          <Pressable style={[styles.actionBtn, { backgroundColor: "#f59e0b" }]} onPress={onFallbackStart} disabled={startDisabled}>
+            {startDisabled ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="play" size={16} color="#fff" /><Text style={styles.actionBtnText}>Confirm Start</Text></>}
+          </Pressable>
+        )}
+        {jobStatus === "in_progress" && onFallbackComplete && (
+          <Pressable style={[styles.actionBtn, { backgroundColor: "#22c55e" }]} onPress={onFallbackComplete} disabled={completeDisabled}>
+            {completeDisabled ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="check" size={16} color="#fff" /><Text style={styles.actionBtnText}>Mark Complete</Text></>}
+          </Pressable>
+        )}
+      </>
+    );
+  }
+
+  const STATUS_LABEL: Record<string, string> = {
+    on_way:          "Worker is on the way",
+    on_scene:        "Worker arrived — confirm on scene",
+    scene_confirmed: "Worker is on scene & working",
+    completed:       "Worker marked job done",
+    disputed:        "Request was denied",
+  };
+  const dotColor = tracking.status === "scene_confirmed" ? "#22c55e" : tracking.status === "on_way" ? "#f59e0b" : colors.primary;
+
+  return (
+    <View style={[styles.trackPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <View style={[styles.trackStatusDot, { backgroundColor: dotColor }]} />
+        <Text style={[styles.trackTitle, { color: colors.foreground, marginBottom: 0, flex: 1 }]}>
+          {STATUS_LABEL[tracking.status] ?? tracking.status}
+        </Text>
+      </View>
+
+      {tracking.status === "on_way" && (
+        <Pressable style={[styles.trackActionBtn, { backgroundColor: "#ef4444", opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/deny-request`)} disabled={acting}>
+          {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="x" size={16} color="#fff" /><Text style={styles.trackBtnText}>Deny Request</Text></>}
+        </Pressable>
+      )}
+      {tracking.status === "on_scene" && (
+        <Pressable style={[styles.trackActionBtn, { backgroundColor: colors.primary, opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/confirm-scene`)} disabled={acting}>
+          {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="user-check" size={16} color="#fff" /><Text style={styles.trackBtnText}>Confirm On Scene</Text></>}
+        </Pressable>
+      )}
+      {tracking.status === "completed" && (
+        <Pressable style={[styles.trackActionBtn, { backgroundColor: "#22c55e", opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/confirm-complete`)} disabled={acting}>
+          {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="check-circle" size={16} color="#fff" /><Text style={styles.trackBtnText}>Confirm Completion</Text></>}
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -661,8 +808,19 @@ function JobDetailModal({
             </>
           )}
 
-          {/* ─ Messages (if active worker) ─ */}
-          {(isWorker && job.status === "in_progress") && (
+          {/* ─ Worker tracking panel ─ */}
+          {isWorker && (
+            <GigWorkerTrackingPanel
+              jobId={job.id}
+              onRefresh={() => {
+                qc.invalidateQueries({ queryKey: getGetGigJobQueryKey(jobId) });
+                qc.invalidateQueries({ queryKey: getListMyGigJobsQueryKey() });
+              }}
+            />
+          )}
+
+          {/* ─ Chat (always available to assigned worker) ─ */}
+          {isWorker && (
             <Pressable
               style={[styles.msgCTA, { backgroundColor: colors.secondary, borderColor: colors.border }]}
               onPress={async () => {
@@ -854,66 +1012,46 @@ function MyJobModal({
             </View>
           )}
 
-          {/* Action buttons */}
-          {job.status === "open" && job.workerId && (
-            <Pressable
-              style={[styles.actionBtn, { backgroundColor: "#f59e0b" }]}
-              onPress={handleStart}
-              disabled={starting}
-            >
-              {starting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Feather name="play" size={16} color="#fff" />
-                  <Text style={styles.actionBtnText}>Confirm Start</Text>
-                </>
-              )}
-            </Pressable>
+          {/* ─ Hirer tracking panel (when worker assigned) ─ */}
+          {job.workerId && (
+            <GigHirerTrackingPanel
+              jobId={job.id}
+              jobStatus={job.status}
+              onRefresh={invalidateJob}
+              onFallbackStart={handleStart}
+              onFallbackComplete={handleComplete}
+              startDisabled={starting}
+              completeDisabled={completing}
+            />
           )}
 
-          {job.status === "in_progress" && (
-            <>
-              <Pressable
-                style={[styles.actionBtn, { backgroundColor: "#22c55e" }]}
-                onPress={handleComplete}
-                disabled={completing}
-              >
-                {completing ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Feather name="check" size={16} color="#fff" />
-                    <Text style={styles.actionBtnText}>Mark Complete</Text>
-                  </>
-                )}
-              </Pressable>
-              <Pressable
-                style={[styles.msgCTA, { backgroundColor: colors.secondary, borderColor: colors.border, opacity: startingChat ? 0.7 : 1 }]}
-                onPress={async () => {
-                  if (!job.workerId) return;
-                  setStartingChat(true);
-                  try {
-                    const token = await getToken();
-                    const res = await fetch("/api/messages/conversations/start", {
-                      method: "POST",
-                      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                      body: JSON.stringify({ contextType: "gig", contextId: job.id, contextTitle: job.title, otherUserId: job.workerId }),
-                    });
-                    if (res.ok) {
-                      const conv = await res.json();
-                      router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(job.workerName ?? "Worker")}` as never);
-                    }
-                  } catch {}
-                  setStartingChat(false);
-                }}
-                disabled={startingChat}
-              >
-                <Feather name="message-circle" size={18} color={colors.primary} />
-                <Text style={[styles.msgCTAText, { color: colors.foreground }]}>{startingChat ? "Opening…" : "Job Chat"}</Text>
-                <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-              </Pressable>
-            </>
+          {/* Chat button always available when worker is assigned */}
+          {(job.status === "in_progress" || job.status === "open") && job.workerId && (
+            <Pressable
+              style={[styles.msgCTA, { backgroundColor: colors.secondary, borderColor: colors.border, opacity: startingChat ? 0.7 : 1 }]}
+              onPress={async () => {
+                if (!job.workerId) return;
+                setStartingChat(true);
+                try {
+                  const token = await getToken();
+                  const res = await fetch("/api/messages/conversations/start", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ contextType: "gig", contextId: job.id, contextTitle: job.title, otherUserId: job.workerId }),
+                  });
+                  if (res.ok) {
+                    const conv = await res.json();
+                    router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(job.workerName ?? "Worker")}` as never);
+                  }
+                } catch {}
+                setStartingChat(false);
+              }}
+              disabled={startingChat}
+            >
+              <Feather name="message-circle" size={18} color={colors.primary} />
+              <Text style={[styles.msgCTAText, { color: colors.foreground }]}>{startingChat ? "Opening…" : "Job Chat"}</Text>
+              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+            </Pressable>
           )}
 
           {job.status === "completed" && job.durationMinutes != null && (
@@ -1026,6 +1164,8 @@ function PostGigModal({
   const [payDollars, setPayDollars] = useState("");
   const [city, setCity] = useState("");
   const [stateCode, setStateCode] = useState("");
+  const [locationText, setLocationText] = useState("");
+  const [detectingLoc, setDetectingLoc] = useState(false);
 
   const { mutateAsync: create, isPending: posting } = useCreateGigJob();
 
@@ -1049,6 +1189,22 @@ function PostGigModal({
     } else {
       handlePost();
     }
+  };
+
+  const handleDetectLocation = async () => {
+    setDetectingLoc(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") { Alert.alert("Permission denied", "Enable location to auto-fill."); return; }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const [geo] = await Location.reverseGeocodeAsync(pos.coords);
+      if (geo) {
+        if (geo.city) setCity(geo.city);
+        if (geo.region) setStateCode(geo.region.slice(0, 2).toUpperCase());
+        if (geo.street) setLocationText(geo.street);
+      }
+    } catch { Alert.alert("Could not detect location"); }
+    finally { setDetectingLoc(false); }
   };
 
   const handlePost = async () => {
@@ -1211,6 +1367,19 @@ function PostGigModal({
         {/* ── Step 2: Location + Review ── */}
         {step === 2 && (
           <View style={styles.formFields}>
+            <Pressable
+              style={[styles.detectLocBtn, { backgroundColor: colors.secondary, borderColor: colors.border, opacity: detectingLoc ? 0.6 : 1 }]}
+              onPress={handleDetectLocation}
+              disabled={detectingLoc}
+            >
+              {detectingLoc
+                ? <ActivityIndicator size="small" color={colors.primary} />
+                : <Feather name="crosshair" size={15} color={colors.primary} />}
+              <Text style={[styles.detectLocText, { color: colors.primary }]}>
+                {detectingLoc ? "Detecting…" : "Use My Location"}
+              </Text>
+            </Pressable>
+
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>City</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
@@ -1228,6 +1397,14 @@ function PostGigModal({
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="characters"
               maxLength={2}
+            />
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Location details (optional)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.secondary, color: colors.foreground, borderColor: colors.border }]}
+              value={locationText}
+              onChangeText={setLocationText}
+              placeholder="e.g. 123 Main St, Apt 4B, blue gate"
+              placeholderTextColor={colors.mutedForeground}
             />
 
             {/* Review summary */}
@@ -1421,7 +1598,7 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
             <Text style={styles.headerPostBtnText}>Post Gig</Text>
           </Pressable>
         ) : (
-          <View style={{ width: 36 }} />
+          <WorkDailyLimit />
         )}
       </View>
 
@@ -2058,4 +2235,42 @@ const styles = StyleSheet.create({
   reviewTitle: { fontSize: 16, fontWeight: "700" },
   reviewRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   reviewMeta: { fontSize: 13 },
+
+  // detect location button
+  detectLocBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, paddingVertical: 11, borderRadius: 12, borderWidth: 1,
+  },
+  detectLocText: { fontSize: 14, fontWeight: "600" },
+
+  // tracking panels
+  trackPanel: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12, marginTop: 8 },
+  trackTitle: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
+  trackSub: { fontSize: 12 },
+  trackActionBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, paddingVertical: 13, borderRadius: 12,
+  },
+  trackBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  trackStepsRow: { flexDirection: "row", alignItems: "flex-start" },
+  trackStepCol: { flex: 1, alignItems: "center", gap: 4 },
+  trackStepDot: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+  },
+  trackStepLabel: { fontSize: 9, textAlign: "center", fontWeight: "600" },
+  trackStepConnector: { height: 2, flex: 0.4, marginTop: 11 },
+  trackWaitRow: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    padding: 12, borderRadius: 10, borderWidth: 1,
+  },
+  trackWaitText: { fontSize: 13, flex: 1 },
+  trackStatusDot: { width: 10, height: 10, borderRadius: 5 },
+
+  // daily limit badge (work mode header)
+  dailyLimitBadge: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1,
+  },
+  dailyLimitText: { fontSize: 12, fontWeight: "600" },
 });
