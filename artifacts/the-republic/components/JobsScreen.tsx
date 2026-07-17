@@ -90,9 +90,16 @@ interface JobApplication {
   listingId: number;
   applicantId: string;
   applicantName: string;
+  applicantAvatar: string | null;
   coverLetter: string;
+  resumeUrl: string | null;
   status: string;
   createdAt: string;
+}
+
+// Application returned by GET /applications/my (joined with listing)
+interface MyJobApplication extends JobApplication {
+  listing: JobListing;
 }
 
 function formatSalary(minCents: number | null, maxCents: number | null): string {
@@ -371,6 +378,222 @@ function JobDetailModal({
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
+      )}
+    </View>
+  );
+}
+
+// ── Applicants modal (Hire mode) ──────────────────────────────────────────────
+
+function ApplicantsModal({
+  job,
+  meId,
+  onClose,
+}: {
+  job: JobListing;
+  meId: string;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const { getToken } = useAuth();
+  const router = useRouter();
+
+  const [applicants, setApplicants] = useState<JobApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<number | null>(null);
+  const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
+
+  const loadApplicants = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/jobs/listings/${job.id}/applications`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) setApplicants(await res.json() as JobApplication[]);
+    } catch {}
+    finally { setLoading(false); }
+  }, [job.id, getToken]);
+
+  useEffect(() => { loadApplicants(); }, [loadApplicants]);
+
+  const handleStatus = useCallback(async (appId: number, status: "accepted" | "rejected") => {
+    setUpdating(appId);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/jobs/applications/${appId}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as JobApplication;
+        setApplicants((prev) => prev.map((a) => a.id === appId ? { ...a, status: updated.status } : a));
+        if (selectedApp?.id === appId) setSelectedApp((a) => a ? { ...a, status: updated.status } : a);
+      }
+    } catch {}
+    finally { setUpdating(null); }
+  }, [getToken, selectedApp]);
+
+  const statusColor = (s: string) =>
+    s === "accepted" ? "#16a34a" : s === "rejected" ? "#dc2626" : colors.mutedForeground;
+  const statusBg = (s: string) =>
+    s === "accepted" ? "#16a34a20" : s === "rejected" ? "#dc262620" : colors.secondary;
+
+  return (
+    <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.modalHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
+        <Pressable
+          onPress={selectedApp ? () => setSelectedApp(null) : onClose}
+          style={[styles.modalCloseBtn, { backgroundColor: colors.secondary }]}
+        >
+          <Feather name={selectedApp ? "arrow-left" : "x"} size={18} color={colors.foreground} />
+        </Pressable>
+        <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+          {selectedApp ? selectedApp.applicantName : `Applicants (${applicants.length})`}
+        </Text>
+        <View style={{ width: 36 }} />
+      </View>
+
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      ) : selectedApp ? (
+        /* ── Applicant detail ── */
+        <ScrollView contentContainerStyle={[styles.modalBody, { paddingBottom: insets.bottom + 24 }]}>
+          {/* Applicant info */}
+          <View style={[styles.applicantHero, { backgroundColor: colors.secondary }]}>
+            <View style={[styles.applicantAvatar, { backgroundColor: colors.primary + "30" }]}>
+              <Text style={[styles.applicantAvatarLetter, { color: colors.primary }]}>
+                {selectedApp.applicantName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={[styles.applicantHeroName, { color: colors.foreground }]}>{selectedApp.applicantName}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: statusBg(selectedApp.status) }]}>
+              <Text style={[styles.statusBadgeText, { color: statusColor(selectedApp.status) }]}>
+                {selectedApp.status.charAt(0).toUpperCase() + selectedApp.status.slice(1)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Cover letter */}
+          <Text style={[styles.detailSectionLabel, { color: colors.mutedForeground }]}>Cover Letter</Text>
+          <View style={[styles.coverLetterBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Text style={[styles.coverLetterText, { color: colors.foreground }]}>
+              {selectedApp.coverLetter || "No cover letter provided."}
+            </Text>
+          </View>
+
+          {/* Resume URL */}
+          {selectedApp.resumeUrl ? (
+            <>
+              <Text style={[styles.detailSectionLabel, { color: colors.mutedForeground }]}>Resume / Portfolio</Text>
+              <View style={[styles.resumeBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Feather name="link" size={14} color={colors.primary} />
+                <Text style={[styles.resumeUrl, { color: colors.primary }]} numberOfLines={2}>
+                  {selectedApp.resumeUrl}
+                </Text>
+              </View>
+            </>
+          ) : null}
+
+          {/* Action buttons */}
+          {selectedApp.status !== "accepted" && (
+            <Pressable
+              style={[styles.actionBtn, { backgroundColor: "#16a34a", opacity: updating === selectedApp.id ? 0.6 : 1 }]}
+              onPress={() => handleStatus(selectedApp.id, "accepted")}
+              disabled={updating === selectedApp.id}
+            >
+              {updating === selectedApp.id ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Feather name="check-circle" size={16} color="#fff" />
+                  <Text style={styles.actionBtnText}>Accept Applicant</Text>
+                </>
+              )}
+            </Pressable>
+          )}
+          {selectedApp.status !== "rejected" && (
+            <Pressable
+              style={[styles.actionBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: "#dc2626" }]}
+              onPress={() => handleStatus(selectedApp.id, "rejected")}
+              disabled={updating === selectedApp.id}
+            >
+              <Feather name="x-circle" size={16} color="#dc2626" />
+              <Text style={[styles.actionBtnText, { color: "#dc2626" }]}>Reject</Text>
+            </Pressable>
+          )}
+          {selectedApp.applicantId && meId !== selectedApp.applicantId && (
+            <Pressable
+              style={[styles.actionBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.border }]}
+              onPress={async () => {
+                try {
+                  const token = await getToken();
+                  const res = await fetch("/api/messages/conversations/start", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ contextType: "job", contextId: job.id, contextTitle: job.title, otherUserId: selectedApp.applicantId }),
+                  });
+                  if (res.ok) {
+                    const conv = await res.json();
+                    onClose();
+                    router.push(`/conversation?id=${conv.id}&title=${encodeURIComponent(selectedApp.applicantName)}` as never);
+                  }
+                } catch {}
+              }}
+            >
+              <Feather name="message-circle" size={16} color={colors.foreground} />
+              <Text style={[styles.actionBtnText, { color: colors.foreground }]}>Message Applicant</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      ) : (
+        /* ── Applicant list ── */
+        <FlatList
+          data={applicants}
+          keyExtractor={(a) => String(a.id)}
+          contentContainerStyle={[{ padding: 16, gap: 10 }, { paddingBottom: insets.bottom + 24 }]}
+          ListEmptyComponent={
+            <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
+              <Feather name="users" size={40} color={colors.mutedForeground} />
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No applicants yet</Text>
+              <Text style={[styles.emptySub, { color: colors.mutedForeground, textAlign: "center" }]}>
+                Applications to this posting will appear here.
+              </Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              style={[styles.applicantRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => setSelectedApp(item)}
+            >
+              <View style={[styles.applicantAvatar, { backgroundColor: colors.primary + "30" }]}>
+                <Text style={[styles.applicantAvatarLetter, { color: colors.primary }]}>
+                  {item.applicantName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.applicantName, { color: colors.foreground }]}>{item.applicantName}</Text>
+                <Text style={[styles.applicantPreview, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {item.coverLetter || "No cover letter"}
+                </Text>
+              </View>
+              <View style={{ gap: 4, alignItems: "flex-end" }}>
+                <View style={[styles.statusBadge, { backgroundColor: statusBg(item.status) }]}>
+                  <Text style={[styles.statusBadgeText, { color: statusColor(item.status) }]}>
+                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+              </View>
+            </Pressable>
+          )}
+          showsVerticalScrollIndicator={false}
+        />
       )}
     </View>
   );
@@ -698,6 +921,7 @@ export default function JobsScreen({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const router = useRouter();
 
   const [mode, setMode] = useState<Mode>(externalMode ?? "browse");
@@ -709,8 +933,9 @@ export default function JobsScreen({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [myListings, setMyListings] = useState<JobListing[]>([]);
-  const [myApps, setMyApps] = useState<JobApplication[]>([]);
+  const [myApps, setMyApps] = useState<MyJobApplication[]>([]);
   const [detailJob, setDetailJob] = useState<JobListing | null>(null);
+  const [applicantsJob, setApplicantsJob] = useState<JobListing | null>(null);
   const [showPost, setShowPost] = useState(false);
   const [deletingJobId, setDeletingJobId] = useState<number | null>(null);
 
@@ -760,18 +985,20 @@ export default function JobsScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCat, debouncedSearch]);
 
-  // Load my listings + apps
+  // Load my listings + apps (with joined listing data)
   const loadMyData = useCallback(async () => {
     if (!meId) return;
     try {
+      const token = await getToken();
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       const [listRes, appRes] = await Promise.all([
-        fetch("/api/jobs/listings/my"),
-        fetch("/api/jobs/applications/my"),
+        fetch("/api/jobs/listings/my", { headers }),
+        fetch("/api/jobs/applications/my", { headers }),
       ]);
       if (listRes.ok) setMyListings(await listRes.json() as JobListing[]);
-      if (appRes.ok) setMyApps(await appRes.json() as JobApplication[]);
+      if (appRes.ok) setMyApps(await appRes.json() as MyJobApplication[]);
     } catch { /* ignore */ }
-  }, [meId]);
+  }, [meId, getToken]);
 
   useEffect(() => {
     if (mode === "hire") loadMyData();
@@ -929,6 +1156,16 @@ export default function JobsScreen({
             myListings.map((job) => (
               <View key={job.id}>
                 <JobCard job={job} onPress={setDetailJob} />
+                {/* View Applicants button */}
+                <Pressable
+                  style={[styles.viewAppsBtn, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "40" }]}
+                  onPress={() => setApplicantsJob(job)}
+                >
+                  <Feather name="users" size={13} color={colors.primary} />
+                  <Text style={[styles.viewAppsBtnText, { color: colors.primary }]}>
+                    View Applicants ({job.applicationCount})
+                  </Text>
+                </Pressable>
                 <Pressable
                   style={[styles.deleteJobBtn, { borderColor: colors.border }]}
                   onPress={() => handleDeleteJob(job.id)}
@@ -954,16 +1191,35 @@ export default function JobsScreen({
               No applications yet. Browse jobs and apply!
             </Text>
           ) : (
-            myApps.map((app) => (
-              <View key={app.id} style={[styles.appCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.appTitle, { color: colors.foreground }]}>Application #{app.listingId}</Text>
-                <View style={[styles.appStatusBadge, { backgroundColor: app.status === "accepted" ? "#16a34a20" : app.status === "rejected" ? "#dc262620" : colors.secondary }]}>
-                  <Text style={[styles.appStatusText, { color: app.status === "accepted" ? "#16a34a" : app.status === "rejected" ? "#dc2626" : colors.mutedForeground }]}>
-                    {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                  </Text>
+            myApps.map((app) => {
+              const statusBg = app.status === "accepted" ? "#16a34a20" : app.status === "rejected" ? "#dc262620" : colors.secondary;
+              const statusFg = app.status === "accepted" ? "#16a34a" : app.status === "rejected" ? "#dc2626" : colors.mutedForeground;
+              return (
+                <View key={app.id} style={[styles.myAppCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={[styles.myAppCatIcon, { backgroundColor: colors.secondary }]}>
+                    <Text style={{ fontSize: 18 }}>{jobCatEmoji(app.listing?.category ?? "other")}</Text>
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[styles.myAppTitle, { color: colors.foreground }]} numberOfLines={1}>
+                      {app.listing?.title ?? `Job #${app.listingId}`}
+                    </Text>
+                    <Text style={[styles.myAppCompany, { color: colors.mutedForeground }]} numberOfLines={1}>
+                      {app.listing?.company ?? ""}
+                    </Text>
+                    {app.status === "accepted" && (
+                      <Text style={[styles.myAppAcceptedNote, { color: "#16a34a" }]}>
+                        🎉 You were accepted! Message the poster to follow up.
+                      </Text>
+                    )}
+                  </View>
+                  <View style={[styles.appStatusBadge, { backgroundColor: statusBg }]}>
+                    <Text style={[styles.appStatusText, { color: statusFg }]}>
+                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
       )}
@@ -989,6 +1245,17 @@ export default function JobsScreen({
             meId={meId}
             meName={meName}
             onClose={() => setDetailJob(null)}
+          />
+        )}
+      </Modal>
+
+      {/* ── Applicants modal (hirer) ── */}
+      <Modal visible={applicantsJob !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setApplicantsJob(null)}>
+        {applicantsJob !== null && (
+          <ApplicantsModal
+            job={applicantsJob}
+            meId={meId}
+            onClose={() => setApplicantsJob(null)}
           />
         )}
       </Modal>
@@ -1124,8 +1391,37 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
   } as const,
   deleteJobBtnText: { fontSize: 12, fontWeight: "600", color: "#dc2626" },
+  viewAppsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginHorizontal: 16,
+    marginTop: -6,
+    marginBottom: 4,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  viewAppsBtnText: { fontSize: 12, fontWeight: "600" },
 
-  // Application card
+  // My application card (worker side)
+  myAppCard: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  myAppCatIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  myAppTitle: { fontSize: 14, fontWeight: "600" },
+  myAppCompany: { fontSize: 12 },
+  myAppAcceptedNote: { fontSize: 12, fontWeight: "500", lineHeight: 16 },
+
+  // Application card (legacy, keep for compat)
   appCard: {
     marginHorizontal: 16,
     marginBottom: 10,
@@ -1139,6 +1435,37 @@ const styles = StyleSheet.create({
   appTitle: { fontSize: 14, fontWeight: "600" },
   appStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   appStatusText: { fontSize: 12, fontWeight: "600" },
+
+  // Applicants modal
+  applicantRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+  },
+  applicantAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
+  applicantAvatarLetter: { fontSize: 20, fontWeight: "700" },
+  applicantName: { fontSize: 14, fontWeight: "600" },
+  applicantPreview: { fontSize: 12 },
+  applicantHero: { alignItems: "center", padding: 20, borderRadius: 16, gap: 8, marginBottom: 4 },
+  applicantHeroName: { fontSize: 20, fontWeight: "700" },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  statusBadgeText: { fontSize: 12, fontWeight: "700" },
+  coverLetterBox: { borderRadius: 12, borderWidth: 1, padding: 14 },
+  coverLetterText: { fontSize: 14, lineHeight: 22 },
+  resumeBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, borderWidth: 1, padding: 12 },
+  resumeUrl: { flex: 1, fontSize: 13 },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  actionBtnText: { color: "#fff", fontSize: 15, fontWeight: "600" },
 
   // Modal shared
   modalContainer: { flex: 1 },

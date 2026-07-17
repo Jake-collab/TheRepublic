@@ -215,17 +215,55 @@ router.get("/listings/:id/applications", requireAuth, ensureUser, async (req, re
 });
 
 // ── GET /jobs/applications/my ─────────────────────────────────────────────────
-// Auth. Returns the current user's job applications.
+// Auth. Returns the current user's job applications, joined with listing data.
 router.get("/applications/my", requireAuth, ensureUser, async (req, res) => {
   const userId = (req as any).userId as string;
 
-  const apps = await db
-    .select()
+  const rows = await db
+    .select({
+      app:     jobApplicationsTable,
+      listing: jobListingsTable,
+    })
     .from(jobApplicationsTable)
+    .innerJoin(jobListingsTable, eq(jobApplicationsTable.listingId, jobListingsTable.id))
     .where(eq(jobApplicationsTable.applicantId, userId))
     .orderBy(desc(jobApplicationsTable.createdAt));
 
-  res.status(200).json(apps);
+  res.status(200).json(rows.map((r) => ({ ...r.app, listing: r.listing })));
+  return;
+});
+
+// ── PATCH /jobs/applications/:id ──────────────────────────────────────────────
+// Auth. Poster accepts or rejects an application.
+router.patch("/applications/:id", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const appId = Number(req.params.id);
+  if (!appId) { res.status(400).json({ error: "Invalid application id" }); return; }
+
+  const { status } = req.body as { status?: string };
+  if (!status || !["accepted", "rejected", "pending"].includes(status)) {
+    res.status(400).json({ error: "status must be accepted, rejected, or pending" });
+    return;
+  }
+
+  // Load the application + listing to verify ownership
+  const rows = await db
+    .select({ app: jobApplicationsTable, listing: jobListingsTable })
+    .from(jobApplicationsTable)
+    .innerJoin(jobListingsTable, eq(jobApplicationsTable.listingId, jobListingsTable.id))
+    .where(eq(jobApplicationsTable.id, appId))
+    .limit(1);
+
+  if (!rows[0]) { res.status(404).json({ error: "Application not found" }); return; }
+  if (rows[0].listing.posterId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const [updated] = await db
+    .update(jobApplicationsTable)
+    .set({ status })
+    .where(eq(jobApplicationsTable.id, appId))
+    .returning();
+
+  res.status(200).json(updated);
   return;
 });
 
