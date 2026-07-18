@@ -434,7 +434,10 @@ export default function BrowserScreen() {
       {/* ── Upgrade modal (pro tab locked) ────────────────────────────── */}
       <UpgradeModal />
 
-      {/* ── Drawer ────────────────────────────────────────────────────── */}
+      {/* ── Splash ────────────────────────────────────────────────────── */}
+      {showSplash && <SplashOverlay onDone={() => setShowSplash(false)} />}
+
+      {/* ── Drawer — rendered LAST so it is always above every section ── */}
       <DrawerNav
         isOpen={drawerOpen}
         activeSection={activeSection}
@@ -448,9 +451,6 @@ export default function BrowserScreen() {
           router.push("/profile");
         }}
       />
-
-      {/* ── Splash ────────────────────────────────────────────────────── */}
-      {showSplash && <SplashOverlay onDone={() => setShowSplash(false)} />}
     </View>
   );
 }

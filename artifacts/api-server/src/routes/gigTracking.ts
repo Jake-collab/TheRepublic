@@ -14,16 +14,64 @@ import { eq, and, gte, desc, sql } from "drizzle-orm";
 const router = Router();
 
 // ── GET /gig-tracking/:jobId ──────────────────────────────────────────────────
+// Returns the latest tracking record for the job, augmented with jobStartedAt
+// so the client can render an elapsed timer during the scene_confirmed stage.
 router.get("/:jobId", requireAuth, async (req, res) => {
   const jobId = Number(req.params.jobId);
   const rows = await db
-    .select()
+    .select({
+      tracking:    gigTrackingTable,
+      jobStartedAt: gigJobsTable.startedAt,
+    })
     .from(gigTrackingTable)
+    .innerJoin(gigJobsTable, eq(gigTrackingTable.jobId, gigJobsTable.id))
     .where(eq(gigTrackingTable.jobId, jobId))
     .orderBy(desc(gigTrackingTable.createdAt))
     .limit(1);
   if (!rows[0]) { res.status(404).json({ error: "No tracking record" }); return; }
-  res.json(rows[0]);
+  res.json({ ...rows[0].tracking, jobStartedAt: rows[0].jobStartedAt });
+});
+
+// ── GET /gig-tracking/my-active ──────────────────────────────────────────────
+// Returns the authenticated worker's current active tracking record + job info.
+// "Active" = on_way | on_scene | scene_confirmed (not completed/disputed).
+router.get("/my-active", requireAuth, ensureUser, async (req, res) => {
+  const userId = (req as any).userId as string;
+
+  const rows = await db
+    .select({
+      tracking: gigTrackingTable,
+      jobTitle:       gigJobsTable.title,
+      jobCategory:    gigJobsTable.category,
+      jobPayAmount:   gigJobsTable.payAmountCents,
+      jobPayType:     gigJobsTable.payType,
+      jobStartedAt:   gigJobsTable.startedAt,
+    })
+    .from(gigTrackingTable)
+    .innerJoin(gigJobsTable, eq(gigTrackingTable.jobId, gigJobsTable.id))
+    .where(
+      and(
+        eq(gigTrackingTable.workerId, userId),
+        sql`${gigTrackingTable.status} IN ('on_way','on_scene','scene_confirmed','completed','disputed')`,
+      ),
+    )
+    .orderBy(desc(gigTrackingTable.updatedAt))
+    .limit(1);
+
+  if (!rows[0]) { res.status(404).json({ error: "No active tracking" }); return; }
+
+  const r = rows[0];
+  res.json({
+    tracking: r.tracking,
+    job: {
+      id:           r.tracking.jobId,
+      title:        r.jobTitle,
+      category:     r.jobCategory,
+      payAmountCents: r.jobPayAmount,
+      payType:      r.jobPayType,
+      startedAt:    r.jobStartedAt,
+    },
+  });
 });
 
 // ── POST /gig-tracking/check-limit ───────────────────────────────────────────

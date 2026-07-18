@@ -55,6 +55,7 @@ import type {
   GigApplicationWithJob,
 } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
+import LeaveReviewModal from "@/components/LeaveReviewModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -397,10 +398,118 @@ type TrackingRecord = {
   status: string;
   sceneConfirmed: boolean;
   completionConfirmed: boolean;
+  jobStartedAt?: string | null;
 };
+
+/** Format elapsed minutes since a timestamp into "Xh Ym" or "Ym". */
+function fmtElapsed(sinceIso: string): string {
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(sinceIso).getTime()) / 60000));
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
 
 const TRACK_STEPS = ["on_way", "on_scene", "scene_confirmed", "completed"] as const;
 const TRACK_LABELS = ["On the Way", "On Scene", "Working", "Complete"];
+
+const ACTIVE_STAGE_LABEL: Record<string, string> = {
+  on_way:          "On the Way",
+  on_scene:        "On Scene — awaiting confirmation",
+  scene_confirmed: "Working",
+};
+const ACTIVE_STAGE_COLOR: Record<string, string> = {
+  on_way:          "#f59e0b",
+  on_scene:        "#3b82f6",
+  scene_confirmed: "#22c55e",
+  completed:       "#8b5cf6",
+  disputed:        "#ef4444",
+};
+
+type ActiveGigData = {
+  tracking: TrackingRecord & { jobId: number };
+  job: {
+    id: number;
+    title: string;
+    category: string;
+    payAmountCents: number;
+    payType: string;
+    startedAt: string | null;
+  };
+};
+
+function GigActiveBanner({ onOpen }: { onOpen: (jobId: number) => void }) {
+  const colors = useColors();
+  const { getToken } = useAuth();
+  const [data, setData] = useState<ActiveGigData | null>(null);
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  const load = useCallback(async () => {
+    try {
+      const token = await getToken();
+      const r = await fetch("/api/gig-tracking/my-active", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.status === 404) { setData(null); return; }
+      if (r.ok) setData(await r.json());
+    } catch { /* silent */ }
+  }, [getToken]);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 8000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  useEffect(() => {
+    if (!data) return;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1,   duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [data, pulse]);
+
+  if (!data) return null;
+
+  const { tracking, job } = data;
+  const isDenied    = tracking.status === "disputed";
+  const isCompleted = tracking.completionConfirmed;
+  const accentColor = ACTIVE_STAGE_COLOR[tracking.status] ?? colors.primary;
+  const stageLabel  = isDenied
+    ? "Request Denied by Hirer"
+    : isCompleted
+    ? "Job Complete 🎉"
+    : (ACTIVE_STAGE_LABEL[tracking.status] ?? tracking.status);
+
+  return (
+    <Pressable
+      style={[
+        styles.activeBanner,
+        { backgroundColor: accentColor + "18", borderColor: accentColor + "55" },
+      ]}
+      onPress={() => onOpen(job.id)}
+    >
+      <Animated.View
+        style={[styles.activeDot, { backgroundColor: accentColor, opacity: pulse }]}
+      />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={[styles.activeBannerLabel, { color: accentColor }]}>
+          {isDenied || isCompleted ? stageLabel : `LIVE · ${stageLabel}`}
+        </Text>
+        <Text style={[styles.activeBannerJob, { color: colors.foreground }]} numberOfLines={1}>
+          {job.title}
+        </Text>
+      </View>
+      {!isDenied && !isCompleted && (
+        <Feather name="chevron-right" size={16} color={accentColor} />
+      )}
+    </Pressable>
+  );
+}
 
 function GigWorkerTrackingPanel({ jobId, onRefresh }: { jobId: number; onRefresh: () => void }) {
   const colors = useColors();
@@ -508,9 +617,14 @@ function GigWorkerTrackingPanel({ jobId, onRefresh }: { jobId: number; onRefresh
         </View>
       )}
       {tracking.status === "scene_confirmed" && (
-        <Pressable style={[styles.trackActionBtn, { backgroundColor: "#22c55e", opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/complete`)} disabled={acting}>
-          {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="check-circle" size={16} color="#fff" /><Text style={styles.trackBtnText}>Mark Job Complete</Text></>}
-        </Pressable>
+        <View style={{ gap: 8 }}>
+          {tracking.jobStartedAt && (
+            <ElapsedTimer sinceIso={tracking.jobStartedAt} />
+          )}
+          <Pressable style={[styles.trackActionBtn, { backgroundColor: "#22c55e", opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/complete`)} disabled={acting}>
+            {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="check-circle" size={16} color="#fff" /><Text style={styles.trackBtnText}>Mark Job Complete</Text></>}
+          </Pressable>
+        </View>
       )}
       {tracking.status === "completed" && (
         <View style={[styles.trackWaitRow, { backgroundColor: "#22c55e18", borderColor: "#22c55e44" }]}>
@@ -518,6 +632,37 @@ function GigWorkerTrackingPanel({ jobId, onRefresh }: { jobId: number; onRefresh
           <Text style={[styles.trackWaitText, { color: colors.foreground }]}>Waiting for hirer to confirm completion…</Text>
         </View>
       )}
+      {tracking.status === "disputed" && (
+        <View style={[styles.trackWaitRow, { backgroundColor: "#ef444418", borderColor: "#ef444444" }]}>
+          <Feather name="alert-circle" size={15} color="#ef4444" />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.trackWaitText, { color: "#ef4444", fontWeight: "700" }]}>Request Denied</Text>
+            <Text style={[styles.trackWaitText, { color: colors.mutedForeground }]}>The hirer declined your acceptance. This gig is back on the open list — your daily slot has been returned.</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── ElapsedTimer ──────────────────────────────────────────────────────────────
+// Self-updating elapsed time display, ticking every minute.
+
+function ElapsedTimer({ sinceIso }: { sinceIso: string }) {
+  const colors = useColors();
+  const [display, setDisplay] = useState(() => fmtElapsed(sinceIso));
+
+  useEffect(() => {
+    const id = setInterval(() => setDisplay(fmtElapsed(sinceIso)), 60000);
+    return () => clearInterval(id);
+  }, [sinceIso]);
+
+  return (
+    <View style={[styles.trackWaitRow, { backgroundColor: "#22c55e18", borderColor: "#22c55e44" }]}>
+      <Feather name="clock" size={15} color="#22c55e" />
+      <Text style={[styles.trackWaitText, { color: colors.foreground }]}>
+        Working · <Text style={{ fontWeight: "700", color: "#22c55e" }}>{display}</Text>
+      </Text>
     </View>
   );
 }
@@ -534,6 +679,7 @@ function GigHirerTrackingPanel({
   onFallbackComplete,
   startDisabled,
   completeDisabled,
+  onComplete,
 }: {
   jobId: number;
   jobStatus: string;
@@ -542,6 +688,7 @@ function GigHirerTrackingPanel({
   onFallbackComplete?: () => void;
   startDisabled?: boolean;
   completeDisabled?: boolean;
+  onComplete?: () => void;
 }) {
   const colors = useColors();
   const { getToken } = useAuth();
@@ -620,10 +767,36 @@ function GigHirerTrackingPanel({
           {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="user-check" size={16} color="#fff" /><Text style={styles.trackBtnText}>Confirm On Scene</Text></>}
         </Pressable>
       )}
-      {tracking.status === "completed" && (
-        <Pressable style={[styles.trackActionBtn, { backgroundColor: "#22c55e", opacity: acting ? 0.6 : 1 }]} onPress={() => post(`/api/gig-tracking/${jobId}/confirm-complete`)} disabled={acting}>
+      {tracking.status === "scene_confirmed" && (
+        <>
+          {tracking.jobStartedAt && (
+            <ElapsedTimer sinceIso={tracking.jobStartedAt} />
+          )}
+          <View style={[styles.trackWaitRow, { backgroundColor: "#22c55e18", borderColor: "#22c55e44" }]}>
+            <Feather name="check" size={15} color="#22c55e" />
+            <Text style={[styles.trackWaitText, { color: colors.foreground }]}>Worker is on site — waiting for them to mark complete</Text>
+          </View>
+        </>
+      )}
+      {tracking.status === "completed" && !tracking.completionConfirmed && (
+        <Pressable style={[styles.trackActionBtn, { backgroundColor: "#22c55e", opacity: acting ? 0.6 : 1 }]} onPress={async () => {
+          setActing(true);
+          try {
+            const token = await getToken();
+            await fetch(`/api/gig-tracking/${jobId}/confirm-complete`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+            await fetchData();
+            onRefresh();
+            onComplete?.();
+          } finally { setActing(false); }
+        }} disabled={acting}>
           {acting ? <ActivityIndicator size="small" color="#fff" /> : <><Feather name="check-circle" size={16} color="#fff" /><Text style={styles.trackBtnText}>Confirm Completion</Text></>}
         </Pressable>
+      )}
+      {tracking.completionConfirmed && (
+        <View style={[styles.trackWaitRow, { backgroundColor: "#8b5cf618", borderColor: "#8b5cf644" }]}>
+          <Feather name="star" size={15} color="#8b5cf6" />
+          <Text style={[styles.trackWaitText, { color: colors.foreground }]}>Job complete! Payment will be processed shortly.</Text>
+        </View>
       )}
     </View>
   );
@@ -871,6 +1044,8 @@ function MyJobModal({
   const qc = useQueryClient();
   const router = useRouter();
   const [startingChat, setStartingChat] = useState(false);
+  const [showCompletionPanel, setShowCompletionPanel] = useState(false);
+  const [showLeaveReview, setShowLeaveReview] = useState(false);
   const { getToken } = useAuth();
 
   const { data: job, isLoading } = useGetGigJob(jobId);
@@ -1022,7 +1197,31 @@ function MyJobModal({
               onFallbackComplete={handleComplete}
               startDisabled={starting}
               completeDisabled={completing}
+              onComplete={() => {
+                invalidateJob();
+                setShowCompletionPanel(true);
+              }}
             />
+          )}
+
+          {/* ─ Post-completion review prompt ─ */}
+          {showCompletionPanel && job.workerId && (
+            <View style={[styles.trackPanel, { backgroundColor: "#8b5cf618", borderColor: "#8b5cf644" }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <Feather name="star" size={16} color="#8b5cf6" />
+                <Text style={[styles.trackTitle, { color: "#8b5cf6", marginBottom: 0 }]}>Job Complete 🎉</Text>
+              </View>
+              <Text style={[styles.trackSub, { color: "#8b5cf6", marginBottom: 12 }]}>
+                Leave a review for your worker — it helps others in the community!
+              </Text>
+              <Pressable
+                style={[styles.trackActionBtn, { backgroundColor: "#8b5cf6" }]}
+                onPress={() => { setShowCompletionPanel(false); setShowLeaveReview(true); }}
+              >
+                <Feather name="star" size={16} color="#fff" />
+                <Text style={styles.trackBtnText}>Leave a Review</Text>
+              </Pressable>
+            </View>
           )}
 
           {/* Chat button always available when worker is assigned */}
@@ -1134,6 +1333,19 @@ function MyJobModal({
             <Text style={[styles.closeBtnText, { color: colors.foreground }]}>Close</Text>
           </Pressable>
         </ScrollView>
+
+      {/* ─ Leave-review modal overlay ─ */}
+      {job?.workerId && (
+        <LeaveReviewModal
+          visible={showLeaveReview}
+          revieweeId={job.workerId}
+          revieweeName={(job as any).workerName ?? "Worker"}
+          contextType="gig_job"
+          contextId={job.id}
+          onClose={() => setShowLeaveReview(false)}
+          onSubmitted={() => setShowLeaveReview(false)}
+        />
+      )}
     </View>
   );
 }
@@ -1759,6 +1971,9 @@ export default function GigsScreen({ onOpenDrawer, externalMode }: { onOpenDrawe
           onEndReachedThreshold={0.3}
           ListHeaderComponent={
             <View style={styles.workHeader}>
+              {/* Active gig banner — shows when worker has an active tracking record */}
+              <GigActiveBanner onOpen={(jobId) => setDetailJobId(jobId)} />
+
               {/* Location + radius bar */}
               <View style={{ gap: 8 }}>
                 <View
@@ -2076,6 +2291,16 @@ const styles = StyleSheet.create({
 
   // work header
   workHeader: { gap: 12, marginBottom: 4 },
+
+  // active-gig live banner
+  activeBanner: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    padding: 14, borderRadius: 14, borderWidth: 1,
+  },
+  activeDot: { width: 10, height: 10, borderRadius: 5 },
+  activeBannerLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase" },
+  activeBannerJob: { fontSize: 14, fontWeight: "600" },
+
   radiusBar: {
     flexDirection: "row", alignItems: "center", gap: 8,
     padding: 12, borderRadius: 14, borderWidth: 1,

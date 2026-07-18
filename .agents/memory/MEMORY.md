@@ -7,3 +7,4 @@
 - [externalMode pattern](external-mode-pattern.md) — all section screens accept externalMode prop + useEffect sync; index.tsx owns sectionModes state and passes down.
 - [BuySellScreen browse/grid split](buysell-browse-grid.md) — buy mode defaults to horizontal browse per category (PLACEHOLDER_LISTINGS static data); viewAllCat state switches to 2-col grid; GridHeader has back button.
 - [Jobs feature](jobs-feature.md) — 3 DB tables (jobListings/jobApplications/jobMessages) in lib/db/src/schema/jobs.ts; API at /api/jobs/* in routes/jobs.ts; JobsScreen uses fetch() directly — no codegen needed.
+- [Gig tracking lifecycle](gig-tracking-lifecycle.md) — GigActiveBanner, ElapsedTimer, dispute UI, post-completion review patterns; workerName cast to any.

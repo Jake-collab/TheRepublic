@@ -318,8 +318,9 @@ const WebIframe = memo(function WebIframe({
             { backgroundColor: colors.card, borderTopColor: colors.border },
           ]}
         >
+          <Feather name="alert-circle" size={14} color={colors.mutedForeground} />
           <Text style={[styles.openBarText, { color: colors.mutedForeground }]}>
-            {displayHost} may block preview
+            {displayHost} restricts embedding — open in browser for full access
           </Text>
           <Pressable
             style={[styles.openBarBtn, { backgroundColor: colors.primary }]}
@@ -329,7 +330,7 @@ const WebIframe = memo(function WebIframe({
             }}
           >
             <Text style={[styles.openBarBtnText, { color: colors.primaryForeground }]}>
-              Open site ↗
+              Open ↗
             </Text>
           </Pressable>
         </View>
