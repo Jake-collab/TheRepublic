@@ -283,10 +283,14 @@ const WebIframe = memo(function WebIframe({
   const onPageReadyRef = useRef(onPageReady);
   useEffect(() => { onPageReadyRef.current = onPageReady; }, [onPageReady]);
 
-  // 4 s heuristic — can't reliably detect X-Frame-Options blocking
+  // 4 s heuristic — fires only if onLoad never fires (iframe blocked by X-Frame-Options)
+  const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    const t = setTimeout(() => setBlocked(true), 4000);
-    return () => clearTimeout(t);
+    setBlocked(false);
+    blockTimerRef.current = setTimeout(() => setBlocked(true), 4000);
+    return () => {
+      if (blockTimerRef.current) clearTimeout(blockTimerRef.current);
+    };
   }, [url]);
 
   const displayHost = (() => {
@@ -307,7 +311,14 @@ const WebIframe = memo(function WebIframe({
           height: "100%",
           display: isVisible ? "block" : "none",
         } as React.CSSProperties}
-        onLoad={() => onPageReadyRef.current?.()}
+        onLoad={() => {
+          if (blockTimerRef.current) {
+            clearTimeout(blockTimerRef.current);
+            blockTimerRef.current = null;
+          }
+          setBlocked(false);
+          onPageReadyRef.current?.();
+        }}
         title="Republic Browser"
         referrerPolicy="no-referrer-when-downgrade"
       />

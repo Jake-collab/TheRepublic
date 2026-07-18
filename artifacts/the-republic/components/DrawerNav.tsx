@@ -6,11 +6,12 @@
  */
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
   Image,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -73,7 +74,13 @@ export default function DrawerNav({
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
 
+  // Keep the Modal mounted during the close animation so it doesn't vanish
+  // mid-slide. Set true immediately on open, false only after close animation ends.
+  const [modalVisible, setModalVisible] = useState(false);
+
   useEffect(() => {
+    if (isOpen) setModalVisible(true);
+
     Animated.parallel([
       Animated.spring(translateX, {
         toValue: isOpen ? 0 : -DRAWER_WIDTH,
@@ -86,7 +93,9 @@ export default function DrawerNav({
         duration: 220,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]).start(({ finished }) => {
+      if (finished && !isOpen) setModalVisible(false);
+    });
   }, [isOpen, translateX, backdropOpacity]);
 
   const handleSimpleSelect = (section: "talks" | "web") => {
@@ -302,31 +311,39 @@ export default function DrawerNav({
   );
 
   return (
-    <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]} pointerEvents={isOpen ? "auto" : "none"}>
-      <Animated.View
-        style={[styles.backdrop, { opacity: backdropOpacity }]}
-        pointerEvents={isOpen ? "auto" : "none"}
-      >
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
+    <Modal
+      visible={modalVisible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        <Animated.View
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+          pointerEvents="auto"
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
 
-      <Animated.View
-        style={[styles.drawerOuter, { width: DRAWER_WIDTH, transform: [{ translateX }] }]}
-        pointerEvents="box-none"
-      >
-        {Platform.OS === "ios" ? (
-          <>
-            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
-            <View style={[StyleSheet.absoluteFill, styles.blurOverlay]} />
-            {drawerInner}
-          </>
-        ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: D.bg }]}>
-            {drawerInner}
-          </View>
-        )}
-      </Animated.View>
-    </View>
+        <Animated.View
+          style={[styles.drawerOuter, { width: DRAWER_WIDTH, transform: [{ translateX }] }]}
+          pointerEvents="box-none"
+        >
+          {Platform.OS === "ios" ? (
+            <>
+              <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+              <View style={[StyleSheet.absoluteFill, styles.blurOverlay]} />
+              {drawerInner}
+            </>
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: D.bg }]}>
+              {drawerInner}
+            </View>
+          )}
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
