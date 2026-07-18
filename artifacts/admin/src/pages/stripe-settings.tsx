@@ -32,11 +32,16 @@ export default function StripeSettingsPage() {
   const [monthlyPrice, setMonthlyPrice] = useState("");
   const [annualPrice, setAnnualPrice] = useState("");
 
-  // Tiered pricing (Section 6)
+  // Tiered pricing
   const [webPriceId, setWebPriceId] = useState("");
   const [webPrice, setWebPrice] = useState("");
   const [proMonthlyPriceId, setProMonthlyPriceId] = useState("");
   const [proPrice, setProPrice] = useState("");
+
+  // Transaction fees
+  const [workerFeePercent, setWorkerFeePercent] = useState("");
+  const [consumerFeePercent, setConsumerFeePercent] = useState("");
+  const [consumerFeeCap, setConsumerFeeCap] = useState("");
 
   const initialized = useRef(false);
 
@@ -51,6 +56,9 @@ export default function StripeSettingsPage() {
       setWebPrice(centsToDisplay(settings.webMonthlyCents));
       setProMonthlyPriceId(settings.proMonthlyPriceId ?? "");
       setProPrice(centsToDisplay(settings.proMonthlyCents));
+      setWorkerFeePercent(String(settings.workerFeePercent));
+      setConsumerFeePercent(String(settings.consumerFeePercent));
+      setConsumerFeeCap(centsToDisplay(settings.consumerFeeCapCents));
     }
   }, [settings]);
 
@@ -59,12 +67,19 @@ export default function StripeSettingsPage() {
     const annualPriceCents = Math.round(parseFloat(annualPrice) * 100);
     const webMonthlyCents = Math.round(parseFloat(webPrice) * 100);
     const proMonthlyCents = Math.round(parseFloat(proPrice) * 100);
+    const consumerFeeCapCents = Math.round(parseFloat(consumerFeeCap) * 100);
+    const workerFee = parseInt(workerFeePercent, 10);
+    const consumerFee = parseInt(consumerFeePercent, 10);
 
     if (
       isNaN(monthlyPriceCents) || isNaN(annualPriceCents) ||
       isNaN(webMonthlyCents) || isNaN(proMonthlyCents)
     ) {
       toast({ title: "Invalid prices", description: "Please enter valid dollar amounts.", variant: "destructive" });
+      return;
+    }
+    if (isNaN(workerFee) || isNaN(consumerFee) || isNaN(consumerFeeCapCents)) {
+      toast({ title: "Invalid fees", description: "Please enter valid fee percentages and cap.", variant: "destructive" });
       return;
     }
 
@@ -81,6 +96,9 @@ export default function StripeSettingsPage() {
           webMonthlyCents,
           proMonthlyPriceId: proMonthlyPriceId || undefined,
           proMonthlyCents,
+          workerFeePercent: workerFee,
+          consumerFeePercent: consumerFee,
+          consumerFeeCapCents,
         }
       });
       setSecretKey("");
@@ -244,6 +262,68 @@ export default function StripeSettingsPage() {
                       placeholder="4.99"
                       value={proPrice}
                       onChange={e => setProPrice(e.target.value)}
+                      className="rounded-l-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Transaction Fees */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction Fees</CardTitle>
+              <CardDescription>
+                Platform fee % charged on transactions. Worker fee applies to Gigs &amp; Freelance payouts (waived for Pro members). Consumer fee applies to Buy/Sell purchases.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label>Worker Payout Fee (%)</Label>
+                  <p className="text-xs text-muted-foreground">Gigs &amp; Freelance — waived for Pro</p>
+                  <div className="flex">
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="50"
+                      placeholder="5"
+                      value={workerFeePercent}
+                      onChange={e => setWorkerFeePercent(e.target.value)}
+                    />
+                    <span className="flex items-center px-3 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">%</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Consumer Transaction Fee (%)</Label>
+                  <p className="text-xs text-muted-foreground">Buy/Sell marketplace purchases</p>
+                  <div className="flex">
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="50"
+                      placeholder="1"
+                      value={consumerFeePercent}
+                      onChange={e => setConsumerFeePercent(e.target.value)}
+                    />
+                    <span className="flex items-center px-3 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">%</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Consumer Fee Cap ($)</Label>
+                  <p className="text-xs text-muted-foreground">Maximum fee charged per purchase</p>
+                  <div className="flex">
+                    <span className="flex items-center px-3 border border-r-0 rounded-l-md bg-muted text-muted-foreground text-sm">$</span>
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="20"
+                      value={consumerFeeCap}
+                      onChange={e => setConsumerFeeCap(e.target.value)}
                       className="rounded-l-none"
                     />
                   </div>

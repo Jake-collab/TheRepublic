@@ -19,4 +19,7 @@ export interface StripeSettingsUpdate {
   webMonthlyCents?: number;
   proMonthlyPriceId?: string;
   proMonthlyCents?: number;
+  workerFeePercent?: number;
+  consumerFeePercent?: number;
+  consumerFeeCapCents?: number;
 }

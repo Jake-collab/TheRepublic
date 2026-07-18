@@ -2940,7 +2940,7 @@ components:
 
     StripeSettings:
       type: object
-      required: [secretKeyConfigured, webhookSecretConfigured, monthlyPriceCents, annualPriceCents, webMonthlyCents, proMonthlyCents]
+      required: [secretKeyConfigured, webhookSecretConfigured, monthlyPriceCents, annualPriceCents, webMonthlyCents, proMonthlyCents, workerFeePercent, consumerFeePercent, consumerFeeCapCents]
       properties:
         secretKeyConfigured:
           type: boolean
@@ -2962,6 +2962,15 @@ components:
           type: ["string", "null"]
         proMonthlyCents:
           type: integer
+        workerFeePercent:
+          type: integer
+          description: Platform fee % taken from Gigs/Freelance worker payouts (waived for Pro members)
+        consumerFeePercent:
+          type: integer
+          description: Platform fee % added to Buy/Sell consumer purchases
+        consumerFeeCapCents:
+          type: integer
+          description: Maximum consumer fee in cents (e.g. 2000 = $20 cap)
         updatedAt:
           type: string
 
@@ -2987,6 +2996,12 @@ components:
         proMonthlyPriceId:
           type: string
         proMonthlyCents:
+          type: integer
+        workerFeePercent:
+          type: integer
+        consumerFeePercent:
+          type: integer
+        consumerFeeCapCents:
           type: integer
 
     # ── User Website Preferences ─────────────────────────────────────────────────

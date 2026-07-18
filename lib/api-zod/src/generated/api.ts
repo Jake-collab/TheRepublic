@@ -971,6 +971,9 @@ export const AdminGetStripeSettingsResponse = zod.object({
   "webMonthlyCents": zod.number(),
   "proMonthlyPriceId": zod.string().nullish(),
   "proMonthlyCents": zod.number(),
+  "workerFeePercent": zod.number().describe('Platform fee % taken from Gigs\/Freelance worker payouts (waived for Pro members)'),
+  "consumerFeePercent": zod.number().describe('Platform fee % added to Buy\/Sell consumer purchases'),
+  "consumerFeeCapCents": zod.number().describe('Maximum consumer fee in cents (e.g. 2000 = $20 cap)'),
   "updatedAt": zod.string().optional()
 })
 
@@ -988,7 +991,10 @@ export const AdminUpdateStripeSettingsBody = zod.object({
   "webPriceId": zod.string().optional(),
   "webMonthlyCents": zod.number().optional(),
   "proMonthlyPriceId": zod.string().optional(),
-  "proMonthlyCents": zod.number().optional()
+  "proMonthlyCents": zod.number().optional(),
+  "workerFeePercent": zod.number().optional(),
+  "consumerFeePercent": zod.number().optional(),
+  "consumerFeeCapCents": zod.number().optional()
 })
 
 export const AdminUpdateStripeSettingsResponse = zod.object({
@@ -1002,6 +1008,9 @@ export const AdminUpdateStripeSettingsResponse = zod.object({
   "webMonthlyCents": zod.number(),
   "proMonthlyPriceId": zod.string().nullish(),
   "proMonthlyCents": zod.number(),
+  "workerFeePercent": zod.number().describe('Platform fee % taken from Gigs\/Freelance worker payouts (waived for Pro members)'),
+  "consumerFeePercent": zod.number().describe('Platform fee % added to Buy\/Sell consumer purchases'),
+  "consumerFeeCapCents": zod.number().describe('Maximum consumer fee in cents (e.g. 2000 = $20 cap)'),
   "updatedAt": zod.string().optional()
 })
 

@@ -261,6 +261,12 @@ export interface StripeSettings {
   /** @nullable */
   proMonthlyPriceId?: string | null;
   proMonthlyCents: number;
+  /** Platform fee % taken from Gigs/Freelance worker payouts (waived for Pro members) */
+  workerFeePercent: number;
+  /** Platform fee % added to Buy/Sell consumer purchases */
+  consumerFeePercent: number;
+  /** Maximum consumer fee in cents (e.g. 2000 = $20 cap) */
+  consumerFeeCapCents: number;
   updatedAt?: string;
 }
 
@@ -277,6 +283,9 @@ export interface StripeSettingsUpdate {
   webMonthlyCents?: number;
   proMonthlyPriceId?: string;
   proMonthlyCents?: number;
+  workerFeePercent?: number;
+  consumerFeePercent?: number;
+  consumerFeeCapCents?: number;
 }
 
 export interface WebsitePref {

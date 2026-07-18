@@ -570,6 +570,9 @@ router.get("/stripe-settings", async (req, res) => {
     webMonthlyCents: cfg.webMonthlyCents,
     proMonthlyPriceId: cfg.proMonthlyPriceId,
     proMonthlyCents: cfg.proMonthlyCents,
+    workerFeePercent: cfg.workerFeePercent,
+    consumerFeePercent: cfg.consumerFeePercent,
+    consumerFeeCapCents: cfg.consumerFeeCapCents,
     updatedAt: new Date().toISOString(),
   });
 });
@@ -579,6 +582,7 @@ router.put("/stripe-settings", async (req, res) => {
     secretKey, webhookSecret,
     monthlyPriceId, annualPriceId, monthlyPriceCents, annualPriceCents,
     webPriceId, webMonthlyCents, proMonthlyPriceId, proMonthlyCents,
+    workerFeePercent, consumerFeePercent, consumerFeeCapCents,
   } = req.body;
 
   const rows = await db.select().from(stripeSettingsTable).limit(1);
@@ -594,6 +598,9 @@ router.put("/stripe-settings", async (req, res) => {
   if (webMonthlyCents !== undefined) updates.webMonthlyCents = Number(webMonthlyCents);
   if (proMonthlyPriceId !== undefined) updates.proMonthlyPriceId = proMonthlyPriceId;
   if (proMonthlyCents !== undefined) updates.proMonthlyCents = Number(proMonthlyCents);
+  if (workerFeePercent !== undefined) updates.workerFeePercent = Number(workerFeePercent);
+  if (consumerFeePercent !== undefined) updates.consumerFeePercent = Number(consumerFeePercent);
+  if (consumerFeeCapCents !== undefined) updates.consumerFeeCapCents = Number(consumerFeeCapCents);
 
   if (!rows[0]) {
     await db.insert(stripeSettingsTable).values({ ...updates });
